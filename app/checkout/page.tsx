@@ -469,9 +469,9 @@ export default function CheckoutPage() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium">
-                    <span>ℹ️</span>
+                    <span>⚠️</span>
                     <span>
-                      <strong>Outer Postal Delivery:</strong> PIN {pinCode} is outside the direct 10 km Kalwaral radius. Orders will be dispatched safely via India Post Speed Post.
+                      <strong>Local 10 km Radius Notice:</strong> Store deliveries are strictly operated within a 10 km radius of Kalwaral under PIN 503145. Please ensure your delivery location is within this zone.
                     </span>
                   </div>
                 )}
@@ -693,7 +693,7 @@ export default function CheckoutPage() {
                       className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
                     />
                     <span className="text-neutral-700 leading-snug">
-                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-blue-700">Terms of Sale</Link> and agree to 10-km local delivery / India Post delivery guidelines.
+                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-blue-700">Terms of Sale</Link> and agree to 10-km local village delivery guidelines.
                     </span>
                   </label>
 

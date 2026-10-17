@@ -168,9 +168,9 @@ export default function AboutPage() {
             </div>
 
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-2">
-              <div className="text-lg font-black text-emerald-300">3. Local 10km Speed &amp; India Post</div>
+              <div className="text-lg font-black text-emerald-300">3. Local 10km Express Delivery</div>
               <p className="text-neutral-300 leading-relaxed">
-                Direct village doorstep delivery across habitations under PIN 503145, paired with India Post Speed Post reaching every corner of India with real-time tracking.
+                Dedicated local doorstep delivery across all habitations within a 10 km radius under PIN 503145 with stage-by-stage real-time tracking.
               </p>
             </div>
 

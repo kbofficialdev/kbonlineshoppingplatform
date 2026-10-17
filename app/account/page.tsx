@@ -495,7 +495,7 @@ function AccountManagementContent() {
     {
       id: 'tracking',
       label: 'Live Consignment Tracking',
-      subtitle: 'Real-time Speed Post & Village Delivery',
+      subtitle: 'Real-time 10 km Local Runner Tracking',
       badge: 'Live',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">

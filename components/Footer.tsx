@@ -6,49 +6,49 @@ export default function Footer() {
   const store = db.storeSettings;
 
   return (
-    <footer className="bg-gradient-to-b from-[#0B0F19] via-[#090D17] to-[#04060A] text-neutral-300 border-t border-amber-500/20 pt-0 pb-12 mt-20 relative overflow-hidden">
+    <footer className="bg-black text-neutral-300 border-t border-neutral-800 pt-0 pb-12 mt-16 relative overflow-hidden">
       
       {/* ========================================================= */}
-      {/* 1. TOP TRUST & ARTISAN HERITAGE STRIP                     */}
+      {/* 1. TOP TRUST & ARTISAN HERITAGE STRIP (Clean Monochrome)   */}
       {/* ========================================================= */}
-      <div className="bg-gradient-to-r from-amber-950/40 via-neutral-900 to-indigo-950/40 border-b border-white/10 py-5 px-4 sm:px-6 lg:px-8">
+      <div className="bg-neutral-950 border-b border-neutral-800 py-5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center text-lg shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-lg shrink-0 text-white">
               🧵
             </div>
             <div>
-              <div className="font-black text-white text-xs">100% Genuine Weaves</div>
+              <div className="font-bold text-white text-xs">100% Genuine Weaves</div>
               <div className="text-[11px] text-neutral-400">Pure silk &amp; branded mill cuts</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-center text-lg shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-lg shrink-0 text-white">
               🚚
             </div>
             <div>
-              <div className="font-black text-white text-xs">10 km Local Village Hub</div>
-              <div className="text-[11px] text-neutral-400">Free doorstep express (PIN 503145)</div>
+              <div className="font-bold text-white text-xs">10 km Local Village Delivery</div>
+              <div className="text-[11px] text-neutral-400">Doorstep runner (PIN 503145)</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-center text-lg shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-lg shrink-0 text-white">
               🎫
             </div>
             <div>
-              <div className="font-black text-white text-xs">Online Support Desk</div>
+              <div className="font-bold text-white text-xs">Online Support Desk</div>
               <div className="text-[11px] text-neutral-400">Streamlined 24h ticket resolution</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center text-lg shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-lg shrink-0 text-white">
               🏛️
             </div>
             <div>
-              <div className="font-black text-white text-xs">Sec 23 CGST Compliant</div>
+              <div className="font-bold text-white text-xs">Sec 23 CGST Compliant</div>
               <div className="text-[11px] text-neutral-400">GST-exempt direct village value</div>
             </div>
           </div>
@@ -56,9 +56,9 @@ export default function Footer() {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. MAIN FOOTER NAVIGATION GRID                            */}
+      {/* 2. MAIN FOOTER NAVIGATION GRID (Black & White, Blue on Hover) */}
       {/* ========================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-neutral-800">
           
           {/* Column 1: Brand & Village Identity */}
@@ -66,31 +66,33 @@ export default function Footer() {
             <div className="space-y-1">
               <div className="text-3xl font-black tracking-tight text-white flex items-baseline gap-1">
                 <span>{store.brandName}.</span>
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                   FASHIONS
                 </span>
               </div>
-              <div className="font-telugu text-sm font-semibold text-amber-200/90">
+              <div className="font-telugu text-sm font-semibold text-neutral-300">
                 కల్వరాల్ గ్రామీణ చేనేత వస్త్ర భాండాగారం
               </div>
             </div>
 
             <p className="text-xs text-neutral-400 leading-relaxed max-w-sm">
-              Rooted in Kalwaral village for over two decades (2006–2026). Offering genuine Gadwal handloom sarees, unstitched Raymond suiting fabrics, and rural cotton essentials with complete transparency.
+              Rooted in Kalwaral village for over two decades (2006–2026). Delivering genuine Gadwal handloom sarees, unstitched Raymond suiting fabrics, and rural cotton essentials strictly within a 10 km radius under PIN 503145.
             </p>
 
             <div className="space-y-2 text-xs pt-1">
               <div className="flex items-start gap-2 text-neutral-400">
-                <span className="text-amber-400">📍</span>
+                <span className="text-neutral-300">📍</span>
                 <span>{store.address}</span>
               </div>
               <div className="flex items-center gap-2 text-neutral-400">
-                <span className="text-emerald-400">📞</span>
+                <span className="text-neutral-300">📞</span>
                 <span>Helpline: <strong className="text-white">{store.contactPhone}</strong> (9 AM – 9 PM)</span>
               </div>
               <div className="flex items-center gap-2 text-neutral-400">
-                <span className="text-sky-400">✉️</span>
-                <span>{store.contactEmail}</span>
+                <span className="text-neutral-300">✉️</span>
+                <a href={`mailto:${store.contactEmail}`} className="hover:text-blue-500 hover:font-bold transition-all">
+                  {store.contactEmail}
+                </a>
               </div>
             </div>
 
@@ -99,101 +101,96 @@ export default function Footer() {
                 href={`https://wa.me/91${(store.contactPhone || '').replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold hover:bg-emerald-600/30 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-900 text-neutral-300 border border-neutral-700 text-[11px] font-medium hover:border-blue-500 hover:text-blue-500 hover:font-bold transition-all"
               >
                 <span>💬</span>
-                <span>WhatsApp Assistant</span>
+                <span>WhatsApp Helpline</span>
               </a>
               <Link
                 href="/support"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-600/20 text-blue-300 border border-blue-500/40 text-[11px] font-bold hover:bg-blue-600/30 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-900 text-neutral-300 border border-neutral-700 text-[11px] font-medium hover:border-blue-500 hover:text-blue-500 hover:font-bold transition-all"
               >
                 <span>🎫</span>
-                <span>Raise Support Ticket</span>
+                <span>Online Support Desk</span>
               </Link>
             </div>
           </div>
 
           {/* Column 2: Collections */}
           <div className="text-xs space-y-3">
-            <h4 className="font-black text-amber-400 uppercase tracking-widest text-[11px] border-b border-amber-500/20 pb-2 inline-block">
+            <h4 className="font-bold text-white uppercase tracking-widest text-[11px] border-b border-neutral-800 pb-2 inline-block">
               Textile Collections
             </h4>
-            <div className="space-y-2 pt-1">
-              <div><Link href="/search?category=Sarees" className="text-neutral-400 hover:text-white transition-colors">Gadwal Handloom Sarees</Link></div>
-              <div><Link href="/search?category=Sarees" className="text-neutral-400 hover:text-white transition-colors">Pure Silk Pattu &amp; Nirma</Link></div>
-              <div><Link href="/search?category=Men%27s+Unstitched" className="text-neutral-400 hover:text-white transition-colors">Raymond Suiting &amp; Shirting</Link></div>
-              <div><Link href="/search?category=Men%27s+Unstitched" className="text-neutral-400 hover:text-white transition-colors">Arvind Pure Linen Cuts</Link></div>
-              <div><Link href="/search?category=Dhoti+%26+Towels" className="text-neutral-400 hover:text-white transition-colors">Traditional Cotton Panchas</Link></div>
-              <div><Link href="/search?category=Women" className="text-neutral-400 hover:text-white transition-colors">Matching 2×2 Rubia Blouses</Link></div>
+            <div className="space-y-2 pt-1 flex flex-col">
+              <Link href="/search?category=Sarees" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Gadwal Handloom Sarees</Link>
+              <Link href="/search?category=Sarees" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Pure Silk Pattu &amp; Nirma</Link>
+              <Link href="/search?category=Men%27s+Unstitched" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Raymond Suiting &amp; Shirting</Link>
+              <Link href="/search?category=Men%27s+Unstitched" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Arvind Pure Linen Cuts</Link>
+              <Link href="/search?category=Dhoti+%26+Towels" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Traditional Cotton Panchas</Link>
+              <Link href="/search?category=Women" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Matching 2×2 Rubia Blouses</Link>
             </div>
           </div>
 
-          {/* Column 3: Patron Services & Support Desk */}
+          {/* Column 3: Patron Services */}
           <div className="text-xs space-y-3">
-            <h4 className="font-black text-amber-400 uppercase tracking-widest text-[11px] border-b border-amber-500/20 pb-2 inline-block">
+            <h4 className="font-bold text-white uppercase tracking-widest text-[11px] border-b border-neutral-800 pb-2 inline-block">
               Patron Care &amp; Support
             </h4>
-            <div className="space-y-2 pt-1">
-              <div>
-                <Link href="/support" className="text-sky-300 font-bold hover:underline flex items-center gap-1.5">
-                  <span>🎫</span>
-                  <span>Online Support Desk (SLA)</span>
-                </Link>
-              </div>
-              <div><Link href="/account?tab=tracking" className="text-neutral-400 hover:text-white transition-colors">Track Consignment Live</Link></div>
-              <div><Link href="/about" className="text-neutral-400 hover:text-white transition-colors">20-Year Kalwaral Heritage</Link></div>
-              <div><Link href="/policies/shipping" className="text-neutral-400 hover:text-white transition-colors">10 km Local Village Hub</Link></div>
-              <div><Link href="/contact" className="text-neutral-400 hover:text-white transition-colors">Help Desk &amp; Inquiries</Link></div>
-              <div><Link href="/ai" className="text-neutral-400 hover:text-white transition-colors">KB Shopmate AI Preview</Link></div>
+            <div className="space-y-2 pt-1 flex flex-col">
+              <Link href="/support" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Online Support Desk</Link>
+              <Link href="/account?tab=tracking" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Track Consignment Live</Link>
+              <Link href="/about" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">20-Year Kalwaral Heritage</Link>
+              <Link href="/policies/shipping" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">10 km Local Delivery Hub</Link>
+              <Link href="/contact" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Help Desk &amp; Inquiries</Link>
+              <Link href="/ai" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">KB Shopmate AI Preview</Link>
             </div>
           </div>
 
           {/* Column 4: Statutory Legal Compliance */}
           <div className="text-xs space-y-3">
-            <h4 className="font-black text-amber-400 uppercase tracking-widest text-[11px] border-b border-amber-500/20 pb-2 inline-block">
+            <h4 className="font-bold text-white uppercase tracking-widest text-[11px] border-b border-neutral-800 pb-2 inline-block">
               Statutory Compliance
             </h4>
-            <div className="space-y-2 pt-1">
-              <div><Link href="/policies/grievance" className="text-neutral-400 hover:text-white transition-colors">Grievance Officer (Rules 2020)</Link></div>
-              <div><Link href="/policies/shipping" className="text-neutral-400 hover:text-white transition-colors">Shipping &amp; Local Radius Policy</Link></div>
-              <div><Link href="/policies/refunds" className="text-neutral-400 hover:text-white transition-colors">7-Day Refund &amp; Return Policy</Link></div>
-              <div><Link href="/policies/terms" className="text-neutral-400 hover:text-white transition-colors">Terms of Sale &amp; Conditions</Link></div>
-              <div><Link href="/policies/privacy" className="text-neutral-400 hover:text-white transition-colors">Privacy Policy</Link></div>
-              <div><Link href="/policies/statutory-declaration" className="text-neutral-400 hover:text-white transition-colors">Sec 23 CGST Exemption Notice</Link></div>
+            <div className="space-y-2 pt-1 flex flex-col">
+              <Link href="/policies/grievance" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Grievance Redressal (Rules 2020)</Link>
+              <Link href="/policies/shipping" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Shipping &amp; 10 km Radius Policy</Link>
+              <Link href="/policies/refunds" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">7-Day Refund &amp; Return Policy</Link>
+              <Link href="/policies/terms" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Terms of Sale &amp; Conditions</Link>
+              <Link href="/policies/privacy" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Privacy Policy</Link>
+              <Link href="/policies/statutory-declaration" className="text-neutral-400 hover:text-blue-500 hover:font-bold transition-all">Sec 23 CGST Exemption Notice</Link>
             </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* 3. PAYMENT BADGES & BOTTOM COPYRIGHT                      */}
+        {/* 3. PAYMENT BADGES & BOTTOM COPYRIGHT (Strictly B&W, No Names) */}
         {/* ========================================================= */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-neutral-400 gap-6">
           <div className="space-y-1 text-center md:text-left">
             <div>
               © 2006–2026 {store.officialName}. All rights reserved. Kalwaral Village, Kamareddy, Telangana, India.
             </div>
-            <div className="text-[11px] text-neutral-500">
-              Grievance Officer: Sri K. Balaram (Rule 5(9) Consumer Protection E-Commerce Rules 2020).
+            <div className="text-[11px] text-neutral-400">
+              Grievance Redressal: <strong className="text-white">{store.officialName}</strong> — {store.grievanceOfficerDesignation || 'Designated Grievance Redressal Officer'} (<a href={`mailto:${store.contactEmail}`} className="text-white hover:text-blue-500 hover:font-bold transition-all">{store.contactEmail}</a>) (Rule 5(9) Consumer Protection E-Commerce Rules 2020).
             </div>
           </div>
 
-          {/* Payment & Logistics Badges */}
+          {/* Payment & Logistics Badges (Clean Black & White) */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-bold">
-            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-300">
+            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-200">
               ⚡ UPI / QR
             </span>
-            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-300">
+            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-200">
               🇮🇳 RuPay
             </span>
-            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-300">
+            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-200">
               💳 Visa / Mastercard
             </span>
-            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-300">
+            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-200">
               💵 Village COD
             </span>
-            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-amber-300">
-              📮 India Post Speed Post
+            <span className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-700 text-neutral-200">
+              📍 10 km Local Delivery (PIN 503145)
             </span>
           </div>
         </div>

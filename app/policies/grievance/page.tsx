@@ -70,8 +70,8 @@ export default function GrievanceRedressalPage() {
                 ⚖️
               </div>
               <div>
-                <div className="text-xl font-black text-neutral-900">{store.grievanceOfficerName || 'Sri K. Balaram'}</div>
-                <div className="text-xs font-bold text-purple-700">{store.grievanceOfficerDesignation || 'Designated Grievance Redressal Officer & Managing Proprietor'}</div>
+                <div className="text-xl font-black text-neutral-900">{store.officialName || 'KB FASHIONS'}</div>
+                <div className="text-xs font-bold text-purple-700">{store.grievanceOfficerDesignation || 'Designated Grievance Redressal Officer & Managing Proprietorship'}</div>
               </div>
             </div>
 

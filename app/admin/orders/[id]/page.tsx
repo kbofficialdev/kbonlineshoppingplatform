@@ -20,7 +20,7 @@ export default function AdminOrderDetailPage() {
   const [stageTitle, setStageTitle] = useState<string>('Order Confirmed & Inspected');
   const [stageDesc, setStageDesc] = useState<string>('Garments inspected for weaving quality and packed in eco-friendly wrapping at Kalwaral store.');
   const [stageLocation, setStageLocation] = useState<string>('KB FASHIONS, Kalwaral, Telangana');
-  const [courierPartner, setCourierPartner] = useState<string>('India Post Speed Post');
+  const [courierPartner, setCourierPartner] = useState<string>('KB 10km Express Runner');
   const [trackingNumber, setTrackingNumber] = useState<string>('');
 
   useEffect(() => {
@@ -48,9 +48,9 @@ export default function AdminOrderDetailPage() {
         } else if (data.order.orderStatus === 'CONFIRMED') {
           setNextStage('DISPATCHED');
           setStageTitle('Dispatched in Transit');
-          setStageDesc('Consignment handed over to India Post Speed Post facility.');
-          setStageLocation('Kamareddy Head Post Office, Telangana');
-          setTrackingNumber(`EK${Math.floor(100000000 + Math.random() * 900000000)}IN`);
+          setStageDesc('Consignment handed over to KB 10km Local Delivery runner.');
+          setStageLocation('Kalwaral Delivery Hub, Telangana');
+          setTrackingNumber(`KB-LOC-${Math.floor(10000000 + Math.random() * 90000000)}`);
         } else if (data.order.orderStatus === 'DISPATCHED') {
           setNextStage('OUT_FOR_DELIVERY');
           setStageTitle('Out for Delivery');
@@ -236,7 +236,7 @@ export default function AdminOrderDetailPage() {
                     type="text"
                     value={courierPartner}
                     onChange={(e) => setCourierPartner(e.target.value)}
-                    placeholder="India Post Speed Post, DTDC, etc."
+                    placeholder="KB 10km Express Runner, Local Runner, etc."
                     className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:outline-none focus:ring-1 focus:ring-black text-xs"
                   />
                 </div>

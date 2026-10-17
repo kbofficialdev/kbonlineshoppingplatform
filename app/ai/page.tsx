@@ -1,191 +1,164 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useToast } from '@/components/ToastContext';
-import { SmoothLoader } from '@/components/SmoothLoader';
 
 export default function AIPage() {
-  const { showToast } = useToast();
-  const [name, setName] = useState('');
-  const [emailOrPhone, setEmailOrPhone] = useState('');
-  const [village, setVillage] = useState('Kalwaral');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isJoined, setIsJoined] = useState(false);
-
-  const handleJoinWaitlist = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailOrPhone.trim()) {
-      showToast({ type: 'warning', title: 'Contact Required', message: 'Please enter your mobile phone or email' });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const res = await fetch('/api/ai/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, emailOrPhone, village }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setIsJoined(true);
-        showToast({
-          type: 'success',
-          title: 'Waitlist Registered',
-          message: '✓ Added to the trusted customer private access queue.',
-        });
-      } else {
-        showToast({ type: 'error', title: 'Error', message: data.error || 'Failed to submit' });
-      }
-    } catch (err: any) {
-      showToast({ type: 'error', title: 'Error', message: err.message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12">
-      {/* Top Breadcrumb & Status */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black uppercase tracking-wider mb-2">
-            <span>🔒 PRIVATE PREVIEW</span>
-            <span>•</span>
-            <span>COMING SOON FOR TRUSTED CUSTOMERS</span>
+    <div className="min-h-[85vh] bg-[#07090E] text-white py-10 sm:py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden flex flex-col justify-center items-center">
+      {/* Dynamic Ambient Background Glows */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-blue-600/20 via-indigo-500/15 to-purple-600/20 blur-[120px] rounded-full pointer-events-none -z-10 animate-pulse duration-1000"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-sky-500/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+      <div className="absolute top-10 left-10 w-80 h-80 bg-purple-500/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+
+      <div className="w-full max-w-5xl mx-auto space-y-10 relative z-10">
+        
+        {/* Top Minimal Navigation Strip */}
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
+            <span className="text-xs font-mono tracking-widest text-blue-400 uppercase font-bold">
+              KB FASHIONS LABS • EXPERIMENTAL AI
+            </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-neutral-900 tracking-tight">
-            KB Shopmate AI Voice Shopping
-          </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 mt-1 max-w-2xl">
-            Conversational shopping assistant in Telugu (తెలుగు) &amp; English. AI access is strictly controlled by KB Fashions store administration for trusted customers.
-          </p>
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 text-xs font-bold text-neutral-300 hover:text-white transition-all duration-200"
+          >
+            <span>←</span>
+            <span>Return to Public Store</span>
+          </Link>
         </div>
 
-        <Link
-          href="/"
-          className="px-4 py-2 rounded-full border border-slate-300 text-xs font-bold text-neutral-700 hover:border-black hover:text-black transition-colors shrink-0"
-        >
-          ← Return to Public Store
-        </Link>
-      </div>
+        {/* Master AI Showcase Card with Glowing Holographic Border */}
+        <div className="relative rounded-3xl p-1.5 sm:p-2 bg-gradient-to-b from-blue-500/40 via-indigo-500/20 to-purple-600/40 shadow-[0_0_60px_rgba(59,130,246,0.22)] backdrop-blur-xl">
+          <div className="relative rounded-[22px] overflow-hidden bg-neutral-950 border border-white/10 shadow-2xl">
+            
+            {/* The KB Shopmate AI Official Banner */}
+            <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] max-h-[520px] bg-black flex items-center justify-center overflow-hidden group">
+              <img
+                src="/images/kb-shopmate-ai-banner.png"
+                alt="KB ShopMate AI Assistant - Voice & Multimodal Shopping in Telugu and English"
+                className="w-full h-full object-contain sm:object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
+                onError={(e: any) => {
+                  e.target.src = '/api/media/banner-shopmate-ai';
+                }}
+              />
+              
+              {/* Subtle Vignette Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none"></div>
 
-      {/* Main Content Grid: Poster on Left, Coming Soon & Waitlist on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        {/* Poster Image Container */}
-        <div className="lg:col-span-7 bg-neutral-950 p-3 sm:p-5 rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group">
-          <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-neutral-900">
-            <img
-              src="/images/kb-ai-poster.png"
-              alt="KB Shopmate AI Interface Poster"
-              className="w-full h-full object-contain object-center"
-              onError={(e: any) => {
-                // Fallback if image path varies
-                e.target.src = '/api/media/banner-shopmate-ai';
-              }}
-            />
-          </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-neutral-400 px-2 font-mono">
-            <span>Preview: Multi-turn Voice AI Engine</span>
-            <span className="text-amber-400">Status: Controlled Rollout</span>
-          </div>
-        </div>
-
-        {/* Right Column: Waitlist Card & Governance Notice */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
-            <div className="space-y-2">
-              <span className="text-xs font-black uppercase tracking-wider text-blue-600">
-                Exclusive Early Access
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black text-neutral-900 leading-tight">
-                Request Trusted Customer Access
-              </h2>
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                Join our private waitlist. Our store owners in Kalwaral will review customer profiles and unlock AI voice shopping capabilities on your account.
-              </p>
+              {/* Floating Status Pill over Banner */}
+              <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[11px] font-bold text-white shadow-lg">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="tracking-wide">AI Model V2.4 In Staging</span>
+                </div>
+              </div>
             </div>
 
-            {isJoined ? (
-              <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
-                <span className="text-2xl">✓</span>
-                <h3 className="text-sm font-bold text-emerald-900">Application Submitted!</h3>
-                <p className="text-xs text-emerald-700">
-                  Thank you! Your profile has been queued for verification. Once approved by the administrator, voice shopping will be active on your account.
+            {/* Bottom Content Area with Animated Coming Soon Typography & Messages */}
+            <div className="p-6 sm:p-10 lg:p-12 space-y-8 bg-gradient-to-b from-neutral-950 via-[#0C0F17] to-neutral-950">
+              
+              {/* Animated Coming Soon Badge */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30 text-blue-300 text-xs font-black uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+                  <span className="text-base animate-spin" style={{ animationDuration: '6s' }}>✦</span>
+                  <span className="animate-pulse">COMING SOON FOR TRUSTED PATRONS</span>
+                  <span className="text-base animate-spin" style={{ animationDuration: '6s' }}>✦</span>
+                </div>
+
+                {/* Animated Voice Waveform Visualizer */}
+                <div className="flex items-center gap-1.5 h-6 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                  <span className="text-[10px] font-mono text-neutral-400 mr-1.5">Voice Synth</span>
+                  <span className="w-1 bg-blue-400 rounded-full animate-[pulse_1s_ease-in-out_infinite] h-2"></span>
+                  <span className="w-1 bg-indigo-400 rounded-full animate-[pulse_1.2s_ease-in-out_infinite_0.2s] h-4"></span>
+                  <span className="w-1 bg-sky-400 rounded-full animate-[pulse_0.8s_ease-in-out_infinite_0.4s] h-5"></span>
+                  <span className="w-1 bg-purple-400 rounded-full animate-[pulse_1.1s_ease-in-out_infinite_0.1s] h-3"></span>
+                  <span className="w-1 bg-blue-400 rounded-full animate-[pulse_0.9s_ease-in-out_infinite_0.3s] h-2"></span>
+                </div>
+              </div>
+
+              {/* Headlines & Messages */}
+              <div className="space-y-4">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+                  <span className="bg-gradient-to-r from-white via-neutral-100 to-blue-200 bg-clip-text text-transparent">
+                    KB ShopMate AI Voice Shopping
+                  </span>
+                </h1>
+
+                {/* Heartwarming Telugu Message */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm space-y-1.5">
+                  <div className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>✨</span>
+                    <span>తెలుగు భాషా సంభాషణా వేదిక</span>
+                  </div>
+                  <p className="font-telugu text-base sm:text-lg font-medium text-amber-100/95 leading-relaxed">
+                    “త్వరలో మీ ముందుకు: KB షాప్‌మేట్ AI — తెలంగాణ గ్రామీణ ప్రాంతాల కోసం సరికొత్త ఆర్టిఫిషియల్ ఇంటెలిజెన్స్ షాపింగ్ అనుభవం. మీ మాతృభాష తెలుగులో స్వరం ద్వారా మాట్లాడి స్వచ్ఛమైన గద్వాల్ పట్టు చీరలు, సూటింగ్స్ మరియు వస్త్రాలను మీ బడ్జెట్‌కు తగినట్లు ఎంచుకోండి.”
+                  </p>
+                </div>
+
+                {/* English Vision Message */}
+                <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-3xl">
+                  Experience next-generation conversational commerce hand-tailored for Kalwaral village and patrons across Telangana. 
+                  Say naturally in Telugu or English: <span className="text-white font-semibold italic">“నాకు ₹1,500 లోపు పండుగ గద్వాల్ చీర చూపించు”</span> or <span className="text-white font-semibold italic">“Show me Raymond safari suiting cuts”</span> and receive tailored recommendations matched to live village inventory.
                 </p>
+              </div>
+
+              {/* Interactive Feature Highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                  <div className="text-xl">🎙️</div>
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wider">Natural Voice in Telugu</h2>
+                  <p className="text-[11px] text-neutral-400 leading-normal">
+                    Speak freely in regional dialect with instant conversational responses and audio feedback.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                  <div className="text-xl">🧵</div>
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wider">Artisan Weave Matching</h2>
+                  <p className="text-[11px] text-neutral-400 leading-normal">
+                    AI accurately recognizes pure silk Gadwal borders, zari motifs, and tailor cut requirements.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                  <div className="text-xl">🛡️</div>
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wider">Trusted Patron Rollout</h2>
+                  <p className="text-[11px] text-neutral-400 leading-normal">
+                    Controlled early preview governed directly by KB Fashions store administration.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
                 <Link
                   href="/search?category=Sarees"
-                  className="inline-block mt-2 text-xs font-bold text-emerald-900 underline"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-black hover:bg-neutral-200 font-bold text-xs uppercase tracking-wider transition-all duration-200 text-center shadow-lg hover:shadow-white/20"
                 >
-                  Explore Current Catalog in the Meantime →
+                  Explore Current Store Catalog →
+                </Link>
+
+                <Link
+                  href="/"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white font-semibold text-xs border border-white/10 transition-colors text-center"
+                >
+                  Back to Kalwaral Storefront
                 </Link>
               </div>
-            ) : (
-              <form onSubmit={handleJoinWaitlist} className="space-y-4 text-xs">
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Your Full Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Ramesh Reddy"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
 
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Mobile Phone (+91) or Email *</label>
-                  <input
-                    type="text"
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="e.g. 9876543210 or ramesh@example.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black font-mono"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Village / Town</label>
-                  <input
-                    type="text"
-                    value={village}
-                    onChange={(e) => setVillage(e.target.value)}
-                    placeholder="e.g. Kalwaral, Sadasivanagar, Kamareddy"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  id="join-ai-waitlist-btn"
-                  className="w-full py-3 rounded-full bg-black text-white font-bold hover:bg-neutral-800 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <SmoothLoader size="xs" color="white" />
-                      <span>Submitting Request...</span>
-                    </>
-                  ) : (
-                    <span>Request AI Access / Join Waitlist →</span>
-                  )}
-                </button>
-              </form>
-            )}
-
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-neutral-600 space-y-1">
-              <div className="font-bold text-neutral-900 flex items-center gap-1.5">
-                <span>🛡️</span>
-                <span>Administrator Governance Notice</span>
-              </div>
-              <p>
-                Under our store's security charter, AI interactions with the live inventory database are permission-gated. Store administrators toggle user access directly in the administration console.
-              </p>
             </div>
           </div>
         </div>
+
+        {/* Minimal Footer Stamp */}
+        <div className="text-center text-xs text-neutral-500 font-mono">
+          KB FASHIONS (కల్వరాల్ గ్రామం) • Next-Gen Rural Commerce &copy; 2006–2026
+        </div>
+
       </div>
     </div>
   );

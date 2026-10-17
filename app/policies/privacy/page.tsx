@@ -133,7 +133,7 @@ export default function PrivacyPolicyPage() {
                 <tr className="hover:bg-slate-50/50">
                   <td className="p-3.5 font-bold">Consignment Address</td>
                   <td className="p-3.5">House/Street, Village, District, State, PIN (503145)</td>
-                  <td className="p-3.5">Doorstep delivery routing &amp; India Post parcel manifest</td>
+                  <td className="p-3.5">Doorstep delivery routing &amp; 10 km local runner manifest</td>
                   <td className="p-3.5">Statutory tax audit period (7 yrs)</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50">

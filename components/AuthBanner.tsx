@@ -77,8 +77,8 @@ export default function AuthBanner({
             📍
           </div>
           <div>
-            <div className="font-extrabold text-xs text-white">10 km Local Radius Delivery &amp; Speed Post</div>
-            <div className="text-[11px] text-neutral-400">Serving villages under PIN 503145 and all India doorsteps</div>
+            <div className="font-extrabold text-xs text-white">Strict 10 km Local Village Delivery</div>
+            <div className="text-[11px] text-neutral-400">Serving habitations under PIN 503145 from Kalwaral store</div>
           </div>
         </div>
       </div>

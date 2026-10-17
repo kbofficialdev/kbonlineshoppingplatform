@@ -36,7 +36,7 @@ export default function ShippingPolicyPage() {
             Shipping &amp; Doorstep Delivery Policy
           </h1>
           <p className="text-sm text-sky-100/90 max-w-3xl leading-relaxed">
-            Direct dispatches from our ancestral weaver center at {store.village}, {store.district}, {store.state}. Combining local doorstep village deliveries with India Post Speed Post nationwide connectivity.
+            Direct dispatches from our ancestral weaver center at {store.village}, {store.district}, {store.state}. Deliveries strictly operated within a 10 km radius for all villages and habitations under Postal PIN Code 503145.
           </p>
 
           {/* Quick Policy Navigation Strip */}
@@ -142,21 +142,21 @@ export default function ShippingPolicyPage() {
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="p-3.5 font-bold flex items-center gap-1.5">
-                    <span className="text-blue-600">●</span> India Post Speed Post
+                    <span className="text-blue-600">●</span> Kalwaral Store Counter Pickup
                   </td>
-                  <td className="p-3.5">Telangana &amp; Rest of India</td>
-                  <td className="p-3.5">2 to 5 Business Days</td>
-                  <td className="p-3.5">
-                    ₹{store.flatShippingFee || 70} flat (FREE on orders &gt; ₹{store.freeShippingThreshold || 999})
-                  </td>
+                  <td className="p-3.5">Main Bazaar Counter, Kalwaral (PIN 503145)</td>
+                  <td className="p-3.5 font-semibold text-blue-700">Immediate / Within 1 Hour</td>
+                  <td className="p-3.5 font-bold text-emerald-700">Always 100% FREE</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="p-3.5 font-bold flex items-center gap-1.5">
-                    <span className="text-purple-600">●</span> Express Courier
+                    <span className="text-purple-600">●</span> Village Runner Scheduled Handover
                   </td>
-                  <td className="p-3.5">Hyderabad, Bangalore, Mumbai, Metro Hubs</td>
-                  <td className="p-3.5">24 to 48 Hours</td>
-                  <td className="p-3.5 font-semibold">Standard Surface / Air Tariff</td>
+                  <td className="p-3.5">Habitations under PIN 503145 (within 10 km)</td>
+                  <td className="p-3.5">12 to 24 Hours</td>
+                  <td className="p-3.5 font-semibold">
+                    ₹{store.flatShippingFee || 70} flat (FREE on orders &gt; ₹{store.freeShippingThreshold || 999})
+                  </td>
                 </tr>
               </tbody>
             </table>
