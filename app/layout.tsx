@@ -4,6 +4,7 @@ import Script from 'next/script';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import TopProgressBar from '@/components/TopProgressBar';
+import MobileBottomDock from '@/components/MobileBottomDock';
 import { ModalProvider } from '@/components/ModalContext';
 import { ToastProvider } from '@/components/ToastContext';
 
@@ -33,9 +34,10 @@ export default function RootLayout({
         <ToastProvider>
           <ModalProvider>
             <Header />
-            <main className="flex-1 pt-24 sm:pt-[96px]">
+            <main className="flex-1 pt-24 sm:pt-[96px] pb-20 sm:pb-0">
               {children}
             </main>
+            <MobileBottomDock />
             <Footer />
           </ModalProvider>
         </ToastProvider>
