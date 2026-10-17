@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
+import { useToast } from '@/components/ToastContext';
+import { SmoothLoader } from '@/components/SmoothLoader';
 import { authFetch } from '@/lib/clientAuth';
 
 export default function ProductDetailPage() {
@@ -11,6 +13,8 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const id = params?.id as string;
   const { showModal } = useModalAlert();
+  const { showToast } = useToast();
+  const [isAdding, setIsAdding] = useState<boolean>(false);
 
   const [product, setProduct] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
@@ -106,25 +110,18 @@ export default function ProductDetailPage() {
     if (isWishlisted) {
       list = list.filter(p => (p.productId || p.id) !== product.productId);
       setIsWishlisted(false);
-      showModal({
+      showToast({
         type: 'info',
         title: 'Removed from Wishlist',
-        message: `"${product.name}" was removed from your wishlist.`,
+        message: `"${product.name}" removed from your wishlist.`,
       });
     } else {
       list.push(product);
       setIsWishlisted(true);
-      showModal({
+      showToast({
         type: 'success',
         title: 'Saved to Wishlist',
-        message: `♥ "${product.name}" has been bookmarked to your wishlist.`,
-        primaryBtn: {
-          text: 'View Wishlist →',
-          href: '/wishlist',
-        },
-        secondaryBtn: {
-          text: 'Continue Browsing',
-        },
+        message: `♥ "${product.name}" bookmarked to your wishlist.`,
       });
     }
     localStorage.setItem('kb_wishlist', JSON.stringify(list));
@@ -140,6 +137,7 @@ export default function ProductDetailPage() {
 
   const handleAddToBag = async (proceedToCart: boolean = false) => {
     if (!product) return;
+    setIsAdding(true);
     try {
       const itemName = isMeterProduct
         ? `${product.name} (${cutLength}m Cut)`
@@ -169,6 +167,11 @@ export default function ProductDetailPage() {
       const data = await res.json();
 
       if (res.status === 401 || data.requiresAuth) {
+        showToast({
+          type: 'warning',
+          title: 'Sign In Required',
+          message: 'Please sign in to add garments to your bag.',
+        });
         showModal({
           type: 'auth',
           title: 'Sign In Required to Shop',
@@ -186,13 +189,19 @@ export default function ProductDetailPage() {
       }
 
       if (!res.ok) {
-        showModal({
+        showToast({
           type: 'error',
-          title: 'Unable to Add to Bag',
-          message: data.error || 'Could not add item to bag. Please try again.',
+          title: 'Error',
+          message: data.error || 'Could not add item to bag.',
         });
         return;
       }
+
+      showToast({
+        type: 'success',
+        title: 'Added to Bag',
+        message: `✓ Added 1x "${itemName}" (₹${totalPriceWithAddons}) to your bag.`,
+      });
 
       if (proceedToCart) {
         router.push('/cart');
@@ -211,11 +220,13 @@ export default function ProductDetailPage() {
         });
       }
     } catch (e: any) {
-      showModal({
+      showToast({
         type: 'error',
         title: 'Connection Error',
-        message: 'Could not connect to the store servers. Please check your connection.',
+        message: 'Could not communicate with store servers.',
       });
+    } finally {
+      setIsAdding(false);
     }
   };
 

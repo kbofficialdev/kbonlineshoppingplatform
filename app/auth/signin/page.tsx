@@ -4,6 +4,8 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setClientSession } from '@/lib/clientAuth';
+import { SmoothLoader } from '@/components/SmoothLoader';
+import { useToast } from '@/components/ToastContext';
 
 function SignInContent() {
   const router = useRouter();
@@ -11,12 +13,13 @@ function SignInContent() {
   const redirectUrl = searchParams.get('redirect');
   const reason = searchParams.get('reason');
 
+  const { showToast } = useToast();
+
   const [mode, setMode] = useState<'PASSWORD' | 'OTP'>('PASSWORD');
   const [emailOrPhone, setEmailOrPhone] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [otpCode, setOtpCode] = useState<string>('');
   const [otpSent, setOtpSent] = useState<boolean>(false);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -40,13 +43,30 @@ function SignInContent() {
         if (data.token) {
           setClientSession(data.token, data.user);
         }
+        showToast({
+          type: 'success',
+          title: 'Sign In Successful',
+          message: `Welcome back, ${data.user.name || 'valued customer'}!`,
+        });
         const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account');
-        window.location.href = dest;
+        setTimeout(() => {
+          window.location.href = dest;
+        }, 300);
       } else {
         setErrorMsg(data.error || 'Failed to sign in. Please verify your credentials.');
+        showToast({
+          type: 'error',
+          title: 'Sign In Failed',
+          message: data.error || 'Incorrect email/phone or password. Please try again.',
+        });
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Error communicating with server');
+      showToast({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not connect to store authentication service.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -73,11 +93,18 @@ function SignInContent() {
       if (data.success) {
         setOtpSent(true);
         setSuccessMsg(data.message);
-        if (data.devOtp) {
-          setDevOtpHint(data.devOtp);
-        }
+        showToast({
+          type: 'info',
+          title: 'Passcode Dispatched',
+          message: data.message || '6-digit OTP passcode sent successfully.',
+        });
       } else {
         setErrorMsg(data.error || 'Failed to send OTP');
+        showToast({
+          type: 'error',
+          title: 'Unable to Send Passcode',
+          message: data.error || 'Could not dispatch OTP code.',
+        });
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Error communicating with server');
@@ -108,10 +135,22 @@ function SignInContent() {
         if (data.token) {
           setClientSession(data.token, data.user);
         }
+        showToast({
+          type: 'success',
+          title: 'Verification Successful',
+          message: `Signed in as ${data.user.name}.`,
+        });
         const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account');
-        window.location.href = dest;
+        setTimeout(() => {
+          window.location.href = dest;
+        }, 300);
       } else {
         setErrorMsg(data.error || 'Invalid OTP code');
+        showToast({
+          type: 'error',
+          title: 'Verification Failed',
+          message: data.error || 'Incorrect or expired OTP code.',
+        });
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Error communicating with server');
@@ -240,9 +279,16 @@ function SignInContent() {
               type="submit"
               id="signin-submit-btn"
               disabled={isLoading}
-              className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
+              className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLoading ? 'Verifying...' : 'Sign In Now →'}
+              {isLoading ? (
+                <>
+                  <SmoothLoader size="xs" color="white" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <span>Sign In Now →</span>
+              )}
             </button>
           </form>
         )}
@@ -270,9 +316,16 @@ function SignInContent() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isLoading ? 'Sending Passcode...' : 'Send 6-Digit OTP →'}
+                  {isLoading ? (
+                    <>
+                      <SmoothLoader size="xs" color="white" />
+                      <span>Sending Passcode...</span>
+                    </>
+                  ) : (
+                    <span>Send 6-Digit OTP →</span>
+                  )}
                 </button>
               </form>
             ) : (
@@ -297,31 +350,26 @@ function SignInContent() {
                     placeholder="e.g. 123456"
                     className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kb-gray bg-white text-xs text-center font-mono font-bold tracking-widest text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
                   />
-                  {devOtpHint && (
-                    <div className="mt-2 text-[10px] text-amber-800 bg-amber-50 p-2 rounded border border-amber-200">
-                      🔑 Test passcode for development: <strong>{devOtpHint}</strong>
-                    </div>
-                  )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isLoading ? 'Verifying Passcode...' : 'Verify OTP & Continue →'}
+                  {isLoading ? (
+                    <>
+                      <SmoothLoader size="xs" color="white" />
+                      <span>Verifying Passcode...</span>
+                    </>
+                  ) : (
+                    <span>Verify OTP &amp; Continue →</span>
+                  )}
                 </button>
               </form>
             )}
           </div>
         )}
-
-        {/* Demo Credentials Box */}
-        <div className="border-t border-kb-gray pt-4 text-[11px] text-kb-slate bg-neutral-50 p-3 rounded-kb-sm space-y-1">
-          <div className="font-bold text-kb-black">Authorized Store Admin Credentials:</div>
-          <div className="font-mono text-[10px]">Email: kb.official.admin@gmail.com</div>
-          <div className="font-mono text-[10px]">Password: Admin@KBFashions2026</div>
-        </div>
 
         <div className="border-t border-kb-gray pt-4 text-center text-xs text-kb-slate">
           <span>Don't have an account yet? </span>

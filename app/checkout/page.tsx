@@ -4,13 +4,32 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
+import { useToast } from '@/components/ToastContext';
+import { SmoothLoader, SmoothLoadingOverlay } from '@/components/SmoothLoader';
 import { authFetch } from '@/lib/clientAuth';
+
+const LOCAL_VILLAGES_503145 = [
+  { name: 'Kalwaral', distance: '0 km (Store Hub)' },
+  { name: 'Sadasivanagar', distance: '4 km' },
+  { name: 'Padmavajiwadi', distance: '3.5 km' },
+  { name: 'Dharmaraopet', distance: '5 km' },
+  { name: 'Modegaon', distance: '6 km' },
+  { name: 'Utnoor', distance: '7 km' },
+  { name: 'Kuprial', distance: '7.5 km' },
+  { name: 'Thippapur', distance: '8 km' },
+  { name: 'Markovillage', distance: '8.5 km' },
+  { name: 'Tukaramthanda', distance: '8.5 km' },
+  { name: 'Jukkalwadi', distance: '9.2 km' },
+  { name: 'Adloor', distance: '9.6 km' },
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { showModal } = useModalAlert();
+  const { showToast } = useToast();
   const [step, setStep] = useState<number>(1);
   const [cart, setCart] = useState<any>({ items: [], subtotal: 0, total: 0, shippingFee: 0, discountAmount: 0 });
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -29,6 +48,19 @@ export default function CheckoutPage() {
   // Payment Selection
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'UPI' | 'CARD'>('COD');
 
+  const selectLocalVillage = (vName: string) => {
+    setVillageOrCity(vName);
+    setMandalOrArea('Sadasivanagar');
+    setDistrict('Kamareddy');
+    setState('Telangana');
+    setPinCode('503145');
+    showToast({
+      type: 'info',
+      title: 'Local Village Selected',
+      message: `${vName} selected within 10 km delivery radius of 503145.`,
+    });
+  };
+
   useEffect(() => {
     fetchCartAndUser();
   }, []);
@@ -44,6 +76,7 @@ export default function CheckoutPage() {
       const userRes = await authFetch('/api/auth/me');
       const userData = await userRes.json();
       if (userData?.authenticated && userData.user) {
+        setUser(userData.user);
         setName(userData.user.name || '');
         setEmail(userData.user.email || '');
         setPhone(userData.user.phone?.replace('+91', '') || '');
@@ -139,6 +172,7 @@ export default function CheckoutPage() {
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
+      const effectiveSessionId = user?.id || 'default-guest';
       const res = await authFetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,6 +189,7 @@ export default function CheckoutPage() {
             pinCode: pinCode.trim(),
           },
           paymentMethod,
+          sessionId: effectiveSessionId,
         })
       });
 
@@ -162,6 +197,11 @@ export default function CheckoutPage() {
 
       if (res.status === 401 || data.requiresAuth) {
         setIsSubmitting(false);
+        showToast({
+          type: 'warning',
+          title: 'Sign In Required',
+          message: 'Please sign in with your customer account to place your order.',
+        });
         showModal({
           type: 'auth',
           title: 'Authentication Session Expired',
@@ -180,6 +220,11 @@ export default function CheckoutPage() {
 
       if (data.success && data.order) {
         setIsSubmitting(false);
+        showToast({
+          type: 'success',
+          title: 'Order Confirmed!',
+          message: `✓ Order #${data.order.orderId} registered. Dispatched from Kalwaral store.`,
+        });
         showModal({
           type: 'success',
           title: 'Order Placed Successfully!',
@@ -196,6 +241,11 @@ export default function CheckoutPage() {
       } else {
         setIsSubmitting(false);
         setErrorMsg(data.error || 'Failed to place order. Please try again.');
+        showToast({
+          type: 'error',
+          title: 'Order Not Placed',
+          message: data.error || 'Could not place order. Please review your details.',
+        });
         showModal({
           type: 'error',
           title: 'Unable to Place Order',
@@ -205,6 +255,11 @@ export default function CheckoutPage() {
     } catch (e: any) {
       setIsSubmitting(false);
       setErrorMsg(e.message || 'Error communicating with server');
+      showToast({
+        type: 'error',
+        title: 'Server Error',
+        message: 'Could not connect to store server. Please try again.',
+      });
       showModal({
         type: 'error',
         title: 'Communication Error',
@@ -215,21 +270,25 @@ export default function CheckoutPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-neutral-400">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-xs">Preparing checkout...</p>
+      <div className="max-w-7xl mx-auto px-4 py-28 text-center">
+        <SmoothLoader size="md" color="black" label="Preparing checkout session..." />
       </div>
     );
   }
 
   if (!cart.items || cart.items.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center space-y-4">
+        <div className="text-4xl">🛍️</div>
         <h1 className="text-xl font-bold">Your shopping bag is empty</h1>
-        <p className="text-xs text-neutral-500 mt-2">Add items to your bag before checking out.</p>
-        <Link href="/search?category=All" className="inline-block mt-4 bg-black text-white text-xs font-bold px-6 py-3 rounded-full">
-          Browse Collections
-        </Link>
+        <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+          Add authentic village handlooms, unstitched suitings, or Gadwal sarees to your bag before checking out.
+        </p>
+        <div>
+          <Link href="/search?category=All" className="inline-block bg-black text-white text-xs font-bold px-6 py-3 rounded-full hover:bg-neutral-800 transition-colors shadow-sm">
+            Browse Garment Collections →
+          </Link>
+        </div>
       </div>
     );
   }
@@ -270,6 +329,88 @@ export default function CheckoutPage() {
               <h2 className="text-base font-black text-kbBlack uppercase tracking-wider text-xs">
                 Step 1: Contact & Delivery Address
               </h2>
+
+              {/* Hyper-Local Village Delivery Zone (10 km Radius of PIN 503145) & Google Maps Selector */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">📍</span>
+                      <span className="text-xs font-black uppercase tracking-wider text-neutral-900">
+                        Direct Delivery Service Area: 10 km Radius (PIN 503145)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-600 mt-0.5">
+                      Direct doorstep delivery from KB FASHIONS, Kalwaral village, Kamareddy, Telangana.
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                    ✓ 10 KM SERVICE RADIUS
+                  </span>
+                </div>
+
+                {/* Village Quick Selection */}
+                <div>
+                  <label className="text-[11px] font-bold text-neutral-800 block mb-2">
+                    Quick-Select Your Village within 10 km of Kalwaral Store:
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LOCAL_VILLAGES_503145.map((v) => {
+                      const isSelected = villageOrCity.toLowerCase() === v.name.toLowerCase() && pinCode === '503145';
+                      return (
+                        <button
+                          key={v.name}
+                          type="button"
+                          onClick={() => selectLocalVillage(v.name)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${
+                            isSelected
+                              ? 'bg-kb-blue text-white shadow-sm ring-2 ring-blue-300'
+                              : 'bg-white border border-slate-200 text-neutral-700 hover:border-kb-blue hover:text-kb-blue'
+                          }`}
+                        >
+                          <span>{v.name}</span>
+                          <span className="text-[10px] opacity-75 font-normal">({v.distance})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Embedded Interactive Google Map with 10km Visual Area */}
+                <div className="rounded-xl overflow-hidden border border-slate-200 bg-neutral-100 relative h-48 sm:h-56">
+                  <iframe
+                    title="KB Fashions 10km Delivery Radius - Kalwaral 503145"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src="https://maps.google.com/maps?q=18.4285,78.2615&hl=en&z=12&output=embed"
+                  />
+                  <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-md text-[10px] font-bold text-neutral-800 shadow-sm border border-black/10 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Google Maps Delivery Radius • Kalwaral Center (PIN 503145)</span>
+                  </div>
+                </div>
+
+                {/* Postal Eligibility Feedback */}
+                {pinCode === '503145' ? (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium">
+                    <span>✓</span>
+                    <span>
+                      <strong>Eligible for Direct Doorstep Delivery:</strong> Address is within the 10 km Kalwaral radius under PIN 503145. Local village delivery applied.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium">
+                    <span>ℹ️</span>
+                    <span>
+                      <strong>Outer Postal Delivery:</strong> PIN {pinCode} is outside the direct 10 km Kalwaral radius. Orders will be dispatched safely via India Post Speed Post.
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
@@ -486,9 +627,16 @@ export default function CheckoutPage() {
                   id="confirm-place-order-btn"
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
-                  className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50"
+                  className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isSubmitting ? 'Placing Order...' : 'Confirm & Place Order Now →'}
+                  {isSubmitting ? (
+                    <>
+                      <SmoothLoader size="xs" color="white" />
+                      <span>Confirming Order...</span>
+                    </>
+                  ) : (
+                    <span>Confirm &amp; Place Order Now →</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -543,6 +691,13 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {isSubmitting && (
+        <SmoothLoadingOverlay
+          message="Confirming Order with Kalwaral Store..."
+          submessage="Validating local 10 km delivery coverage, stock, and generating bill of supply..."
+        />
+      )}
     </div>
   );
 }

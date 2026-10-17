@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useModalAlert } from './ModalContext';
+import { useToast } from './ToastContext';
+import { SmoothLoader } from './SmoothLoader';
 import { authFetch } from '@/lib/clientAuth';
 
 interface CarouselSlide {
@@ -24,9 +26,11 @@ interface CarouselSlide {
 
 export default function HeroShowcaseCarousel() {
   const { showModal } = useModalAlert();
+  const { showToast } = useToast();
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isAddingId, setIsAddingId] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
@@ -136,12 +140,15 @@ export default function HeroShowcaseCarousel() {
     e.preventDefault();
     e.stopPropagation();
 
+    const prodId = product.productId || product.id;
+    setIsAddingId(prodId);
+
     try {
       const res = await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productId: product.productId || product.id,
+          productId: prodId,
           name: product.name,
           price: product.price,
           size: product.sizes?.[0] || 'Standard',
@@ -150,6 +157,11 @@ export default function HeroShowcaseCarousel() {
       });
 
       if (res.status === 401) {
+        showToast({
+          type: 'warning',
+          title: 'Sign In Required',
+          message: 'Please sign in to your KB Fashions account to add items to your shopping bag.',
+        });
         showModal({
           type: 'auth',
           title: 'Sign In Required to Shop',
@@ -167,39 +179,27 @@ export default function HeroShowcaseCarousel() {
 
       const data = await res.json();
       if (data?.requiresAuth) {
-        showModal({
-          type: 'auth',
-          title: 'Sign In Required to Shop',
+        showToast({
+          type: 'warning',
+          title: 'Sign In Required',
           message: data.error || 'Please sign in to add garments to your bag.',
-          primaryBtn: {
-            text: 'Sign In →',
-            href: `/auth/signin?redirect=${encodeURIComponent(window.location.pathname)}`,
-          },
         });
         return;
       }
 
-      showModal({
+      showToast({
         type: 'success',
-        title: 'Added to Shopping Bag!',
-        message: `✓ Added 1x "${product.name}" to your authenticated bag.`,
-        primaryBtn: {
-          text: 'View Bag & Checkout →',
-          href: '/cart',
-        },
-        secondaryBtn: {
-          text: 'Keep Shopping',
-        },
+        title: 'Added to Shopping Bag',
+        message: `✓ Added 1x "${product.name}" (₹${product.price}) to your bag.`,
       });
     } catch (err) {
-      showModal({
+      showToast({
         type: 'error',
-        title: 'Connection Error',
-        message: 'Could not connect to bag service. Please verify your connection.',
-        primaryBtn: {
-          text: 'Understood',
-        },
+        title: 'Bag Error',
+        message: 'Could not connect to shopping bag service. Please retry.',
       });
+    } finally {
+      setIsAddingId(null);
     }
   };
 
@@ -227,42 +227,44 @@ export default function HeroShowcaseCarousel() {
       <div className="relative min-h-[380px] sm:min-h-[460px] lg:min-h-[500px] flex items-center">
         {currentSlide.type === 'BANNER' ? (
           /* ============================================================== */
-          /* FULL-WIDTH BANNER SLIDE (Complete Display Without Truncation)  */
+          /* FULL-CARD BANNER SLIDE (Complete Display Spanning Full Width)  */
           /* ============================================================== */
-          <div className="relative w-full h-full min-h-[280px] sm:min-h-[380px] lg:min-h-[440px] flex items-center justify-center overflow-hidden bg-[#07090F]">
-            {/* Ambient Blurred Background Glow */}
-            <div
-              className="absolute inset-0 bg-cover bg-center filter blur-2xl opacity-35 scale-110 pointer-events-none"
-              style={{ backgroundImage: `url(${currentSlide.imageSrc})` }}
+          <div className="relative w-full h-[380px] sm:h-[460px] lg:h-[500px] overflow-hidden bg-neutral-950 flex items-end">
+            {/* Complete Banner Artwork Spanning Full Card Edge-to-Edge */}
+            <img
+              src={currentSlide.imageSrc}
+              alt={currentSlide.title}
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
 
-            {/* Complete, Uncut Official Banner Artwork Spanning Full Width */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center p-2 sm:p-4">
-              <img
-                src={currentSlide.imageSrc}
-                alt={currentSlide.title}
-                className="w-full h-auto max-h-[360px] sm:max-h-[440px] lg:max-h-[480px] object-contain object-center drop-shadow-2xl rounded-xl"
-              />
-            </div>
+            {/* Subtle Gradient Overlay for High-Contrast Action Buttons */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
-            {/* Subtle Interactive Floating Overlay CTAs (Preserving Full Artwork Visibility) */}
-            <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-8 z-20 flex flex-wrap items-center gap-2.5 sm:gap-3 bg-neutral-950/80 backdrop-blur-md px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-2xl border border-white/20 shadow-2xl">
-              <span className="text-[10px] sm:text-[11px] font-bold text-kb-gold hidden sm:inline">
-                {currentSlide.badge}
-              </span>
-              <Link
-                href={currentSlide.linkUrl}
-                className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-md flex items-center gap-1.5"
-              >
-                <span>{currentSlide.ctaText}</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-              <Link
-                href="/search?category=All"
-                className="px-3.5 py-2 rounded-full border border-white/20 text-neutral-300 hover:text-white text-xs font-semibold transition-colors hidden md:inline-block"
-              >
-                Browse Catalog
-              </Link>
+            {/* Interactive Floating Overlay CTAs and Badge */}
+            <div className="relative z-20 w-full p-4 sm:p-8 flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="inline-block px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold tracking-wider bg-black/70 text-kb-gold border border-amber-400/40 backdrop-blur-md">
+                  {currentSlide.badge}
+                </span>
+                <h3 className="text-base sm:text-xl lg:text-2xl font-black text-white drop-shadow-lg">
+                  {currentSlide.title}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Link
+                  href={currentSlide.linkUrl}
+                  className="px-5 sm:px-7 py-2.5 sm:py-3 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-xl flex items-center gap-1.5"
+                >
+                  <span>{currentSlide.ctaText}</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  href="/search?category=All"
+                  className="px-4 py-2.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-neutral-200 hover:text-white text-xs font-semibold transition-colors hidden md:inline-block"
+                >
+                  Browse Catalog
+                </Link>
+              </div>
             </div>
           </div>
         ) : (
@@ -313,10 +315,18 @@ export default function HeroShowcaseCarousel() {
               <div className="pt-2 flex flex-wrap gap-3 sm:gap-4 items-center">
                 <button
                   onClick={(e) => handleQuickAdd(currentSlide.product, e)}
-                  className="px-6 py-3 rounded-kb-pill bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-lg hover:shadow-kb-blue/30 inline-flex items-center gap-2"
+                  disabled={isAddingId === (currentSlide.product?.productId || currentSlide.product?.id)}
+                  className="px-6 py-3 rounded-kb-pill bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-lg hover:shadow-kb-blue/30 inline-flex items-center gap-2 disabled:opacity-60"
                   id="carousel-quick-add-btn"
                 >
-                  <span>+ Quick Add to Bag</span>
+                  {isAddingId === (currentSlide.product?.productId || currentSlide.product?.id) ? (
+                    <>
+                      <SmoothLoader size="xs" color="white" />
+                      <span>Adding to Bag...</span>
+                    </>
+                  ) : (
+                    <span>+ Quick Add to Bag</span>
+                  )}
                 </button>
                 <Link
                   href={currentSlide.linkUrl}

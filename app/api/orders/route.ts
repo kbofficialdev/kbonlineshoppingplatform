@@ -25,7 +25,22 @@ export async function POST(req: NextRequest) {
     }
 
     const { customer, paymentMethod, sessionId } = parsed.data;
-    const cart = calculateCart(sessionId);
+    const effectiveSessionId = auth.userId || (sessionId && sessionId !== 'default-guest' ? sessionId : null) || 'default-guest';
+    let cart = calculateCart(effectiveSessionId);
+
+    if ((!cart.items || cart.items.length === 0) && auth.userId) {
+      cart = calculateCart(auth.userId);
+    }
+    if (!cart.items || cart.items.length === 0) {
+      const guestCart = calculateCart('default-guest');
+      if (guestCart.items && guestCart.items.length > 0) {
+        guestCart.items.forEach(i => {
+          i.sessionId = auth.userId || effectiveSessionId;
+          i.userId = auth.userId || effectiveSessionId;
+        });
+        cart = calculateCart(auth.userId || effectiveSessionId);
+      }
+    }
 
     if (!cart.items || cart.items.length === 0) {
       return NextResponse.json({ error: 'Cannot checkout with an empty bag' }, { status: 400 });
@@ -116,9 +131,16 @@ export async function POST(req: NextRequest) {
       { invoiceNumber, totalPaid: newOrder.totalPaid, paymentMethod, itemsCount: orderItems.length }
     );
 
-    // Clear cart for this session
-    db.cartItems = db.cartItems.filter(i => i.sessionId !== sessionId);
-    db.appliedPromos.delete(sessionId);
+    // Clear cart for this session and user
+    db.cartItems = db.cartItems.filter(
+      i => i.sessionId !== effectiveSessionId &&
+           i.sessionId !== auth.userId &&
+           i.userId !== auth.userId &&
+           i.sessionId !== 'default-guest'
+    );
+    db.appliedPromos.delete(effectiveSessionId);
+    if (auth.userId) db.appliedPromos.delete(auth.userId);
+    db.appliedPromos.delete('default-guest');
 
     return NextResponse.json({
       success: true,

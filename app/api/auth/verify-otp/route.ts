@@ -74,6 +74,18 @@ export async function POST(req: NextRequest) {
       { method: 'OTP' }
     );
 
+    // Auto-migrate any guest cart items to this authenticated user
+    db.cartItems.forEach(i => {
+      if (i.sessionId === 'default-guest') {
+        i.sessionId = user.id;
+        i.userId = user.id;
+      }
+    });
+    if (db.appliedPromos.has('default-guest')) {
+      const promo = db.appliedPromos.get('default-guest');
+      if (promo) db.appliedPromos.set(user.id, promo);
+    }
+
     const token = signToken({
       userId: user.id,
       email: user.email,

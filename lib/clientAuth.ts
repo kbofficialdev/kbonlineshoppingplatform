@@ -65,3 +65,4 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
     credentials: 'include',
   });
 }
+

@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import TypewriterTicker from './TypewriterTicker';
 import { authFetch, clearClientSession } from '@/lib/clientAuth';
+import { useToast } from './ToastContext';
 
 export default function Header() {
   const pathname = usePathname();
+  const { showToast } = useToast();
   const [cartCount, setCartCount] = useState<number>(0);
   const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [user, setUser] = useState<any>(null);
@@ -74,8 +76,17 @@ export default function Header() {
       await fetch('/api/auth/logout', { method: 'POST' });
       clearClientSession();
       setUser(null);
+      showToast({
+        type: 'info',
+        title: 'Logged Out',
+        message: 'You have been securely signed out of your account.'
+      });
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 400);
+    } catch (e) {
       window.location.href = '/';
-    } catch (e) {}
+    }
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {

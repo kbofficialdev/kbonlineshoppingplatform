@@ -70,7 +70,14 @@ export default function TermsAndConditionsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-black">6. Dispute Resolution &amp; Jurisdiction</h2>
+          <h2 className="text-base font-bold text-black">6. Direct Delivery Radius &amp; Postal Territory</h2>
+          <p>
+            Direct hyper-local delivery services are strictly confined to a <strong>10 km radius</strong> for habitations and villages falling under <strong>Postal PIN Code 503145</strong> (including Kalwaral, Sadasivanagar, Padmavajiwadi, Dharmaraopet, Modegaon, Utnoor, Kuprial, Thippapur, Markovillage, and adjacent settlements). Orders beyond this 10 km limit or outside PIN 503145 are fulfilled via India Post Speed Post parcel services.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-black">7. Dispute Resolution &amp; Jurisdiction</h2>
           <p>
             Any disputes arising under these terms shall first be submitted to our Grievance Redressal Desk for amicable settlement within 30 days. Unresolved claims shall fall under the exclusive jurisdiction of the competent courts in Kamareddy, Telangana, India.
           </p>
@@ -79,3 +86,4 @@ export default function TermsAndConditionsPage() {
     </div>
   );
 }
+

@@ -4,6 +4,7 @@ import Script from 'next/script';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ModalProvider } from '@/components/ModalContext';
+import { ToastProvider } from '@/components/ToastContext';
 
 export const metadata: Metadata = {
   title: 'KB FASHIONS — Better Clothes. Better Prices.',
@@ -27,13 +28,15 @@ export default function RootLayout({
         <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
       </head>
       <body className="bg-gradient-to-b from-[#F8FAFD] via-[#FFFFFF] to-[#F3F5FA] text-kb-black font-sans antialiased selection:bg-kb-blue selection:text-white min-h-screen flex flex-col justify-between">
-        <ModalProvider>
-          <Header />
-          <main className="flex-1 pt-24 sm:pt-[96px]">
-            {children}
-          </main>
-          <Footer />
-        </ModalProvider>
+        <ToastProvider>
+          <ModalProvider>
+            <Header />
+            <main className="flex-1 pt-24 sm:pt-[96px]">
+              {children}
+            </main>
+            <Footer />
+          </ModalProvider>
+        </ToastProvider>
       </body>
     </html>
   );

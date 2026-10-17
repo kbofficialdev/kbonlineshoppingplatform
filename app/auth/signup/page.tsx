@@ -4,9 +4,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { setClientSession } from '@/lib/clientAuth';
+import { SmoothLoader } from '@/components/SmoothLoader';
+import { useToast } from '@/components/ToastContext';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
@@ -38,12 +41,29 @@ export default function SignUpPage() {
         if (data.token) {
           setClientSession(data.token, data.user);
         }
-        window.location.href = '/account';
+        showToast({
+          type: 'success',
+          title: 'Account Created',
+          message: `Welcome to KB Fashions, ${data.user.name}!`,
+        });
+        setTimeout(() => {
+          window.location.href = '/account';
+        }, 300);
       } else {
         setErrorMsg(data.error || 'Failed to create account');
+        showToast({
+          type: 'error',
+          title: 'Registration Error',
+          message: data.error || 'Could not create account. Please check your details.',
+        });
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Error communicating with server');
+      showToast({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not connect to store server.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -119,9 +139,16 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-black text-white text-xs font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50"
+            className="w-full bg-black text-white text-xs font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isLoading ? 'Creating Account...' : 'Register Account'}
+            {isLoading ? (
+              <>
+                <SmoothLoader size="xs" color="white" />
+                <span>Registering Account...</span>
+              </>
+            ) : (
+              <span>Register Account →</span>
+            )}
           </button>
         </form>
 

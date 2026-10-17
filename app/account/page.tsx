@@ -4,11 +4,14 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clearClientSession, getStoredToken } from '@/lib/clientAuth';
+import { useToast } from '@/components/ToastContext';
+import { SmoothLoader, SmoothLoadingOverlay } from '@/components/SmoothLoader';
 
 type AccountTab = 'profile' | 'orders' | 'tracking' | 'addresses' | 'payments' | 'security' | 'settings';
 
 function AccountManagementContent() {
   const router = useRouter();
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as AccountTab) || 'profile';
 
@@ -148,13 +151,28 @@ function AccountManagementContent() {
         if (data.success) {
           setProfile((prev: any) => ({ ...prev, avatar: data.avatarUrl }));
           setStatusMessage({ type: 'success', text: '✓ Profile picture uploaded and stored in database successfully!' });
+          showToast({
+            type: 'success',
+            title: 'Avatar Updated',
+            message: 'Profile picture uploaded and stored in database.',
+          });
         } else {
           setStatusMessage({ type: 'error', text: data.error || 'Failed to upload profile picture' });
+          showToast({
+            type: 'error',
+            title: 'Upload Failed',
+            message: data.error || 'Could not save profile picture.',
+          });
         }
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error uploading avatar image' });
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Error uploading profile image.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -190,11 +208,26 @@ function AccountManagementContent() {
       if (data.success) {
         setProfile((prev: any) => ({ ...prev, ...data.profile }));
         setStatusMessage({ type: 'success', text: '✓ Profile details saved successfully!' });
+        showToast({
+          type: 'success',
+          title: 'Profile Updated',
+          message: 'Your personal details have been saved.',
+        });
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to update profile' });
+        showToast({
+          type: 'error',
+          title: 'Update Failed',
+          message: data.error || 'Could not save profile details.',
+        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error saving profile' });
+      showToast({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not connect to store server.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -209,6 +242,11 @@ function AccountManagementContent() {
     }
     if (newPassword !== confirmPassword) {
       setStatusMessage({ type: 'error', text: 'New passwords do not match' });
+      showToast({
+        type: 'warning',
+        title: 'Password Mismatch',
+        message: 'New password and confirmation do not match.',
+      });
       return;
     }
 
@@ -226,11 +264,21 @@ function AccountManagementContent() {
       const data = await res.json();
       if (data.success) {
         setStatusMessage({ type: 'success', text: '✓ Password changed successfully! Your account security is updated.' });
+        showToast({
+          type: 'success',
+          title: 'Password Changed',
+          message: 'Your account password has been updated.',
+        });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to update password' });
+        showToast({
+          type: 'error',
+          title: 'Password Update Failed',
+          message: data.error || 'Incorrect current password or invalid new password.',
+        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error updating password' });
@@ -269,8 +317,18 @@ function AccountManagementContent() {
         setShowAddressForm(false);
         setAddrStreet('');
         setStatusMessage({ type: 'success', text: '✓ New address added successfully!' });
+        showToast({
+          type: 'success',
+          title: 'Address Added',
+          message: 'New delivery address saved successfully.',
+        });
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to add address' });
+        showToast({
+          type: 'error',
+          title: 'Address Error',
+          message: data.error || 'Could not save address.',
+        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error creating address' });
@@ -291,6 +349,11 @@ function AccountManagementContent() {
       if (data.success) {
         setAddresses((prev) => prev.filter((a) => a.id !== id));
         setStatusMessage({ type: 'success', text: '✓ Address removed.' });
+        showToast({
+          type: 'info',
+          title: 'Address Deleted',
+          message: 'Delivery address removed.',
+        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error deleting address' });
@@ -323,8 +386,18 @@ function AccountManagementContent() {
         setPayLabel('');
         setPayIdentifier('');
         setStatusMessage({ type: 'success', text: '✓ Payment method saved successfully!' });
+        showToast({
+          type: 'success',
+          title: 'Payment Method Saved',
+          message: 'Payment option added to your account.',
+        });
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to save payment method' });
+        showToast({
+          type: 'error',
+          title: 'Error',
+          message: data.error || 'Could not save payment method.',
+        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error saving payment method' });
@@ -345,6 +418,11 @@ function AccountManagementContent() {
       if (data.success) {
         setPaymentMethods((prev) => prev.filter((p) => p.id !== id));
         setStatusMessage({ type: 'success', text: '✓ Payment method removed.' });
+        showToast({
+          type: 'info',
+          title: 'Payment Method Removed',
+          message: 'Payment option was deleted.',
+        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error deleting payment method' });
@@ -372,6 +450,11 @@ function AccountManagementContent() {
   // Sign Out Handler
   const handleSignOut = async () => {
     try {
+      showToast({
+        type: 'info',
+        title: 'Signed Out',
+        message: 'You have been safely signed out.',
+      });
       await fetch('/api/auth/logout', { method: 'POST' });
       clearClientSession();
       window.location.href = '/';
@@ -383,9 +466,8 @@ function AccountManagementContent() {
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-20 text-center">
-        <div className="w-10 h-10 border-3 border-kb-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-sm font-semibold text-neutral-600">Loading your customer account...</p>
+      <div className="max-w-6xl mx-auto px-4 py-28 text-center">
+        <SmoothLoader size="md" color="black" label="Loading your customer account..." />
       </div>
     );
   }
@@ -1215,6 +1297,13 @@ function AccountManagementContent() {
           </div>
         </div>
       )}
+
+      {isSaving && (
+        <SmoothLoadingOverlay
+          message="Saving your updates..."
+          submessage="Syncing details with store customer database..."
+        />
+      )}
     </div>
   );
 }
@@ -1223,9 +1312,8 @@ export default function AccountManagementPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-6xl mx-auto px-4 py-20 text-center">
-          <div className="w-10 h-10 border-3 border-kb-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm font-semibold text-neutral-600">Loading your customer account...</p>
+        <div className="max-w-6xl mx-auto px-4 py-28 text-center">
+          <SmoothLoader size="md" color="black" label="Loading your customer account..." />
         </div>
       }
     >

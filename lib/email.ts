@@ -207,3 +207,4 @@ export async function sendAccountLockedEmail(to: string, name: string, lockDurat
   `;
   return sendMail({ to, subject, html });
 }
+

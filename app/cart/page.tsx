@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
+import { useToast } from '@/components/ToastContext';
+import { SmoothLoader } from '@/components/SmoothLoader';
 import { authFetch } from '@/lib/clientAuth';
 
 interface CartItem {
@@ -21,6 +23,7 @@ interface CartItem {
 export default function CartPage() {
   const router = useRouter();
   const { showModal } = useModalAlert();
+  const { showToast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<any>({
     items: [],
@@ -81,6 +84,11 @@ export default function CartPage() {
       });
       const data = await res.json();
       setCart(data);
+      showToast({
+        type: 'info',
+        title: 'Bag Updated',
+        message: 'Cart quantities refreshed.',
+      });
     } catch (e) {}
   };
 
@@ -91,10 +99,10 @@ export default function CartPage() {
       });
       const data = await res.json();
       setCart(data);
-      showModal({
-        type: 'info',
+      showToast({
+        type: 'warning',
         title: 'Item Removed',
-        message: 'The selected item was removed from your shopping bag.',
+        message: 'The item was removed from your shopping bag.',
       });
     } catch (e) {}
   };
@@ -104,9 +112,9 @@ export default function CartPage() {
       const res = await authFetch('/api/cart/clear', { method: 'DELETE' });
       const data = await res.json();
       setCart(data);
-      showModal({
+      showToast({
         type: 'info',
-        title: 'Shopping Bag Cleared',
+        title: 'Bag Cleared',
         message: 'All garments were removed from your shopping bag.',
       });
     } catch (e) {}
@@ -126,25 +134,25 @@ export default function CartPage() {
       if (data.success) {
         setCart(data.cart);
         setPromoMessage(data.message);
-        showModal({
+        showToast({
           type: 'success',
-          title: 'Village Promo Applied',
-          message: `✓ Offer code "${promoCode.trim().toUpperCase()}" applied! You saved ₹${data.cart.discountAmount}.`,
+          title: 'Promo Applied',
+          message: `✓ Offer "${promoCode.trim().toUpperCase()}" applied! You saved ₹${data.cart.discountAmount}.`,
         });
       } else {
         setPromoError(data.error || 'Invalid promo code');
-        showModal({
+        showToast({
           type: 'warning',
           title: 'Invalid Promo Code',
-          message: data.error || 'The entered promo code is invalid. Please try "KB10".',
+          message: data.error || 'Please try "KB10".',
         });
       }
     } catch (e) {
       setPromoError('Failed to apply promo code');
-      showModal({
+      showToast({
         type: 'error',
         title: 'Error',
-        message: 'Could not apply promo code. Please check your network connection.',
+        message: 'Could not apply promo code.',
       });
     }
   };
@@ -172,9 +180,8 @@ export default function CartPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-neutral-400">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-xs">Loading shopping bag...</p>
+      <div className="max-w-7xl mx-auto px-4 py-28 text-center">
+        <SmoothLoader size="md" color="black" label="Loading shopping bag..." />
       </div>
     );
   }

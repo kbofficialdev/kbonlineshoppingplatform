@@ -18,9 +18,22 @@ export function calculateCart(userId: string) {
       exemptionNotice: db.storeSettings?.exemptionNotice,
     };
   }
-  const items = db.cartItems.filter(i => i.sessionId === userId || i.userId === userId);
+  let items = db.cartItems.filter(i => i.sessionId === userId || i.userId === userId);
+  
+  // Auto-migrate guest items to authenticated user session if user cart is empty
+  if (items.length === 0 && userId && userId !== 'default-guest') {
+    const guestItems = db.cartItems.filter(i => i.sessionId === 'default-guest');
+    if (guestItems.length > 0) {
+      guestItems.forEach(i => {
+        i.sessionId = userId;
+        i.userId = userId;
+      });
+      items = db.cartItems.filter(i => i.sessionId === userId || i.userId === userId);
+    }
+  }
+
   const subtotal = items.reduce((acc, i) => acc + (i.price * i.qty), 0);
-  const appliedPromo = db.appliedPromos.get(userId);
+  const appliedPromo = db.appliedPromos.get(userId) || db.appliedPromos.get('default-guest');
 
   let discountAmount = 0;
   let discountPercent = 0;

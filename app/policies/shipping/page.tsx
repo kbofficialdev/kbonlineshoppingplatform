@@ -30,40 +30,60 @@ export default function ShippingPolicyPage() {
           </p>
         </div>
 
-        <section className="space-y-3">
-          <h2 className="text-base font-bold text-black">1. Shipping Coverage &amp; Delivery Partners</h2>
+        <section className="space-y-4">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-1.5">
+            <div className="font-extrabold flex items-center gap-1.5 text-amber-900">
+              <span>📍</span>
+              <span>MANDATORY STATUTORY DELIVERY COVERAGE: 10 KM RADIUS UNDER PIN 503145</span>
+            </div>
+            <p>
+              Direct hyper-local doorstep delivery is strictly operated within a <strong>10 km radius</strong> for habitations and villages falling under <strong>Postal PIN Code 503145</strong> (Kalwaral, Sadasivanagar mandal, Kamareddy district, Telangana).
+            </p>
+          </div>
+
+          <h2 className="text-base font-bold text-black">1. Hyper-Local 10 km Delivery Zone (PIN 503145)</h2>
           <p>
-            {store.officialName} delivers to over 19,000 postal PIN codes across India. All orders are carefully inspected, handloom-folded, and packaged in tamper-resistant moisture-proof wrapping at our physical store in Kalwaral village before dispatch via:
+            {store.officialName} dispatches directly from our ancestral retail store at <strong>3-55/1, Kalwaral Village, Sadasivanagar Mandal, Kamareddy, Telangana 503145</strong>. Customers residing within 10 km under PIN 503145 enjoy same-day or 24-hour local delivery via our dedicated store runners.
           </p>
-          <ul className="list-disc pl-5 space-y-1.5 text-xs text-neutral-600">
-            <li><strong>Telangana State Postal Express &amp; India Post Speed Post:</strong> Providing reliable access to rural village locations and remote talukas.</li>
-            <li><strong>Express Surface Logistics Partners (Delhivery / Bluedart):</strong> For urban centers, metropolitan districts, and rapid deliveries.</li>
-          </ul>
+
+          <div className="border border-slate-200 rounded-2xl p-4 bg-neutral-50 text-xs space-y-2">
+            <div className="font-bold text-neutral-900">Eligible Habitations &amp; Villages Within 10 km of Kalwaral (PIN 503145):</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-neutral-700">
+              <div className="flex items-center gap-1.5 font-medium">✓ Kalwaral (Store Hub • 0 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Sadasivanagar (4 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Padmavajiwadi (3.5 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Dharmaraopet (5 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Modegaon (6 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Utnoor &amp; Kuprial (7 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Thippapur (8 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Markovillage / Thanda (8.5 km)</div>
+              <div className="flex items-center gap-1.5 font-medium">✓ Jukkalwadi &amp; Adloor (9.5 km)</div>
+            </div>
+          </div>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-base font-bold text-black">2. Delivery Charges &amp; Free Shipping Tier</h2>
           <div className="p-4 rounded-2xl bg-neutral-50 border border-slate-200 space-y-2 text-xs">
             <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-              <span className="font-bold text-black">Orders of ₹{store.freeShippingThreshold} and Above:</span>
+              <span className="font-bold text-black">Orders of ₹{store.freeShippingThreshold} and Above (Within 10 km):</span>
               <span className="text-emerald-700 font-extrabold uppercase">FREE DELIVERY (₹0)</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="font-bold text-black">Orders Under ₹{store.freeShippingThreshold}:</span>
-              <span className="text-black font-extrabold">Flat ₹{store.flatShippingFee} Shipping Nationwide</span>
+              <span className="text-black font-extrabold">Flat ₹{store.flatShippingFee} Delivery Fee</span>
             </div>
           </div>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-black">3. Estimated Delivery Timelines</h2>
+          <h2 className="text-base font-bold text-black">3. Delivery Timelines &amp; Outside 10 km Dispatch</h2>
           <ul className="list-disc pl-5 space-y-2 text-xs text-neutral-600">
-            <li><strong>Within Telangana &amp; Andhra Pradesh:</strong> Typically delivered within <strong>2 to 4 business days</strong>.</li>
-            <li><strong>Rest of India (Metropolitan &amp; Tier 1/2 Cities):</strong> Delivered within <strong>4 to 6 business days</strong>.</li>
-            <li><strong>Remote Regions &amp; North East:</strong> Delivered within <strong>6 to 8 business days</strong>.</li>
+            <li><strong>Inside 10 km Radius (PIN 503145):</strong> Delivered within <strong>24 to 48 hours</strong> directly from our Kalwaral store counter.</li>
+            <li><strong>Beyond 10 km Radius / Other PIN Codes:</strong> Dispatched via <strong>India Post Speed Post</strong> with standard parcel transit (3 to 5 business days).</li>
           </ul>
           <p className="text-xs text-neutral-500">
-            <em>Note: Dispatch takes place from Monday to Saturday. Orders placed on Sundays or public holidays are processed on the subsequent working morning.</em>
+            <em>Note: Dispatch operates Monday to Saturday. Store pickup at Kalwaral counter is always available with 0 waiting time.</em>
           </p>
         </section>
 
@@ -86,3 +106,4 @@ export default function ShippingPolicyPage() {
     </div>
   );
 }
+
