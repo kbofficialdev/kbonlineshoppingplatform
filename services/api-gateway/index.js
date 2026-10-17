@@ -24,14 +24,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mount Microservice Endpoints
-app.use(catalogService);
-app.use(cartService);
-app.use(orderService);
-app.use(paymentService);
-app.use(merchantService);
-app.use(adminService);
-
 // Health Check of Gateway and all downstream Microservices
 app.get('/healthz', (req, res) => {
   res.json({
@@ -48,6 +40,14 @@ app.get('/healthz', (req, res) => {
     }
   });
 });
+
+// Mount Microservice Endpoints
+app.use(catalogService);
+app.use(cartService);
+app.use(orderService);
+app.use(paymentService);
+app.use(merchantService);
+app.use(adminService);
 
 // Serve Frontend Static Client
 const frontendDir = path.join(__dirname, '../../public');
