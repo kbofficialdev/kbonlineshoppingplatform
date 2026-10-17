@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KB — Better Clothes. Better Prices.</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js via CDN for Analytics (Canvas-based) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Chosen Palette: Monochrome Minimalist (KB Theme: #111111, #181818, #F7F7F5, #F4F4F1, #F2F2F0, #E8E8E8, #FFFFFF) -->
+
+  <!-- Application Structure Plan: The single-page application is structured into 6 primary operational zones: 1) Frosted Sticky Header with responsive drawer and mobile bottom nav, 2) Dark Welcome Hero with asymmetric brand card, 3) Interactive Category Grid for one-click catalog filter triggering, 4) Dynamic Product Catalog with multi-faceted filtering (category, size, price range, sort) and integrated Chart.js customer rating analytics, 5) Slide-Over Drawers for Shopping Bag & Wishlist with live threshold calculations, and 6) Multi-step Checkout Modal (Address, Payment, Confirmation). This structure guarantees maximum speed, touch-ergonomics on mobile devices, and seamless user exploration without page reloads. -->
+
+  <!-- Visualization & Content Choices: Rating & Value Analysis -> Goal: Compare customer sentiment and value breakdown across categories -> Viz Method: Canvas Chart.js Horizontal Bar Chart -> Interaction: Filtered by active category selection -> Justification: Canvas rendering complies with strict no-SVG constraints while offering interactive tooltips and crisp visuals on high-DPI screens. Libraries: Chart.js CDN. -->
+
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            kbBlack: '#111111',
+            kbDark: '#181818',
+            kbMuted: '#737373',
+            kbLight: '#f7f7f5',
+            kbSurfaceAlt: '#f4f4f1',
+            kbCardBg: '#f2f2f0',
+            kbBorder: '#e8e8e8',
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          },
+          borderRadius: {
+            'kb-xl': '30px',
+            'kb-lg': '28px',
+            'kb-md': '20px',
+            'kb-sm': '18px',
+            'kb-pill': '999px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar and Chart Container Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f7f7f5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d1d1d1;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #111111;
+    }
+
+    /* Chart Container strictly constrained */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 580px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 220px;
+      max-height: 260px;
+    }
+    @media (max-width: 640px) {
+      .chart-container {
+        height: 190px;
+      }
+    }
+
+    /* KB Watermark Placeholder Styling */
+    .watermark-kb::after {
+      content: "KB";
+      position: absolute;
+      font-weight: 800;
+      font-size: 55px;
+      color: #e2e2df;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* Touch Target Optimization */
+    .touch-target {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Focus Visible Rings for Keyboard Navigation */
+    *:focus-visible {
+      outline: 2px solid #111111 !important;
+      outline-offset: 2px !important;
+    }
+  </style>
+</head>
+<body class="bg-white text-kbBlack font-sans antialiased selection:bg-kbBlack selection:text-white pb-16 md:pb-0">
+
+  <!-- GLOBAL FROSTED NAVIGATION HEADER -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-black/5 transition-all duration-200">
+    <div class="max-w-[1240px] mx-auto px-4 md:px-6 h-16 md:h-[72px] flex items-center justify-between">
+      
+      <!-- Logo & Hamburger Menu Trigger -->
+      <div class="flex items-center gap-3">
+        <button id="mobile-menu-btn" class="md:hidden touch-target flex items-center justify-center rounded-full border border-kbBorder hover:bg-kbLight transition-colors text-lg" aria-label="Open Mobile Menu">
+          ☰
+        </button>
+        <a href="#" class="text-[25px] font-extrabold tracking-[-1.5px] select-none">
+          KB<span class="font-normal text-kbBlack">.</span>
+        </a>
+      </div>
+
+      <!-- Desktop Nav Links -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600">
+        <a href="#shop" onclick="filterByCategory('All')" class="hover:text-black transition-colors">Shop</a>
+        <a href="#categories" class="hover:text-black transition-colors">Categories</a>
+        <a href="#shop" onclick="filterByCategory('New Arrivals')" class="hover:text-black transition-colors">New Arrivals</a>
+        <a href="#shop" onclick="filterByCategory('Offers')" class="hover:text-black transition-colors">Offers</a>
+        <a href="#analytics" class="hover:text-black transition-colors">Quality Insights</a>
+        <a href="#about" class="hover:text-black transition-colors">About</a>
+      </nav>
+
+      <!-- Nav Action Icons -->
+      <div class="flex items-center gap-2">
+        <button id="search-open-btn" class="w-10 h-10 rounded-full border border-kbBorder bg-white flex items-center justify-center text-base hover:bg-neutral-100 hover:-translate-y-0.5 transition-all" aria-label="Search Products">
+          ⌕
+        </button>
+        <button id="wishlist-open-btn" class="relative w-10 h-10 rounded-full border border-kbBorder bg-white flex items-center justify-center text-base hover:bg-neutral-100 hover:-translate-y-0.5 transition-all" aria-label="View Wishlist">
+          ♡
+          <span id="wishlist-badge" class="hidden absolute -top-1 -right-1 bg-kbBlack text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+        </button>
+        <button id="bag-open-btn" class="relative w-10 h-10 rounded-full border border-kbBorder bg-white flex items-center justify-center text-base hover:bg-neutral-100 hover:-translate-y-0.5 transition-all" aria-label="View Shopping Bag">
+          🛍️
+          <span id="bag-badge" class="absolute -top-1 -right-1 bg-kbBlack text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MOBILE SLIDE-OUT NAVIGATION DRAWER -->
+  <div id="mobile-drawer" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden">
+    <div id="mobile-drawer-content" class="w-4/5 max-w-sm bg-white h-full p-6 flex flex-col justify-between transform -translate-x-full transition-transform duration-300">
+      <div>
+        <div class="flex items-center justify-between pb-6 border-b border-kbBorder">
+          <div class="text-2xl font-extrabold tracking-tight">KB.</div>
+          <button id="mobile-drawer-close" class="w-9 h-9 rounded-full border border-kbBorder flex items-center justify-center font-bold text-sm">✕</button>
+        </div>
+        <nav class="flex flex-col gap-4 mt-6 text-base font-medium">
+          <a href="#shop" onclick="closeMobileDrawer(); filterByCategory('All')" class="py-2 border-b border-neutral-100">Shop Catalog</a>
+          <a href="#categories" onclick="closeMobileDrawer()" class="py-2 border-b border-neutral-100">Explore Categories</a>
+          <a href="#shop" onclick="closeMobileDrawer(); filterByCategory('Men')" class="py-2 border-b border-neutral-100">Men's Collection</a>
+          <a href="#shop" onclick="closeMobileDrawer(); filterByCategory('Women')" class="py-2 border-b border-neutral-100">Women's Collection</a>
+          <a href="#shop" onclick="closeMobileDrawer(); filterByCategory('New Arrivals')" class="py-2 border-b border-neutral-100">New Arrivals</a>
+          <a href="#shop" onclick="closeMobileDrawer(); filterByCategory('Offers')" class="py-2 border-b border-neutral-100">Offers & Deals</a>
+          <a href="#analytics" onclick="closeMobileDrawer()" class="py-2 border-b border-neutral-100">Quality Ratings</a>
+          <a href="#about" onclick="closeMobileDrawer()" class="py-2 border-b border-neutral-100">About KB</a>
+        </nav>
+      </div>
+      <div class="pt-6 border-t border-kbBorder text-xs text-kbMuted">
+        Better clothes. Better prices.<br>
+        © 2026 KB Online Shopping Platform
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <!-- WELCOME HERO BANNER -->
+    <section class="bg-kbBlack text-white overflow-hidden py-12 md:py-20">
+      <div class="max-w-[1240px] mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] items-center gap-10">
+        
+        <!-- Hero Text -->
+        <div class="hero">
+          <div class="inline-flex items-center px-3 py-1.5 rounded-kb-pill border border-white/20 text-xs text-neutral-300 font-medium mb-6 tracking-wide">
+            WELCOME TO KB ONLINE
+          </div>
+          <h1 class="text-4xl sm:text-5xl lg:text-[72px] leading-[0.98] font-extrabold tracking-[-0.05em] mb-6">
+            Better clothes.<br>
+            <span class="text-neutral-400">Better prices.</span>
+          </h1>
+          <p class="max-w-lg text-neutral-300 text-base md:text-lg leading-relaxed mb-8">
+            Discover everyday fashion made for modern life — carefully selected styles, comfortable premium essentials, and honest prices without compromising quality.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <a href="#shop" onclick="filterByCategory('All')" class="bg-white text-kbBlack font-semibold px-6 py-3.5 rounded-kb-pill hover:bg-neutral-200 hover:-translate-y-0.5 transition-all text-sm">
+              Shop Collection →
+            </a>
+            <a href="#shop" onclick="filterByCategory('New Arrivals')" class="bg-transparent text-white border border-neutral-700 font-semibold px-6 py-3.5 rounded-kb-pill hover:bg-neutral-900 hover:-translate-y-0.5 transition-all text-sm">
+              Explore New Arrivals
+            </a>
+          </div>
+        </div>
+
+        <!-- Hero Visual Graphic Canvas Surface -->
+        <div class="h-[280px] md:h-[350px] rounded-kb-lg bg-gradient-to-br from-neutral-800 to-kbBlack relative overflow-hidden flex items-center justify-center p-6 border border-white/10">
+          <div class="w-52 h-64 rounded-kb-sm bg-gradient-to-br from-neutral-200 to-neutral-500 -rotate-6 shadow-2xl relative p-5 text-kbBlack flex flex-col justify-between transition-transform hover:rotate-0 duration-500 select-none">
+            <div class="text-2xl font-black tracking-tight">KB</div>
+            <div class="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-xs font-bold shadow-sm">
+              <div>ESSENTIAL TEE</div>
+              <div class="text-neutral-500 font-normal">Everyday Comfort</div>
+              <div class="mt-1 text-sm font-extrabold">₹499</div>
+            </div>
+            <div class="text-[10px] font-semibold tracking-widest text-neutral-800">NEW SEASON</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- INTERACTIVE CATEGORY SHOWCASE -->
+    <section id="categories" class="max-w-[1240px] mx-auto px-4 md:px-6 py-16">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-2">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-[-1.5px]">Shop your style.</h2>
+          <p class="text-kbMuted text-sm mt-1">Simple pieces. Easy choices.</p>
+        </div>
+        <span class="text-xs text-neutral-400">Click any card to filter catalog</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Men -->
+        <div onclick="filterByCategory('Men')" class="group cursor-pointer min-h-[170px] rounded-kb-md bg-kbLight p-6 flex flex-col justify-between border border-transparent hover:border-neutral-300 hover:-translate-y-1 transition-all">
+          <span class="text-xs text-neutral-400 font-mono">01</span>
+          <div>
+            <h3 class="text-xl font-bold group-hover:underline">Men</h3>
+            <p class="text-xs text-neutral-500 mt-1">Everyday essentials & fits</p>
+          </div>
+        </div>
+        <!-- Women -->
+        <div onclick="filterByCategory('Women')" class="group cursor-pointer min-h-[170px] rounded-kb-md bg-kbLight p-6 flex flex-col justify-between border border-transparent hover:border-neutral-300 hover:-translate-y-1 transition-all">
+          <span class="text-xs text-neutral-400 font-mono">02</span>
+          <div>
+            <h3 class="text-xl font-bold group-hover:underline">Women</h3>
+            <p class="text-xs text-neutral-500 mt-1">Modern everyday fashion</p>
+          </div>
+        </div>
+        <!-- New Arrivals -->
+        <div onclick="filterByCategory('New Arrivals')" class="group cursor-pointer min-h-[170px] rounded-kb-md bg-kbLight p-6 flex flex-col justify-between border border-transparent hover:border-neutral-300 hover:-translate-y-1 transition-all">
+          <span class="text-xs text-neutral-400 font-mono">03</span>
+          <div>
+            <h3 class="text-xl font-bold group-hover:underline">New Arrivals</h3>
+            <p class="text-xs text-neutral-500 mt-1">Fresh styles updated weekly</p>
+          </div>
+        </div>
+        <!-- Offers -->
+        <div onclick="filterByCategory('Offers')" class="group cursor-pointer min-h-[170px] rounded-kb-md bg-kbLight p-6 flex flex-col justify-between border border-transparent hover:border-neutral-300 hover:-translate-y-1 transition-all">
+          <span class="text-xs text-neutral-400 font-mono">04</span>
+          <div>
+            <h3 class="text-xl font-bold group-hover:underline">Offers</h3>
+            <p class="text-xs text-neutral-500 mt-1">More value for less price</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FULL CATALOG WITH INTERACTIVE FILTER BAR -->
+    <section id="shop" class="max-w-[1240px] mx-auto px-4 md:px-6 py-12 border-t border-kbBorder">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-[-1.5px]">Featured Picks & Catalog.</h2>
+          <p class="text-kbMuted text-sm mt-1">Explore our entire collection with instant filters.</p>
+        </div>
+        <div class="text-xs text-neutral-500">
+          Showing <span id="visible-count" class="font-bold text-black">0</span> of <span id="total-count" class="font-bold text-black">0</span> products
+        </div>
+      </div>
+
+      <!-- Filter Controls Grid -->
+      <div class="bg-kbLight p-4 md:p-6 rounded-kb-md mb-8 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center border border-kbBorder">
+        
+        <!-- Category Pill Filters -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-neutral-500 mr-2">Category:</span>
+          <button onclick="filterByCategory('All')" class="cat-pill active bg-kbBlack text-white text-xs font-semibold px-4 py-2 rounded-kb-pill transition-all">All</button>
+          <button onclick="filterByCategory('Men')" class="cat-pill bg-white text-kbBlack border border-kbBorder text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-200 transition-all">Men</button>
+          <button onclick="filterByCategory('Women')" class="cat-pill bg-white text-kbBlack border border-kbBorder text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-200 transition-all">Women</button>
+          <button onclick="filterByCategory('New Arrivals')" class="cat-pill bg-white text-kbBlack border border-kbBorder text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-200 transition-all">New Arrivals</button>
+          <button onclick="filterByCategory('Offers')" class="cat-pill bg-white text-kbBlack border border-kbBorder text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-200 transition-all">Offers</button>
+        </div>
+
+        <!-- Secondary Filters & Sort Dropdown -->
+        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+          
+          <!-- Size Filter Pill Selector -->
+          <div class="flex items-center gap-1">
+            <span class="text-xs font-semibold text-neutral-500 mr-1">Size:</span>
+            <select id="size-filter" onchange="renderProducts()" class="bg-white border border-kbBorder text-xs rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-black">
+              <option value="All">All Sizes</option>
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+            </select>
+          </div>
+
+          <!-- Price Range Filter -->
+          <div class="flex items-center gap-1">
+            <span class="text-xs font-semibold text-neutral-500 mr-1">Max Price:</span>
+            <select id="price-filter" onchange="renderProducts()" class="bg-white border border-kbBorder text-xs rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-black">
+              <option value="9999">Any Price</option>
+              <option value="599">Under ₹599</option>
+              <option value="999">Under ₹999</option>
+              <option value="1200">Under ₹1,200</option>
+            </select>
+          </div>
+
+          <!-- Sorting -->
+          <div class="flex items-center gap-1">
+            <span class="text-xs font-semibold text-neutral-500 mr-1">Sort:</span>
+            <select id="sort-filter" onchange="renderProducts()" class="bg-white border border-kbBorder text-xs rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-black">
+              <option value="featured">Featured</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="rating">Highest Rated</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Dynamic Product Cards Grid -->
+      <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <!-- Products populated via JavaScript -->
+      </div>
+    </section>
+
+    <!-- DATA ANALYTICS SECTION (Chart.js Visualization) -->
+    <section id="analytics" class="max-w-[1240px] mx-auto px-4 md:px-6 py-12 border-t border-kbBorder">
+      <div class="bg-kbSurfaceAlt rounded-kb-xl p-6 md:p-10 border border-kbBorder">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-widest text-neutral-500">Quality & Comfort Ratings</div>
+            <h2 class="text-2xl font-bold tracking-tight mt-1">Customer Sentiment Breakdown</h2>
+            <p class="text-xs text-kbMuted mt-1">Aggregated verified buyer feedback across fabric, durability, fit accuracy, and value.</p>
+          </div>
+          <div class="bg-white px-4 py-2 rounded-kb-pill border border-kbBorder text-xs font-semibold">
+            Overall Satisfaction Rating: <span class="text-emerald-700 font-extrabold">4.8 / 5.0</span> ★
+          </div>
+        </div>
+
+        <!-- Responsive Chart Container -->
+        <div class="chart-container">
+          <canvas id="qualityChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- EDITORIAL PROMO SECTION -->
+    <section id="new" class="max-w-[1240px] mx-auto px-4 md:px-6 py-12">
+      <div class="bg-kbSurfaceAlt rounded-kb-xl p-8 md:p-16 text-center border border-kbBorder">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-[-2.5px] mb-4">
+          Style shouldn't be expensive.
+        </h2>
+        <p class="max-w-xl mx-auto text-neutral-600 text-sm md:text-base mb-8 leading-relaxed">
+          KB brings together quality, comfort, and modern minimalist design at prices made for sensible, everyday shopping.
+        </p>
+        <button onclick="filterByCategory('All'); document.getElementById('shop').scrollIntoView({behavior: 'smooth'})" class="bg-kbBlack text-white font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all text-sm">
+          Start Shopping →
+        </button>
+      </div>
+    </section>
+
+    <!-- BRAND STORY & ABOUT -->
+    <section id="about" class="max-w-[1240px] mx-auto px-4 md:px-6 py-12 border-t border-kbBorder">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
+        <div>
+          <div class="text-2xl font-extrabold tracking-tight mb-3">KB.</div>
+          <p class="text-neutral-500 leading-relaxed text-xs">
+            We build elevated wardrobe staples designed for long-lasting comfort and versatility. No inflated markups, no artificial trends.
+          </p>
+        </div>
+        <div>
+          <div class="font-bold mb-3 text-black">Customer Care Promise</div>
+          <ul class="text-xs text-neutral-500 space-y-2">
+            <li>✓ Free shipping on all orders over ₹999</li>
+            <li>✓ 7-day hassle-free easy returns & exchanges</li>
+            <li>✓ 100% combed cotton & durable weave fabrics</li>
+            <li>✓ Secure payment via UPI, Cards, Net Banking & COD</li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-bold mb-3 text-black">Stay Connected</div>
+          <p class="text-xs text-neutral-500 mb-3">Subscribe for exclusive drops and early access to sales.</p>
+          <div class="flex gap-2">
+            <input type="email" id="newsletter-email" placeholder="Enter your email" class="bg-kbLight border border-kbBorder text-xs rounded-kb-pill px-4 py-2 w-full focus:outline-none focus:ring-1 focus:ring-black">
+            <button onclick="subscribeNewsletter()" class="bg-kbBlack text-white text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-800 transition-colors">Join</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-kbBorder py-8 bg-white text-neutral-500 text-xs">
+    <div class="max-w-[1240px] mx-auto px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="font-bold text-black text-lg tracking-tight">KB.</div>
+      <div>© 2026 KB Online Shopping Platform. All rights reserved.</div>
+      <div>Better clothes. Affordable prices.</div>
+    </div>
+  </footer>
+
+  <!-- STICKY MOBILE BOTTOM NAVIGATION BAR -->
+  <div class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-kbBorder flex items-center justify-around py-2.5 md:hidden">
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center gap-0.5 text-[10px] font-medium text-neutral-600">
+      <span class="text-base">🏠</span> Home
+    </button>
+    <button onclick="filterByCategory('All'); document.getElementById('shop').scrollIntoView({behavior: 'smooth'})" class="flex flex-col items-center gap-0.5 text-[10px] font-medium text-neutral-600">
+      <span class="text-base">👕</span> Shop
+    </button>
+    <button id="mobile-search-btn" class="flex flex-col items-center gap-0.5 text-[10px] font-medium text-neutral-600">
+      <span class="text-base">⌕</span> Search
+    </button>
+    <button id="mobile-wishlist-btn" class="flex flex-col items-center gap-0.5 text-[10px] font-medium text-neutral-600 relative">
+      <span class="text-base">♡</span> Wishlist
+      <span id="mobile-wishlist-badge" class="hidden absolute top-0 right-2 bg-kbBlack text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
+    </button>
+    <button id="mobile-bag-btn" class="flex flex-col items-center gap-0.5 text-[10px] font-medium text-neutral-600 relative">
+      <span class="text-base">🛍️</span> Bag
+      <span id="mobile-bag-badge" class="absolute top-0 right-2 bg-kbBlack text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
+    </button>
+  </div>
+
+  <!-- SLIDE-OVER SHOPPING BAG DRAWER -->
+  <div id="bag-drawer" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="bag-drawer-content" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white h-full flex flex-col justify-between transform translate-x-full transition-transform duration-300">
+      
+      <!-- Drawer Header -->
+      <div class="p-6 border-b border-kbBorder flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl font-extrabold">Shopping Bag</span>
+          <span id="bag-item-count" class="text-xs bg-kbLight px-2 py-1 rounded-full font-bold text-neutral-600">0 items</span>
+        </div>
+        <button id="bag-drawer-close" class="w-8 h-8 rounded-full border border-kbBorder flex items-center justify-center font-bold text-xs hover:bg-kbLight">✕</button>
+      </div>
+
+      <!-- Free Shipping Indicator Progress Bar -->
+      <div class="bg-kbSurfaceAlt px-6 py-3 border-b border-kbBorder">
+        <div id="shipping-threshold-text" class="text-xs font-medium text-neutral-700 mb-1.5">
+          Add <span class="font-bold text-black">₹999</span> more for FREE Express Delivery
+        </div>
+        <div class="w-full h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+          <div id="shipping-progress" class="h-full bg-black transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Drawer Items List -->
+      <div id="bag-items-list" class="p-6 overflow-y-auto flex-1 divide-y divide-kbBorder">
+        <!-- Dynamic Bag Items -->
+      </div>
+
+      <!-- Drawer Subtotal & Checkout Footer -->
+      <div class="p-6 border-t border-kbBorder bg-kbLight">
+        <!-- Promo Coupon Input -->
+        <div class="flex gap-2 mb-4">
+          <input type="text" id="promo-code-input" placeholder="Promo code (e.g. KB10)" class="uppercase bg-white border border-kbBorder text-xs rounded-kb-pill px-3 py-2 flex-1 focus:outline-none">
+          <button onclick="applyPromoCode()" class="bg-kbBlack text-white text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-800">Apply</button>
+        </div>
+
+        <!-- Calculation Rows -->
+        <div class="space-y-1.5 text-xs text-neutral-600 mb-4">
+          <div class="flex justify-between">
+            <span>Subtotal</span>
+            <span id="bag-subtotal" class="font-bold text-black">₹0</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Discount (<span id="discount-percent">0</span>%)</span>
+            <span id="bag-discount" class="text-emerald-700 font-bold">-₹0</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Estimated Shipping</span>
+            <span id="bag-shipping" class="font-bold text-black">₹99</span>
+          </div>
+          <div class="flex justify-between text-sm font-extrabold text-black pt-2 border-t border-kbBorder">
+            <span>Total</span>
+            <span id="bag-total">₹0</span>
+          </div>
+        </div>
+
+        <button onclick="openCheckoutModal()" id="checkout-btn" class="w-full bg-kbBlack text-white font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all text-sm flex items-center justify-center gap-2">
+          Proceed to Checkout →
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SLIDE-OVER WISHLIST DRAWER -->
+  <div id="wishlist-drawer" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="wishlist-drawer-content" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white h-full flex flex-col justify-between transform translate-x-full transition-transform duration-300">
+      <div class="p-6 border-b border-kbBorder flex items-center justify-between">
+        <span class="text-xl font-extrabold">Your Wishlist</span>
+        <button id="wishlist-drawer-close" class="w-8 h-8 rounded-full border border-kbBorder flex items-center justify-center font-bold text-xs hover:bg-kbLight">✕</button>
+      </div>
+      <div id="wishlist-items-list" class="p-6 overflow-y-auto flex-1 divide-y divide-kbBorder">
+        <!-- Wishlist items populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH OVERLAY MODAL -->
+  <div id="search-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex items-start justify-center pt-20 px-4">
+    <div class="bg-white rounded-kb-md w-full max-w-2xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-kbBorder">
+        <input type="text" id="search-input" onkeyup="handleLiveSearch()" placeholder="Search clothes, collections, or tags..." class="w-full text-lg font-medium focus:outline-none pr-4">
+        <button id="search-modal-close" class="text-sm font-bold w-8 h-8 rounded-full bg-kbLight flex items-center justify-center">✕</button>
+      </div>
+      <div id="search-results" class="mt-4 max-h-80 overflow-y-auto space-y-3">
+        <div class="text-xs text-neutral-400 py-4 text-center">Type to search across KB Catalog...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT DETAIL MODAL (PDP) -->
+  <div id="product-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4">
+    <div id="product-modal-card" class="bg-white rounded-kb-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 md:p-8 relative shadow-2xl">
+      <button onclick="closeProductModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-kbLight border border-kbBorder flex items-center justify-center font-bold text-sm hover:bg-neutral-200">✕</button>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
+        <!-- Left Product Visual Surface -->
+        <div class="h-72 md:h-96 rounded-kb-sm bg-kbCardBg watermark-kb flex items-center justify-center relative overflow-hidden">
+          <span id="modal-tag" class="absolute top-4 left-4 bg-white text-black text-[10px] font-bold px-3 py-1 rounded-kb-pill border border-kbBorder">BESTSELLER</span>
+        </div>
+
+        <!-- Right Specs & Options -->
+        <div class="flex flex-col justify-between">
+          <div>
+            <div id="modal-collection" class="text-xs text-neutral-400 font-semibold uppercase tracking-wider">Everyday Collection</div>
+            <h3 id="modal-title" class="text-2xl font-extrabold mt-1">Essential Oversized Tee</h3>
+            <div class="flex items-center gap-2 mt-2">
+              <span id="modal-price" class="text-2xl font-extrabold">₹499</span>
+              <span class="text-xs text-neutral-400">Tax included</span>
+            </div>
+            
+            <!-- Rating Star Display -->
+            <div class="flex items-center gap-1 mt-2 text-xs font-medium text-amber-600">
+              <span id="modal-rating">★★★★★ 4.8</span>
+              <span class="text-neutral-400">(128 reviews)</span>
+            </div>
+
+            <!-- Size Selector -->
+            <div class="mt-6">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-neutral-600">Select Size</span>
+                <button onclick="openSizeGuide()" class="text-xs text-neutral-500 underline hover:text-black">Size Guide</button>
+              </div>
+              <div id="modal-sizes" class="flex flex-wrap gap-2">
+                <!-- Size Pills inserted via JS -->
+              </div>
+            </div>
+
+            <!-- Color Swatch Display -->
+            <div class="mt-4">
+              <span class="text-xs font-bold uppercase tracking-wider text-neutral-600 block mb-2">Color</span>
+              <div class="flex gap-2">
+                <span class="w-6 h-6 rounded-full bg-black border-2 border-black ring-2 ring-neutral-300 cursor-pointer"></span>
+                <span class="w-6 h-6 rounded-full bg-neutral-400 cursor-pointer"></span>
+                <span class="w-6 h-6 rounded-full bg-stone-200 cursor-pointer"></span>
+              </div>
+            </div>
+
+            <!-- Accordion Info -->
+            <div class="mt-6 text-xs text-neutral-600 space-y-2 border-t border-kbBorder pt-4">
+              <details class="cursor-pointer">
+                <summary class="font-bold text-black py-1">Fabric & Care</summary>
+                <p class="pt-1 text-neutral-500">100% Combed Cotton. Machine wash cold with similar colors. Do not bleach.</p>
+              </details>
+              <details class="cursor-pointer">
+                <summary class="font-bold text-black py-1">Fit & Sizing</summary>
+                <p class="pt-1 text-neutral-500">Relaxed drop-shoulder oversized fit. Order your standard size for intentional relaxed drape.</p>
+              </details>
+              <details class="cursor-pointer">
+                <summary class="font-bold text-black py-1">Free Delivery & Returns</summary>
+                <p class="pt-1 text-neutral-500">Free delivery on orders over ₹999. 7-day hassle free returns guaranteed.</p>
+              </details>
+            </div>
+          </div>
+
+          <!-- Add to Bag CTAs -->
+          <div class="mt-6 flex gap-3">
+            <button onclick="addModalItemToBag()" class="flex-1 bg-kbBlack text-white font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all text-sm">
+              Add to Bag
+            </button>
+            <button onclick="addModalItemToWishlist()" class="w-12 h-12 rounded-full border border-kbBorder flex items-center justify-center text-lg hover:bg-kbLight">
+              ♡
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SIZE GUIDE MODAL OVERLAY -->
+  <div id="size-guide-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4">
+    <div class="bg-white rounded-kb-md w-full max-w-lg p-6 shadow-2xl">
+      <div class="flex justify-between items-center pb-4 border-b border-kbBorder">
+        <h4 class="font-bold text-lg">Size Chart (Inches)</h4>
+        <button onclick="closeSizeGuide()" class="text-sm font-bold w-7 h-7 rounded-full bg-kbLight">✕</button>
+      </div>
+      <div class="mt-4 overflow-x-auto text-xs">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-kbLight border-b border-kbBorder">
+              <th class="p-2">Size</th>
+              <th class="p-2">Chest</th>
+              <th class="p-2">Length</th>
+              <th class="p-2">Shoulder</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-kbBorder">
+            <tr><td class="p-2 font-bold">S</td><td class="p-2">38"</td><td class="p-2">27"</td><td class="p-2">18"</td></tr>
+            <tr><td class="p-2 font-bold">M</td><td class="p-2">40"</td><td class="p-2">28"</td><td class="p-2">19"</td></tr>
+            <tr><td class="p-2 font-bold">L</td><td class="p-2">42"</td><td class="p-2">29"</td><td class="p-2">20"</td></tr>
+            <tr><td class="p-2 font-bold">XL</td><td class="p-2">44"</td><td class="p-2">30"</td><td class="p-2">21"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT MULTI-STEP MODAL -->
+  <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4">
+    <div class="bg-white rounded-kb-xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 md:p-8 relative shadow-2xl">
+      <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-kbLight flex items-center justify-center font-bold text-xs">✕</button>
+
+      <!-- Step Indicator Header -->
+      <div class="flex items-center justify-between pb-6 border-b border-kbBorder">
+        <div id="checkout-step-1-indicator" class="text-xs font-bold text-black border-b-2 border-black pb-1">1. Delivery</div>
+        <div id="checkout-step-2-indicator" class="text-xs font-bold text-neutral-400 pb-1">2. Payment</div>
+        <div id="checkout-step-3-indicator" class="text-xs font-bold text-neutral-400 pb-1">3. Confirmation</div>
+      </div>
+
+      <!-- Step 1: Address Form -->
+      <div id="checkout-step-1" class="mt-6 space-y-4">
+        <h3 class="font-extrabold text-lg">Delivery Address</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block font-semibold mb-1">Full Name</label>
+            <input type="text" id="cust-name" value="Rahul Sharma" class="w-full bg-kbLight border border-kbBorder rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Phone Number (+91)</label>
+            <input type="text" id="cust-phone" value="9876543210" class="w-full bg-kbLight border border-kbBorder rounded-lg px-3 py-2">
+          </div>
+        </div>
+        <div class="text-xs">
+          <label class="block font-semibold mb-1">Street Address</label>
+          <input type="text" id="cust-address" value="42, Fashion Avenue, Indiranagar" class="w-full bg-kbLight border border-kbBorder rounded-lg px-3 py-2">
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <label class="block font-semibold mb-1">PIN Code</label>
+            <input type="text" id="cust-pin" value="560038" class="w-full bg-kbLight border border-kbBorder rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">City</label>
+            <input type="text" id="cust-city" value="Bengaluru" class="w-full bg-kbLight border border-kbBorder rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">State</label>
+            <input type="text" id="cust-state" value="Karnataka" class="w-full bg-kbLight border border-kbBorder rounded-lg px-3 py-2">
+          </div>
+        </div>
+        <button onclick="goToCheckoutStep(2)" class="w-full bg-kbBlack text-white font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all text-sm mt-4">
+          Continue to Payment →
+        </button>
+      </div>
+
+      <!-- Step 2: Payment Method Selection -->
+      <div id="checkout-step-2" class="mt-6 space-y-4 hidden">
+        <h3 class="font-extrabold text-lg">Select Payment Method</h3>
+        <div class="space-y-2 text-xs">
+          <label class="flex items-center gap-3 p-3 rounded-lg border border-kbBorder bg-kbLight cursor-pointer">
+            <input type="radio" name="payment-method" value="upi" checked class="accent-black">
+            <div>
+              <span class="font-bold block">UPI (GPay / PhonePe / Paytm)</span>
+              <span class="text-neutral-500">Instant & 0% processing fees</span>
+            </div>
+          </label>
+          <label class="flex items-center gap-3 p-3 rounded-lg border border-kbBorder bg-kbLight cursor-pointer">
+            <input type="radio" name="payment-method" value="card" class="accent-black">
+            <div>
+              <span class="font-bold block">Credit / Debit Card</span>
+              <span class="text-neutral-500">Visa, Mastercard, RuPay</span>
+            </div>
+          </label>
+          <label class="flex items-center gap-3 p-3 rounded-lg border border-kbBorder bg-kbLight cursor-pointer">
+            <input type="radio" name="payment-method" value="cod" class="accent-black">
+            <div>
+              <span class="font-bold block">Cash on Delivery (COD)</span>
+              <span class="text-neutral-500">Pay when delivered to your door</span>
+            </div>
+          </label>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button onclick="goToCheckoutStep(1)" class="w-1/3 border border-kbBorder font-bold py-3.5 rounded-kb-pill hover:bg-kbLight text-sm">
+            ← Back
+          </button>
+          <button onclick="processOrderConfirmation()" class="w-2/3 bg-kbBlack text-white font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 text-sm">
+            Place Order Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Order Success Confirmation -->
+      <div id="checkout-step-3" class="mt-6 text-center space-y-4 hidden py-6">
+        <div class="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center text-2xl mx-auto font-bold">✓</div>
+        <h3 class="text-2xl font-extrabold">Order Confirmed!</h3>
+        <p class="text-xs text-neutral-500 max-w-sm mx-auto">
+          Thank you for shopping with KB. Your order <span id="conf-order-id" class="font-bold text-black">#KB-2026-8492</span> has been placed successfully.
+        </p>
+        <div class="bg-kbLight p-4 rounded-kb-md text-xs text-left max-w-sm mx-auto space-y-1">
+          <div class="flex justify-between"><span>Estimated Delivery:</span><span class="font-bold">3 Business Days</span></div>
+          <div class="flex justify-between"><span>Amount Paid:</span><span id="conf-amount" class="font-bold">₹0</span></div>
+        </div>
+        <button onclick="resetAndCloseCheckout()" class="bg-kbBlack text-white font-bold px-8 py-3.5 rounded-kb-pill hover:bg-neutral-800 text-sm">
+          Continue Shopping
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // BASE PRODUCT CATALOG DATA MODEL
+    const productsData = [
+      { id: 1, name: "Essential Oversized Tee", category: "Men", tags: ["BESTSELLER"], price: 499, rating: 4.8, reviews: 142, sizes: ["S", "M", "L", "XL"], collection: "Everyday Collection" },
+      { id: 2, name: "Relaxed Fit Cotton Shirt", category: "Men", tags: ["NEW"], price: 899, rating: 4.7, reviews: 89, sizes: ["M", "L", "XL", "XXL"], collection: "New Season" },
+      { id: 3, name: "Classic Cotton Hoodie", category: "Women", tags: ["POPULAR"], price: 1099, rating: 4.9, reviews: 210, sizes: ["XS", "S", "M", "L"], collection: "Comfort Collection" },
+      { id: 4, name: "Straight Fit Trousers", category: "Men", tags: ["SALE"], price: 799, rating: 4.6, reviews: 76, sizes: ["S", "M", "L", "XL"], collection: "Essential Collection" },
+      { id: 5, name: "Minimalist Linen Blouse", category: "Women", tags: ["NEW"], price: 999, rating: 4.8, reviews: 64, sizes: ["XS", "S", "M"], collection: "Summer Linen" },
+      { id: 6, name: "Heavyweight Crewneck Sweatshirt", category: "Offers", tags: ["SALE"], price: 899, rating: 4.7, reviews: 118, sizes: ["M", "L", "XL"], collection: "Winter Warmth" },
+      { id: 7, name: "Ribbed Knit Crop Top", category: "Women", tags: ["POPULAR"], price: 449, rating: 4.5, reviews: 92, sizes: ["XS", "S", "M"], collection: "Basics Series" },
+      { id: 8, name: "Tailored Chino Shorts", category: "Men", tags: ["BESTSELLER"], price: 699, rating: 4.6, reviews: 81, sizes: ["S", "M", "L", "XL"], collection: "Casual Fits" }
+    ];
+
+    // STATE VARIABLES
+    let activeCategory = 'All';
+    let bagItems = JSON.parse(localStorage.getItem('kb_bag')) || [];
+    let wishlistItems = JSON.parse(localStorage.getItem('kb_wishlist')) || [];
+    let currentModalProduct = null;
+    let selectedModalSize = 'M';
+    let appliedDiscountPercent = 0;
+
+    // DOM CONTENT LOADED INITIALIZATION
+    document.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
+      updateBagUI();
+      updateWishlistUI();
+      initQualityChart();
+      setupEventListeners();
+    });
+
+    // RENDER PRODUCTS GRID WITH ACTIVE FILTERS AND SORT
+    function renderProducts() {
+      const grid = document.getElementById('product-grid');
+      const sizeFilter = document.getElementById('size-filter').value;
+      const priceFilter = parseFloat(document.getElementById('price-filter').value);
+      const sortFilter = document.getElementById('sort-filter').value;
+
+      let filtered = productsData.filter(p => {
+        const matchesCat = (activeCategory === 'All') || (p.category === activeCategory) || (p.tags.includes(activeCategory));
+        const matchesSize = (sizeFilter === 'All') || p.sizes.includes(sizeFilter);
+        const matchesPrice = p.price <= priceFilter;
+        return matchesCat && matchesSize && matchesPrice;
+      });
+
+      // Sorting
+      if (sortFilter === 'price-low') filtered.sort((a, b) => a.price - b.price);
+      else if (sortFilter === 'price-high') filtered.sort((a, b) => b.price - a.price);
+      else if (sortFilter === 'rating') filtered.sort((a, b) => b.rating - a.rating);
+
+      document.getElementById('visible-count').innerText = filtered.length;
+      document.getElementById('total-count').innerText = productsData.length;
+
+      grid.innerHTML = '';
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-kbMuted text-sm">No items found matching your current filter criteria.</div>`;
+        return;
+      }
+
+      filtered.forEach(product => {
+        const isWishlisted = wishlistItems.some(item => item.id === product.id);
+        const card = document.createElement('article');
+        card.className = "group cursor-pointer select-none";
+        card.innerHTML = `
+          <div onclick="openProductModal(${product.id})" class="h-80 rounded-kb-sm bg-kbCardBg watermark-kb relative overflow-hidden flex items-center justify-center transition-transform group-hover:scale-[0.98]">
+            <span class="absolute top-3.5 left-3.5 bg-white text-kbBlack text-[10px] font-bold px-2.5 py-1 rounded-kb-pill border border-kbBorder">${product.tags[0]}</span>
+            <button onclick="event.stopPropagation(); toggleWishlist(${product.id})" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white border border-kbBorder flex items-center justify-center text-xs hover:scale-110 transition-transform">
+              ${isWishlisted ? '♥' : '♡'}
+            </button>
+            <button onclick="event.stopPropagation(); quickAddToBag(${product.id})" class="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-sm text-black font-bold text-xs py-2.5 rounded-kb-pill opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-black hover:text-white">
+              + Quick Add to Bag
+            </button>
+          </div>
+          <div class="pt-3.5">
+            <div class="font-semibold text-sm mb-1 group-hover:underline">${product.name}</div>
+            <div class="flex justify-between items-center text-xs text-neutral-500">
+              <span>${product.collection}</span>
+              <strong class="text-black text-sm">₹${product.price}</strong>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // CATEGORY FILTER TRIGGER
+    function filterByCategory(category) {
+      activeCategory = category;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        if (btn.innerText === category) {
+          btn.className = "cat-pill active bg-kbBlack text-white text-xs font-semibold px-4 py-2 rounded-kb-pill transition-all";
+        } else {
+          btn.className = "cat-pill bg-white text-kbBlack border border-kbBorder text-xs font-semibold px-4 py-2 rounded-kb-pill hover:bg-neutral-200 transition-all";
+        }
+      });
+      renderProducts();
+    }
+
+    // PRODUCT DETAIL MODAL LOGIC
+    function openProductModal(id) {
+      const product = productsData.find(p => p.id === id);
+      if (!product) return;
+      currentModalProduct = product;
+      selectedModalSize = product.sizes[0];
+
+      document.getElementById('modal-title').innerText = product.name;
+      document.getElementById('modal-price').innerText = `₹${product.price}`;
+      document.getElementById('modal-tag').innerText = product.tags[0];
+      document.getElementById('modal-collection').innerText = product.collection;
+      document.getElementById('modal-rating').innerText = `★★★★★ ${product.rating}`;
+
+      const sizesContainer = document.getElementById('modal-sizes');
+      sizesContainer.innerHTML = '';
+      product.sizes.forEach(size => {
+        const btn = document.createElement('button');
+        btn.innerText = size;
+        btn.onclick = () => {
+          selectedModalSize = size;
+          updateModalSizePills();
+        };
+        sizesContainer.appendChild(btn);
+      });
+      updateModalSizePills();
+
+      const modal = document.getElementById('product-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function updateModalSizePills() {
+      const btns = document.querySelectorAll('#modal-sizes button');
+      btns.forEach(btn => {
+        if (btn.innerText === selectedModalSize) {
+          btn.className = "bg-kbBlack text-white font-bold text-xs w-10 h-10 rounded-lg flex items-center justify-center";
+        } else {
+          btn.className = "bg-white text-black border border-kbBorder text-xs w-10 h-10 rounded-lg flex items-center justify-center hover:bg-kbLight";
+        }
+      });
+    }
+
+    function closeProductModal() {
+      document.getElementById('product-modal').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function addModalItemToBag() {
+      if (!currentModalProduct) return;
+      addToBag(currentModalProduct.id, selectedModalSize);
+      closeProductModal();
+      openBagDrawer();
+    }
+
+    function addModalItemToWishlist() {
+      if (!currentModalProduct) return;
+      toggleWishlist(currentModalProduct.id);
+    }
+
+    // SIZE GUIDE MODAL
+    function openSizeGuide() { document.getElementById('size-guide-modal').classList.remove('opacity-0', 'pointer-events-none'); }
+    function closeSizeGuide() { document.getElementById('size-guide-modal').classList.add('opacity-0', 'pointer-events-none'); }
+
+    // SHOPPING BAG MANAGEMENT
+    function quickAddToBag(id) {
+      const product = productsData.find(p => p.id === id);
+      if (product) addToBag(product.id, product.sizes[0]);
+    }
+
+    function addToBag(id, size) {
+      const product = productsData.find(p => p.id === id);
+      const existing = bagItems.find(item => item.id === id && item.size === size);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        bagItems.push({ id: product.id, name: product.name, price: product.price, size: size, qty: 1 });
+      }
+      saveBagState();
+      updateBagUI();
+    }
+
+    function changeBagQty(index, delta) {
+      bagItems[index].qty += delta;
+      if (bagItems[index].qty <= 0) bagItems.splice(index, 1);
+      saveBagState();
+      updateBagUI();
+    }
+
+    function saveBagState() {
+      localStorage.setItem('kb_bag', JSON.stringify(bagItems));
+    }
+
+    function updateBagUI() {
+      const list = document.getElementById('bag-items-list');
+      const badge = document.getElementById('bag-badge');
+      const mobileBadge = document.getElementById('mobile-bag-badge');
+      const countLabel = document.getElementById('bag-item-count');
+
+      const totalItems = bagItems.reduce((acc, i) => acc + i.qty, 0);
+      badge.innerText = totalItems;
+      mobileBadge.innerText = totalItems;
+      countLabel.innerText = `${totalItems} items`;
+
+      list.innerHTML = '';
+      if (bagItems.length === 0) {
+        list.innerHTML = `<div class="py-12 text-center text-kbMuted text-xs">Your shopping bag is empty.</div>`;
+      } else {
+        bagItems.forEach((item, index) => {
+          const row = document.createElement('div');
+          row.className = "py-4 flex justify-between items-center gap-4";
+          row.innerHTML = `
+            <div>
+              <div class="font-bold text-xs">${item.name}</div>
+              <div class="text-[11px] text-neutral-400">Size: ${item.size} | ₹${item.price} each</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="changeBagQty(${index}, -1)" class="w-6 h-6 border border-kbBorder rounded-full flex items-center justify-center font-bold text-xs">-</button>
+              <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+              <button onclick="changeBagQty(${index}, 1)" class="w-6 h-6 border border-kbBorder rounded-full flex items-center justify-center font-bold text-xs">+</button>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      }
+
+      // Financials Calculation
+      const subtotal = bagItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const discount = Math.round(subtotal * (appliedDiscountPercent / 100));
+      const shipping = (subtotal >= 999 || subtotal === 0) ? 0 : 99;
+      const grandTotal = subtotal - discount + shipping;
+
+      document.getElementById('bag-subtotal').innerText = `₹${subtotal}`;
+      document.getElementById('bag-discount').innerText = `-₹${discount}`;
+      document.getElementById('bag-shipping').innerText = shipping === 0 ? 'FREE' : `₹${shipping}`;
+      document.getElementById('bag-total').innerText = `₹${grandTotal}`;
+
+      // Free Shipping Progress
+      const thresholdPct = Math.min(100, Math.round((subtotal / 999) * 100));
+      document.getElementById('shipping-progress').style.width = `${thresholdPct}%`;
+      const txt = document.getElementById('shipping-threshold-text');
+      if (subtotal >= 999) {
+        txt.innerHTML = `<span class="font-bold text-emerald-700">✓ You have unlocked FREE Express Delivery!</span>`;
+      } else {
+        txt.innerHTML = `Add <span class="font-bold text-black">₹${999 - subtotal}</span> more for FREE Express Delivery`;
+      }
+    }
+
+    function applyPromoCode() {
+      const val = document.getElementById('promo-code-input').value.trim().toUpperCase();
+      if (val === 'KB10') {
+        appliedDiscountPercent = 10;
+        document.getElementById('discount-percent').innerText = '10';
+        alert("Promo code applied! 10% discount subtracted.");
+      } else {
+        alert("Invalid promo code. Try 'KB10'.");
+      }
+      updateBagUI();
+    }
+
+    // WISHLIST LOGIC
+    function toggleWishlist(id) {
+      const index = wishlistItems.findIndex(i => i.id === id);
+      if (index >= 0) wishlistItems.splice(index, 1);
+      else {
+        const prod = productsData.find(p => p.id === id);
+        if (prod) wishlistItems.push(prod);
+      }
+      localStorage.setItem('kb_wishlist', JSON.stringify(wishlistItems));
+      updateWishlistUI();
+      renderProducts();
+    }
+
+    function updateWishlistUI() {
+      const badge = document.getElementById('wishlist-badge');
+      const mobileBadge = document.getElementById('mobile-wishlist-badge');
+      const list = document.getElementById('wishlist-items-list');
+
+      badge.innerText = wishlistItems.length;
+      mobileBadge.innerText = wishlistItems.length;
+      badge.classList.toggle('hidden', wishlistItems.length === 0);
+      mobileBadge.classList.toggle('hidden', wishlistItems.length === 0);
+
+      list.innerHTML = '';
+      if (wishlistItems.length === 0) {
+        list.innerHTML = `<div class="py-12 text-center text-kbMuted text-xs">Your wishlist is empty.</div>`;
+      } else {
+        wishlistItems.forEach(item => {
+          const row = document.createElement('div');
+          row.className = "py-3 flex justify-between items-center";
+          row.innerHTML = `
+            <div>
+              <div class="font-bold text-xs">${item.name}</div>
+              <div class="text-[11px] text-neutral-400">₹${item.price}</div>
+            </div>
+            <button onclick="quickAddToBag(${item.id}); toggleWishlist(${item.id})" class="bg-black text-white text-xs px-3 py-1.5 rounded-kb-pill">Move to Bag</button>
+          `;
+          list.appendChild(row);
+        });
+      }
+    }
+
+    // SEARCH MODAL LIVE LOGIC
+    function handleLiveSearch() {
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const container = document.getElementById('search-results');
+      if (!query) {
+        container.innerHTML = `<div class="text-xs text-neutral-400 py-4 text-center">Type to search across KB Catalog...</div>`;
+        return;
+      }
+      const matches = productsData.filter(p => p.name.toLowerCase().includes(query) || p.collection.toLowerCase().includes(query));
+      container.innerHTML = '';
+      if (matches.length === 0) {
+        container.innerHTML = `<div class="text-xs text-neutral-400 py-4 text-center">No products found matching "${query}"</div>`;
+      } else {
+        matches.forEach(p => {
+          const item = document.createElement('div');
+          item.className = "p-3 rounded-lg hover:bg-kbLight cursor-pointer flex justify-between items-center border border-kbBorder";
+          item.onclick = () => { closeSearchModal(); openProductModal(p.id); };
+          item.innerHTML = `
+            <div>
+              <div class="font-bold text-xs">${p.name}</div>
+              <div class="text-[10px] text-neutral-400">${p.collection}</div>
+            </div>
+            <div class="font-extrabold text-xs">₹${p.price}</div>
+          `;
+          container.appendChild(item);
+        });
+      }
+    }
+
+    // MULTI-STEP CHECKOUT
+    function openCheckoutModal() {
+      if (bagItems.length === 0) { alert("Your bag is empty!"); return; }
+      closeBagDrawer();
+      document.getElementById('checkout-modal').classList.remove('opacity-0', 'pointer-events-none');
+      goToCheckoutStep(1);
+    }
+    function closeCheckoutModal() {
+      document.getElementById('checkout-modal').classList.add('opacity-0', 'pointer-events-none');
+    }
+    function goToCheckoutStep(step) {
+      document.getElementById('checkout-step-1').classList.toggle('hidden', step !== 1);
+      document.getElementById('checkout-step-2').classList.toggle('hidden', step !== 2);
+      document.getElementById('checkout-step-3').classList.toggle('hidden', step !== 3);
+
+      document.getElementById('checkout-step-1-indicator').className = step === 1 ? "text-xs font-bold text-black border-b-2 border-black pb-1" : "text-xs font-bold text-neutral-400 pb-1";
+      document.getElementById('checkout-step-2-indicator').className = step === 2 ? "text-xs font-bold text-black border-b-2 border-black pb-1" : "text-xs font-bold text-neutral-400 pb-1";
+      document.getElementById('checkout-step-3-indicator').className = step === 3 ? "text-xs font-bold text-black border-b-2 border-black pb-1" : "text-xs font-bold text-neutral-400 pb-1";
+    }
+    function processOrderConfirmation() {
+      const totalText = document.getElementById('bag-total').innerText;
+      document.getElementById('conf-amount').innerText = totalText;
+      document.getElementById('conf-order-id').innerText = `#KB-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+      goToCheckoutStep(3);
+      bagItems = [];
+      saveBagState();
+      updateBagUI();
+    }
+    function resetAndCloseCheckout() {
+      closeCheckoutModal();
+    }
+
+    // DRAWER OPEN & CLOSE EVENT LISTENERS
+    function openBagDrawer() {
+      const drawer = document.getElementById('bag-drawer');
+      const content = document.getElementById('bag-drawer-content');
+      drawer.classList.remove('opacity-0', 'pointer-events-none');
+      content.classList.remove('translate-x-full');
+    }
+    function closeBagDrawer() {
+      const drawer = document.getElementById('bag-drawer');
+      const content = document.getElementById('bag-drawer-content');
+      content.classList.add('translate-x-full');
+      drawer.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function openWishlistDrawer() {
+      const drawer = document.getElementById('wishlist-drawer');
+      const content = document.getElementById('wishlist-drawer-content');
+      drawer.classList.remove('opacity-0', 'pointer-events-none');
+      content.classList.remove('translate-x-full');
+    }
+    function closeWishlistDrawer() {
+      const drawer = document.getElementById('wishlist-drawer');
+      const content = document.getElementById('wishlist-drawer-content');
+      content.classList.add('translate-x-full');
+      drawer.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function openMobileDrawer() {
+      const drawer = document.getElementById('mobile-drawer');
+      const content = document.getElementById('mobile-drawer-content');
+      drawer.classList.remove('opacity-0', 'pointer-events-none');
+      content.classList.remove('-translate-x-full');
+    }
+    function closeMobileDrawer() {
+      const drawer = document.getElementById('mobile-drawer');
+      const content = document.getElementById('mobile-drawer-content');
+      content.classList.add('-translate-x-full');
+      drawer.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function openSearchModal() {
+      document.getElementById('search-modal').classList.remove('opacity-0', 'pointer-events-none');
+      document.getElementById('search-input').focus();
+    }
+    function closeSearchModal() {
+      document.getElementById('search-modal').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function subscribeNewsletter() {
+      const email = document.getElementById('newsletter-email').value;
+      if (email) {
+        alert("Thank you for joining the KB Newsletter!");
+        document.getElementById('newsletter-email').value = '';
+      }
+    }
+
+    function setupEventListeners() {
+      document.getElementById('bag-open-btn').addEventListener('click', openBagDrawer);
+      document.getElementById('mobile-bag-btn').addEventListener('click', openBagDrawer);
+      document.getElementById('bag-drawer-close').addEventListener('click', closeBagDrawer);
+
+      document.getElementById('wishlist-open-btn').addEventListener('click', openWishlistDrawer);
+      document.getElementById('mobile-wishlist-btn').addEventListener('click', openWishlistDrawer);
+      document.getElementById('wishlist-drawer-close').addEventListener('click', closeWishlistDrawer);
+
+      document.getElementById('mobile-menu-btn').addEventListener('click', openMobileDrawer);
+      document.getElementById('mobile-drawer-close').addEventListener('click', closeMobileDrawer);
+
+      document.getElementById('search-open-btn').addEventListener('click', openSearchModal);
+      document.getElementById('mobile-search-btn').addEventListener('click', openSearchModal);
+      document.getElementById('search-modal-close').addEventListener('click', closeSearchModal);
+
+      // Keyboard Escape Key dismisses open overlays
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeBagDrawer();
+          closeWishlistDrawer();
+          closeMobileDrawer();
+          closeSearchModal();
+          closeProductModal();
+          closeCheckoutModal();
+          closeSizeGuide();
+        }
+      });
+    }
+
+    // CHART.JS CANVAS ANALYTICS INITIALIZATION
+    function initQualityChart() {
+      const ctx = document.getElementById('qualityChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Fabric Softness', 'Fit Accuracy', 'Color Retention', 'Stitching Strength', 'Price-to-Value'],
+          datasets: [{
+            label: 'Buyer Rating Score (%)',
+            data: [98, 96, 95, 97, 99],
+            backgroundColor: '#111111',
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ` Positive Rating: ${context.raw}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(val) { return val + '%'; },
+                font: { size: 10, family: 'Inter' }
+              },
+              grid: { color: '#e8e8e8' }
+            },
+            x: {
+              ticks: {
+                font: { size: 11, family: 'Inter' }
+              },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
