@@ -25,6 +25,53 @@ export default function AdminSettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Email Diagnostic State
+  const [testEmail, setTestEmail] = useState<string>('k.bhavithkumar.dev@gmail.com');
+  const [isSendingTest, setIsSendingTest] = useState<boolean>(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSendTestEmail = async (overrideRecipient?: string) => {
+    const recipient = overrideRecipient || testEmail;
+    if (!recipient || !recipient.includes('@')) {
+      setTestResult({ success: false, message: 'Please provide a valid recipient email address.' });
+      return;
+    }
+
+    setIsSendingTest(true);
+    setTestResult(null);
+
+    try {
+      const res = await authFetch('/api/admin/email-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: recipient,
+          subject: `[Verified SMTP] KB Fashions Live Diagnostic Dispatch to ${recipient}`,
+          message: `Live test dispatched from KB Fashions Admin Portal at ${new Date().toLocaleString('en-IN')}. Google SMTP handshake verified.`
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestResult({
+          success: true,
+          message: `✓ Dispatch successful to ${data.recipient}! Message ID: ${data.messageId || 'OK'}`
+        });
+      } else {
+        setTestResult({
+          success: false,
+          message: `❌ Dispatch failed: ${data.error || 'SMTP server error'}`
+        });
+      }
+    } catch (err: any) {
+      setTestResult({
+        success: false,
+        message: `❌ Network error: ${err.message}`
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -383,6 +430,124 @@ export default function AdminSettingsPage() {
               </label>
             </div>
           </div>
+
+          {/* Section: Cashfree Hosted Payments Gateway */}
+          <div className="sm:col-span-2 pt-4 border-t border-kbBorder bg-blue-50/50 p-4 rounded-2xl border border-blue-200">
+            <h3 className="text-sm font-black text-blue-950 mb-1 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+              Cashfree Payments Hosted Checkout (API Version 2026-01-01)
+            </h3>
+            <p className="text-[11px] text-blue-800 mb-3">
+              Configure server-side credentials for redirect checkout. Values are securely stored in PostgreSQL and used by API routes.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="font-bold text-neutral-800 block mb-1">Cashfree App ID (Client ID)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. TEST10926462c1cf4e3650bd8e030226462901"
+                  value={settings.cashfreeAppId || ''}
+                  onChange={(e) => setSettings({ ...settings, cashfreeAppId: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-kb-sm border border-blue-300 bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-800 block mb-1">Cashfree Secret Key</label>
+                <input
+                  type="password"
+                  placeholder="cfsk_ma_test_..."
+                  value={settings.cashfreeSecretKey || ''}
+                  onChange={(e) => setSettings({ ...settings, cashfreeSecretKey: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-kb-sm border border-blue-300 bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-800 block mb-1">Environment Mode</label>
+                <select
+                  value={settings.cashfreeEnv || 'sandbox'}
+                  onChange={(e) => setSettings({ ...settings, cashfreeEnv: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-kb-sm border border-blue-300 bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-bold"
+                >
+                  <option value="sandbox">Sandbox (Testing / Non-live)</option>
+                  <option value="production">Production (Live Transactions)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-800 block mb-1">Cashfree API Version</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={settings.cashfreeApiVersion || '2026-01-01'}
+                  className="w-full px-3.5 py-2.5 rounded-kb-sm border border-blue-300 bg-neutral-100 text-xs font-mono font-bold text-neutral-600"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Live Transactional Email Diagnostics & Dispatcher */}
+          <div className="sm:col-span-2 pt-4 border-t border-kbBorder bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h3 className="text-sm font-black text-slate-900 mb-1 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              Live Transactional Email Diagnostics (Nodemailer + Google SMTP)
+            </h3>
+            <p className="text-[11px] text-slate-600 mb-3">
+              Verify live SMTP delivery to specific mailboxes and diagnose any mail gateway issues.
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="Enter email to test dispatch..."
+                  className="flex-1 px-3.5 py-2.5 rounded-kb-sm border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSendTestEmail()}
+                  disabled={isSendingTest}
+                  className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-kb-sm hover:bg-neutral-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSendingTest ? 'Dispatching...' : 'Dispatch Test Email →'}
+                </button>
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="font-bold text-slate-500">Quick Test:</span>
+                <button
+                  type="button"
+                  onClick={() => { setTestEmail('k.bhavithkumar.dev@gmail.com'); handleSendTestEmail('k.bhavithkumar.dev@gmail.com'); }}
+                  className="px-2.5 py-1 bg-white border border-slate-300 rounded-full font-mono font-semibold text-slate-700 hover:border-black"
+                >
+                  k.bhavithkumar.dev@gmail.com
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTestEmail('b210662@rgukt.ac.in'); handleSendTestEmail('b210662@rgukt.ac.in'); }}
+                  className="px-2.5 py-1 bg-white border border-slate-300 rounded-full font-mono font-semibold text-slate-700 hover:border-black"
+                >
+                  b210662@rgukt.ac.in
+                </button>
+              </div>
+
+              {testResult && (
+                <div className={`p-3 rounded-xl text-xs font-bold border ${
+                  testResult.success
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    : 'bg-rose-50 border-rose-300 text-rose-800'
+                }`}>
+                  {testResult.message}
+                </div>
+              )}
+            </div>
+          </div>
+
 
           <div className="sm:col-span-2">
             <label className="font-bold text-neutral-700 block mb-1">20-Year Heritage Story</label>

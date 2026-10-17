@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
 import { useToast } from '@/components/ToastContext';
@@ -46,7 +47,7 @@ export default function CheckoutPage() {
   const [pinCode, setPinCode] = useState<string>('503145');
 
   // Payment Selection
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'UPI' | 'CARD'>('COD');
+  const [paymentMethod, setPaymentMethod] = useState<'CASHFREE' | 'COD' | 'UPI' | 'CARD'>('CASHFREE');
 
   // Statutory Policies & Terms Consent
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
@@ -221,6 +222,89 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleCashfreeCheckout = async () => {
+    if (!agreeTerms || !agreeReturn || !agreePrivacy) {
+      showToast({
+        type: 'warning',
+        title: 'Consent Required',
+        message: 'Please review and accept our store policies before proceeding to payment.',
+      });
+      return;
+    }
+
+    if (!user) {
+      showModal({
+        type: 'auth',
+        title: 'Sign In Required for Payment',
+        message: 'Please sign in to your customer account to initiate payment.',
+        primaryBtn: {
+          text: 'Sign In to Proceed →',
+          href: '/auth/signin?redirect=%2Fcheckout&reason=auth_required',
+        },
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const effectiveSessionId = user?.id || 'default-guest';
+      const res = await authFetch('/api/payments/cashfree/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: {
+            name: name.trim(),
+            phone: phone.trim().startsWith('+91') ? phone.trim() : `+91${phone.trim()}`,
+            email: email.trim(),
+            streetAddress: streetAddress.trim(),
+            villageOrCity: villageOrCity.trim(),
+            mandalOrArea: mandalOrArea?.trim() || null,
+            district: district.trim(),
+            state: state.trim(),
+            pinCode: pinCode.trim(),
+          },
+          sessionId: effectiveSessionId,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setIsSubmitting(false);
+        showToast({
+          type: 'error',
+          title: 'Cashfree Error',
+          message: data.error || 'Failed to initialize Cashfree payment session',
+        });
+        return;
+      }
+
+      showToast({
+        type: 'info',
+        title: 'Opening Cashfree',
+        message: 'Redirecting to Cashfree Payments Hosted Checkout (Sandbox)...',
+      });
+
+      // Use Cashfree.js with mode: "sandbox" to open checkout
+      if (typeof window !== 'undefined' && (window as any).Cashfree) {
+        const cashfree = (window as any).Cashfree({ mode: "sandbox" });
+        cashfree.checkout({
+          paymentSessionId: data.payment_session_id,
+          redirectTarget: "_self"
+        });
+      } else {
+        // Fallback directly to return URL if SDK not loaded or in mock environment
+        window.location.href = data.return_url;
+      }
+    } catch (err: any) {
+      setIsSubmitting(false);
+      showToast({
+        type: 'error',
+        title: 'Gateway Error',
+        message: err.message || 'Error communicating with Cashfree',
+      });
+    }
+  };
+
   const handlePlaceOrder = async (codeOverride?: string) => {
     const finalOtp = codeOverride || orderOtp;
     if (!finalOtp || finalOtp.trim().length !== 6) {
@@ -360,6 +444,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      {/* Cashfree Hosted Checkout Web SDK */}
+      <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload" />
+
       {/* Title & Multi-step Breadcrumbs */}
       <div className="border-b border-kbBorder pb-4 mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -614,6 +701,34 @@ export default function CheckoutPage() {
               {/* Payment Methods */}
               <div className="space-y-3">
                 <label className={`block border p-4 rounded-kb-md cursor-pointer transition-all ${
+                  paymentMethod === 'CASHFREE' ? 'border-black bg-neutral-50 ring-2 ring-black' : 'border-kbBorder hover:border-neutral-400'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={paymentMethod === 'CASHFREE'}
+                      onChange={() => setPaymentMethod('CASHFREE')}
+                      className="accent-black"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-xs text-neutral-900 flex items-center gap-2">
+                        <span>Cashfree Payments Hosted Checkout</span>
+                        <span className="text-[10px] font-black uppercase text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                          Sandbox
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-neutral-500 mt-0.5">
+                        UPI (GPay/PhonePe/Paytm), Debit &amp; Credit Cards, NetBanking, and Wallets via Cashfree redirect flow (API 2026-01-01).
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      Instant Confirmation
+                    </span>
+                  </div>
+                </label>
+
+                <label className={`block border p-4 rounded-kb-md cursor-pointer transition-all ${
                   paymentMethod === 'COD' ? 'border-black bg-neutral-50 ring-1 ring-black' : 'border-kbBorder hover:border-neutral-400'
                 }`}>
                   <div className="flex items-center gap-3">
@@ -733,22 +848,41 @@ export default function CheckoutPage() {
                   ← Back to Address
                 </button>
 
-                <button
-                  type="button"
-                  id="confirm-place-order-btn"
-                  onClick={handleInitiateOrderOtp}
-                  disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
-                  className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <SmoothLoader size="xs" color="white" />
-                      <span>Confirming Order...</span>
-                    </>
-                  ) : (
-                    <span>Verify OTP &amp; Place Order (₹{cart.total}) →</span>
-                  )}
-                </button>
+                {paymentMethod === 'CASHFREE' ? (
+                  <button
+                    type="button"
+                    id="cashfree-pay-now-btn"
+                    onClick={handleCashfreeCheckout}
+                    disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
+                    className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <SmoothLoader size="xs" color="white" />
+                        <span>Connecting Cashfree...</span>
+                      </>
+                    ) : (
+                      <span>Pay with Cashfree Hosted Checkout (₹{cart.total}) →</span>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    id="confirm-place-order-btn"
+                    onClick={handleInitiateOrderOtp}
+                    disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
+                    className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <SmoothLoader size="xs" color="white" />
+                        <span>Confirming Order...</span>
+                      </>
+                    ) : (
+                      <span>Verify OTP &amp; Place Order (₹{cart.total}) →</span>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )}

@@ -11,6 +11,11 @@ import { ToastProvider } from '@/components/ToastContext';
 export const metadata: Metadata = {
   title: 'KB FASHIONS — Better Clothes. Better Prices.',
   description: 'KB FASHIONS (Kalwaral, Kamareddy, Telangana) — 20 Years of authentic village retail heritage, handlooms, unstitched suitings & shirtings, Gadwal sarees, and daily essentials.',
+  icons: {
+    icon: '/images/kb-monogram-logo.png',
+    shortcut: '/images/kb-monogram-logo.png',
+    apple: '/images/kb-monogram-logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -21,6 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/images/kb-monogram-logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/images/kb-monogram-logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/images/kb-monogram-logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

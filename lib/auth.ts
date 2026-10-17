@@ -60,6 +60,7 @@ export function getAuthFromRequest(req: NextRequest): TokenPayload | null {
 
 // Alias for getAuthFromRequest
 export const verifyAuth = getAuthFromRequest;
+export const getAuthUser = getAuthFromRequest;
 
 // Generate 6-digit numeric OTP
 export function generateOtp(): string {

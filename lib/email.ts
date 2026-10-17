@@ -211,8 +211,8 @@ export async function sendAccountLockedEmail(to: string, name: string, lockDurat
 /**
  * Send 5-Minute Secure Email Verification Link
  */
-export async function sendEmailVerificationLink(to: string, name: string, token: string, baseUrl: string = 'http://localhost:3000'): Promise<SendMailResult> {
-  const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+export async function sendEmailVerificationLink(to: string, name: string, tokenOrUrl: string, baseUrl: string = 'http://localhost:3000'): Promise<SendMailResult> {
+  const verifyUrl = tokenOrUrl.startsWith('http') ? tokenOrUrl : `${baseUrl}/api/auth/verify-email?token=${tokenOrUrl}`;
   const subject = `Verify Your KB FASHIONS Account (Link Expires in 5 Minutes)`;
   const html = `
     <!DOCTYPE html>

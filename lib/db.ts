@@ -103,6 +103,10 @@ export interface StoreSettingsModel {
   deliveryPincode: string;
   deliveryVillages: string;
   tariffDescription?: string;
+  cashfreeAppId?: string;
+  cashfreeSecretKey?: string;
+  cashfreeEnv?: 'sandbox' | 'production';
+  cashfreeApiVersion?: string;
   lastPolicyUpdateTitle?: string;
   lastPolicyUpdateSummary?: string;
   lastPolicyUpdatedAt?: string;
@@ -478,6 +482,10 @@ class DatabaseStore {
     deliveryPincode: "503145",
     deliveryVillages: "Kalwaral, Sadasivanagar, Dharmaraopet, Tadwai, Padmavajiwadi, Modegaon, Markal, Brahmanpally, Utnoor, Kuprial",
     tariffDescription: "Standard 10 km Local Delivery Tariff: ₹70 flat shipping across all villages in 503145 within 10 km radius. Free delivery for orders above ₹999.",
+    cashfreeAppId: process.env.CASHFREE_APP_ID || "TEST10926462c1cf4e3650bd8e030226462901",
+    cashfreeSecretKey: process.env.CASHFREE_SECRET_KEY || "cfsk_ma_test_90483ff73ab4d56f4d2f80164c0eb3f1_32c02df6",
+    cashfreeEnv: "sandbox",
+    cashfreeApiVersion: "2026-01-01",
     lastPolicyUpdateTitle: "Consumer Protection & Delivery Compliance 2026",
     lastPolicyUpdateSummary: "Updated 10km rural delivery coverage radius, grievance officer statutory details, and 7-day return procedures.",
     lastPolicyUpdatedAt: new Date().toISOString(),
@@ -552,6 +560,48 @@ class DatabaseStore {
         smsUpdates: true,
         whatsappUpdates: true,
         bio: "Patron of authentic Gadwal sarees and Raymond fine shirting cuts.",
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "usr-cust-2",
+        name: "Bhavith Kumar",
+        email: "k.bhavithkumar.dev@gmail.com",
+        phone: "+917989768200",
+        passwordHash: customerHash,
+        role: "CUSTOMER",
+        isActive: true,
+        avatar: "/api/media/avatar-usr-cust-1",
+        villageOrCity: "Kalwaral",
+        mandalOrArea: "Sadasivanagar",
+        district: "Kamareddy",
+        state: "Telangana",
+        pinCode: "503145",
+        preferredLanguage: "te",
+        smsUpdates: true,
+        whatsappUpdates: true,
+        bio: "Patron of KB FASHIONS ancestral handlooms & modern textiles.",
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "usr-cust-3",
+        name: "RGUKT Patron",
+        email: "b210662@rgukt.ac.in",
+        phone: "+919876543211",
+        passwordHash: customerHash,
+        role: "CUSTOMER",
+        isActive: true,
+        avatar: "/api/media/avatar-usr-cust-1",
+        villageOrCity: "Kalwaral",
+        mandalOrArea: "Sadasivanagar",
+        district: "Kamareddy",
+        state: "Telangana",
+        pinCode: "503145",
+        preferredLanguage: "en",
+        smsUpdates: true,
+        whatsappUpdates: true,
+        bio: "Verified RGUKT student patron.",
         createdAt: now,
         updatedAt: now,
       }
@@ -1730,6 +1780,13 @@ class DatabaseStore {
       updatedAt: new Date().toISOString(),
     };
     return this.storeSettings;
+  }
+
+  public clearCart(userIdOrSessionId: string): void {
+    this.cartItems = this.cartItems.filter(
+      i => i.sessionId !== userIdOrSessionId && i.userId !== userIdOrSessionId
+    );
+    this.appliedPromos.delete(userIdOrSessionId);
   }
 
   public addAuditLog(

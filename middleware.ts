@@ -73,8 +73,8 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 4. Protect Checkout Pages (/checkout and /checkout/*)
-  if (pathname === '/checkout' || pathname.startsWith('/checkout/')) {
+  // 4. Protect Checkout Pages (/checkout and /checkout/* except cashfree-return)
+  if (pathname === '/checkout' || (pathname.startsWith('/checkout/') && pathname !== '/checkout/cashfree-return')) {
     if (!token || !payload) {
       const signinUrl = new URL('/auth/signin', req.url);
       signinUrl.searchParams.set('redirect', pathname);
@@ -123,7 +123,15 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  // Defensive HTTP Security Headers
+  const response = NextResponse.next();
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+
+  return response;
 }
 
 export const config = {
