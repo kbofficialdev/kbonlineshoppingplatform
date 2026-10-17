@@ -9,3 +9,4 @@ export async function POST() {
   response.cookies.delete('kb_auth_token');
   return response;
 }
+

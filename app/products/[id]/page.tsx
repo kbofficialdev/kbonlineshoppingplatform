@@ -52,7 +52,7 @@ export default function ProductDetailPage() {
         try {
           const list: any[] = JSON.parse(stored);
           setIsWishlisted(list.some(p => (p.productId || p.id) === productId));
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   };
@@ -93,7 +93,7 @@ export default function ProductDetailPage() {
         setAddedToast(true);
         setTimeout(() => setAddedToast(false), 3500);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   if (isLoading) {
@@ -215,11 +215,10 @@ export default function ProductDetailPage() {
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`w-12 h-11 rounded-kb-sm border text-xs font-bold transition-all cursor-pointer ${
-                    selectedSize === size
-                      ? 'border-black bg-black text-white shadow-sm'
-                      : 'border-kbBorder hover:border-black text-neutral-700'
-                  }`}
+                  className={`w-12 h-11 rounded-kb-sm border text-xs font-bold transition-all cursor-pointer ${selectedSize === size
+                    ? 'border-black bg-black text-white shadow-sm'
+                    : 'border-kbBorder hover:border-black text-neutral-700'
+                    }`}
                 >
                   {size}
                 </button>
@@ -296,9 +295,8 @@ export default function ProductDetailPage() {
             </button>
             <button
               onClick={toggleWishlist}
-              className={`w-12 h-12 rounded-full border border-kbBorder flex items-center justify-center text-base transition-colors ${
-                isWishlisted ? 'text-red-500 border-red-300 bg-red-50' : 'hover:border-black'
-              }`}
+              className={`w-12 h-12 rounded-full border border-kbBorder flex items-center justify-center text-base transition-colors ${isWishlisted ? 'text-red-500 border-red-300 bg-red-50' : 'hover:border-black'
+                }`}
               title="Bookmark in Wishlist"
             >
               {isWishlisted ? '♥' : '♡'}
@@ -335,3 +333,4 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
