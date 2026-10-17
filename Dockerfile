@@ -1,25 +1,26 @@
-# Multi-stage production Dockerfile for KB Online Shopping Platform
-FROM node:18-alpine AS base
+# Multi-stage production Dockerfile for KB Online Shopping Platform (Next.js 14 + Prisma + PostgreSQL)
+FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
 COPY packages/shared-types/package*.json ./packages/shared-types/
-RUN npm install --omit=dev
+RUN npm install
 
-# Copy source files
-COPY packages/ ./packages/
-COPY services/ ./services/
-COPY public/ ./public/
-COPY orchestrator.js ./
+# Copy application source files
+COPY . .
 
-# Expose API Gateway port
-EXPOSE 8000
+# Build TypeScript types, generate Prisma client, and compile Next.js production bundle
+RUN npm run build:types
+RUN npx prisma generate
+RUN npx next build
+
+EXPOSE 3000
 
 ENV NODE_ENV=production
-ENV PORT=8000
+ENV PORT=3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8000/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/healthz || exit 1
 
-CMD ["node", "orchestrator.js"]
+CMD ["npm", "start"]

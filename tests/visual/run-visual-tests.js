@@ -3,7 +3,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
-const gatewayApp = require('../../services/api-gateway/index');
+const next = require('next');
 
 const TEST_PORT = 8088;
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
@@ -18,10 +18,14 @@ async function runVisualTests() {
   console.log(` 📸 Screenshots directory: ${SCREENSHOT_DIR}`);
   console.log(`======================================================\n`);
 
-  // 1. Start test server
-  const server = http.createServer(gatewayApp);
+  // 1. Start Next.js App Router Server
+  console.log(`⏳ Preparing Next.js 14 production app on port ${TEST_PORT}...`);
+  const app = next({ dev: false, dir: path.resolve(__dirname, '../../') });
+  const handle = app.getRequestHandler();
+  await app.prepare();
+  const server = http.createServer((req, res) => handle(req, res));
   await new Promise((resolve) => server.listen(TEST_PORT, resolve));
-  console.log(`✓ Microservices Gateway running on http://localhost:${TEST_PORT}`);
+  console.log(`✓ Next.js 14 App Router running on http://localhost:${TEST_PORT}`);
 
   // 2. Launch Playwright Chrome
   const browser = await chromium.launch({

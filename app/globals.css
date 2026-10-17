@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f7f7f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d1d1;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #111111;
+}
+
+/* Chart Container */
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+  height: 220px;
+  max-height: 260px;
+}
+@media (max-width: 640px) {
+  .chart-container {
+    height: 190px;
+  }
+}
+
+/* KB Watermark Placeholder Styling */
+.watermark-kb::after {
+  content: "KB";
+  position: absolute;
+  font-weight: 800;
+  font-size: 55px;
+  color: #e2e2df;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Touch Target Optimization */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Focus Visible Rings for Keyboard Accessibility */
+*:focus-visible {
+  outline: 2px solid #111111 !important;
+  outline-offset: 2px !important;
+}

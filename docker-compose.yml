@@ -1,16 +1,16 @@
 version: '3.8'
 
 services:
-  kb-api-gateway:
+  kb-online-app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: kb-online-gateway
+    container_name: kb-online-app
     ports:
-      - "8000:8000"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
-      - PORT=8000
+      - PORT=3000
       - DATABASE_URL=postgresql://kb_user:kb_pass@postgres:5432/kb_online_db
     depends_on:
       postgres:
