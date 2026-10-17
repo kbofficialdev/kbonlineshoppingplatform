@@ -59,7 +59,15 @@ function SearchContent() {
     } catch (e) {}
   };
 
-  const categories = ['All', 'Men', 'Women', 'Ethnic & Traditional', 'Daily Wear', 'Accessories'];
+  const categories = [
+    'All',
+    'Sarees',
+    "Men's Unstitched",
+    "Women's Wear",
+    'Blouse & Matching',
+    'Dhotis & Towels',
+    'Inners & Essentials'
+  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -169,8 +177,15 @@ function SearchContent() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center font-bold text-neutral-300">KB</div>
                       )}
-                      <div className="absolute top-2.5 left-2.5 bg-white/95 text-[10px] font-bold px-2 py-0.5 rounded-kb-pill border border-kbBorder">
-                        {product.tags?.[0] || 'Handloom'}
+                      <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
+                        <span className="bg-white/95 text-[10px] font-bold px-2 py-0.5 rounded-kb-pill border border-kbBorder">
+                          {product.tags?.[0] || 'Handloom'}
+                        </span>
+                        {product.brand && product.brand !== 'KB FASHIONS' && (
+                          <span className="bg-neutral-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-kb-pill">
+                            {product.brand}
+                          </span>
+                        )}
                       </div>
                     </Link>
 
@@ -191,16 +206,35 @@ function SearchContent() {
 
                   <div className="pt-3 border-t border-kbBorder flex items-center justify-between">
                     <div>
-                      <span className="font-extrabold text-base text-black">₹{product.price}</span>
-                      <span className="block text-[9px] text-neutral-400">Net retail price</span>
+                      {product.isUnstitched || product.unitType === 'METER' ? (
+                        <div>
+                          <span className="font-extrabold text-base text-black">₹{product.pricePerMeter || product.price}</span>
+                          <span className="text-xs text-amber-900 font-bold ml-1">/ Meter</span>
+                          <span className="block text-[9px] text-neutral-400">Custom tailor cuts</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="font-extrabold text-base text-black">₹{product.price}</span>
+                          <span className="block text-[9px] text-neutral-400">Net retail price</span>
+                        </div>
+                      )}
                     </div>
 
-                    <button
-                      onClick={() => handleQuickAdd(product)}
-                      className="bg-black text-white hover:bg-neutral-800 text-xs font-bold px-3 py-2 rounded-kb-pill transition-all"
-                    >
-                      + Add to Bag
-                    </button>
+                    {product.isUnstitched || product.unitType === 'METER' ? (
+                      <Link
+                        href={`/products/${prodId}`}
+                        className="bg-amber-900 hover:bg-black text-white text-xs font-bold px-3 py-2 rounded-kb-pill transition-all"
+                      >
+                        Choose Cut →
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => handleQuickAdd(product)}
+                        className="bg-black text-white hover:bg-neutral-800 text-xs font-bold px-3 py-2 rounded-kb-pill transition-all"
+                      >
+                        + Add to Bag
+                      </button>
+                    )}
                   </div>
                 </article>
               );

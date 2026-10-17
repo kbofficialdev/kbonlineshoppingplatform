@@ -15,9 +15,19 @@ export async function GET(req: NextRequest) {
 
     let result = [...db.products];
 
-    // Filter by category
+    // Filter by category or productType
     if (category && category !== 'All') {
-      result = result.filter(p => p.category.toLowerCase() === category.toLowerCase());
+      const catLower = category.toLowerCase();
+      result = result.filter(p => 
+        p.category.toLowerCase() === catLower ||
+        (p.productType && p.productType.toLowerCase() === catLower) ||
+        (catLower.includes('saree') && p.productType === 'SAREE') ||
+        ((catLower.includes('men') || catLower.includes('unstitched')) && p.productType === 'MEN_UNSTITCHED') ||
+        (catLower.includes('women') && p.productType === 'WOMEN_WEAR') ||
+        ((catLower.includes('blouse') || catLower.includes('matching')) && p.productType === 'BLOUSE_PIECE') ||
+        ((catLower.includes('dhoti') || catLower.includes('towel')) && p.productType === 'DHOTI_TOWEL') ||
+        ((catLower.includes('inner') || catLower.includes('banian')) && p.productType === 'INNER_ESSENTIAL')
+      );
     }
 
     // Filter by search keyword
@@ -114,6 +124,13 @@ export async function POST(req: NextRequest) {
       price: data.price,
       compareAtPrice: data.compareAtPrice,
       category: data.category,
+      productType: data.productType || 'GENERAL',
+      brand: data.brand || 'KB FASHIONS',
+      fabric: data.fabric || 'Pure Cotton',
+      isUnstitched: data.isUnstitched ?? false,
+      unitType: data.unitType || 'PIECE',
+      pricePerMeter: data.pricePerMeter,
+      availableMeters: data.availableMeters || [],
       tags: data.tags,
       sizes: data.sizes,
       colors: data.colors,
@@ -123,6 +140,10 @@ export async function POST(req: NextRequest) {
       fabricCare: data.fabricCare || 'Pure Cotton. Gentle handwash or cold wash.',
       origin: data.origin,
       isFeatured: data.isFeatured,
+      sareeDetails: data.sareeDetails || undefined,
+      unstitchedDetails: data.unstitchedDetails || undefined,
+      essentialDetails: data.essentialDetails || undefined,
+      matchingDetails: data.matchingDetails || undefined,
       createdAt: now,
       updatedAt: now,
       images: [imageModel],

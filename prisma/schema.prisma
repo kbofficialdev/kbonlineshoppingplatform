@@ -60,6 +60,13 @@ model Product {
   price           Float
   compareAtPrice  Float?         @map("compare_at_price")
   category        String
+  productType     String         @default("GENERAL") @map("product_type") // SAREE, MEN_UNSTITCHED, WOMEN_WEAR, BLOUSE_PIECE, DHOTI_TOWEL, INNER_ESSENTIAL, GENERAL
+  brand           String         @default("KB FASHIONS")
+  fabric          String         @default("Pure Cotton")
+  isUnstitched    Boolean        @default(false) @map("is_unstitched")
+  unitType        String         @default("PIECE") @map("unit_type") // PIECE or METER
+  pricePerMeter   Float?         @map("price_per_meter")
+  availableMeters Float[]        @default([]) @map("available_meters")
   tags            String[]
   sizes           String[]
   colors          String[]
@@ -69,6 +76,10 @@ model Product {
   fabricCare      String?        @map("fabric_care")
   origin          String         @default("Kalwaral, Telangana, India")
   isFeatured      Boolean        @default(false) @map("is_featured")
+  sareeDetails    Json?          @map("saree_details")
+  unstitchedDetails Json?        @map("unstitched_details")
+  essentialDetails Json?         @map("essential_details")
+  matchingDetails Json?          @map("matching_details")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
   images          ProductImage[]
@@ -100,16 +111,18 @@ model Category {
 }
 
 model CartItem {
-  id        String   @id @default(cuid())
-  sessionId String   @map("session_id")
-  userId    String?  @map("user_id")
-  productId String   @map("product_id")
-  name      String
-  price     Float
-  size      String
-  color     String   @default("#111111")
-  qty       Int      @default(1)
-  createdAt DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  sessionId     String   @map("session_id")
+  userId        String?  @map("user_id")
+  productId     String   @map("product_id")
+  name          String
+  price         Float
+  size          String
+  color         String   @default("#111111")
+  qty           Int      @default(1)
+  cutLength     Float?   @map("cut_length")
+  configuration Json?    @map("configuration")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("cart_items")
 }
@@ -147,15 +160,17 @@ model Order {
 }
 
 model OrderItem {
-  id          String  @id @default(cuid())
-  orderId     String  @map("order_id")
-  productId   String  @map("product_id")
-  title       String
-  qty         Int
-  unitPrice   Float   @map("unit_price")
-  totalAmount Float   @map("total_amount")
-  size        String
-  order       Order   @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  id            String  @id @default(cuid())
+  orderId       String  @map("order_id")
+  productId     String  @map("product_id")
+  title         String
+  qty           Int
+  unitPrice     Float   @map("unit_price")
+  totalAmount   Float   @map("total_amount")
+  size          String
+  cutLength     Float?  @map("cut_length")
+  configuration Json?   @map("configuration")
+  order         Order   @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
 
   @@map("order_items")
 }

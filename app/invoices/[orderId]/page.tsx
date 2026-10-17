@@ -88,7 +88,13 @@ export default function InvoicePage({ params }: { params: { orderId: string } })
               <td className="py-3 font-mono text-neutral-400">{idx + 1}</td>
               <td className="py-3 font-semibold text-neutral-900">
                 {item.title}
-                <span className="block text-[10px] text-neutral-400 font-normal">Authentic handloom village textile</span>
+                {item.cutLength ? (
+                  <span className="block text-[10px] text-amber-800 font-bold">
+                    ✂ Custom Bolt Cut: {item.cutLength} Meters (Unstitched)
+                  </span>
+                ) : (
+                  <span className="block text-[10px] text-neutral-400 font-normal">Authentic handloom village textile</span>
+                )}
               </td>
               <td className="py-3 text-center">{item.size}</td>
               <td className="py-3 text-center font-bold">{item.qty}</td>

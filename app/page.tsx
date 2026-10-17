@@ -12,6 +12,12 @@ interface Product {
   price: number;
   compareAtPrice?: number | null;
   category: string;
+  productType?: string;
+  brand?: string;
+  fabric?: string;
+  isUnstitched?: boolean;
+  unitType?: string;
+  pricePerMeter?: number | null;
   tags: string[];
   sizes: string[];
   colors: string[];
@@ -160,11 +166,31 @@ export default function HomePage() {
     }
   }, [products]);
 
-  const categories = ['All', 'Men', 'Women', 'Ethnic & Traditional', 'Daily Wear', 'Accessories'];
+  const categories = [
+    'All',
+    'Sarees',
+    "Men's Unstitched",
+    "Women's Wear",
+    'Blouse & Matching',
+    'Dhotis & Towels',
+    'Inners & Essentials'
+  ];
 
   const filteredProducts = activeCategory === 'All'
     ? products
-    : products.filter(p => p.category.toLowerCase() === activeCategory.toLowerCase());
+    : products.filter(p => {
+        const cat = activeCategory.toLowerCase();
+        return (
+          p.category.toLowerCase() === cat ||
+          (p.productType && p.productType.toLowerCase() === cat) ||
+          (cat.includes('saree') && (p.category === 'Sarees' || p.productType === 'SAREE')) ||
+          (cat.includes('men') && (p.category.includes('Men') || p.productType === 'MEN_UNSTITCHED')) ||
+          (cat.includes('women') && (p.category.includes('Women') || p.productType === 'WOMEN_WEAR')) ||
+          (cat.includes('blouse') && (p.category.includes('Blouse') || p.productType === 'BLOUSE_PIECE')) ||
+          (cat.includes('dhoti') && (p.category.includes('Dhoti') || p.productType === 'DHOTI_TOWEL')) ||
+          (cat.includes('inner') && (p.category.includes('Inner') || p.productType === 'INNER_ESSENTIAL'))
+        );
+      });
 
   return (
     <div>
@@ -278,10 +304,15 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    <div className="absolute top-2.5 left-2.5">
+                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
                       <span className="bg-white/95 backdrop-blur-sm text-kbBlack text-[10px] font-bold px-2 py-0.5 rounded-kb-pill border border-kbBorder">
                         {product.tags[0] || 'Handcrafted'}
                       </span>
+                      {product.brand && product.brand !== 'KB FASHIONS' && (
+                        <span className="bg-neutral-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-kb-pill">
+                          {product.brand}
+                        </span>
+                      )}
                     </div>
 
                     <button
@@ -312,19 +343,38 @@ export default function HomePage() {
 
                 <div className="pt-3 border-t border-kbBorder flex items-center justify-between">
                   <div>
-                    <span className="text-base font-extrabold text-black">₹{product.price}</span>
-                    {product.compareAtPrice && (
-                      <span className="text-xs text-neutral-400 line-through ml-2">₹{product.compareAtPrice}</span>
+                    {product.isUnstitched || product.unitType === 'METER' ? (
+                      <div>
+                        <span className="text-base font-extrabold text-black">₹{product.pricePerMeter || product.price}</span>
+                        <span className="text-xs text-amber-900 font-bold ml-1">/ Meter</span>
+                        <span className="block text-[9px] text-neutral-400">Custom tailor cuts</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-base font-extrabold text-black">₹{product.price}</span>
+                        {product.compareAtPrice && (
+                          <span className="text-xs text-neutral-400 line-through ml-2">₹{product.compareAtPrice}</span>
+                        )}
+                        <span className="block text-[9px] text-neutral-400">Net retail price</span>
+                      </div>
                     )}
-                    <span className="block text-[9px] text-neutral-400">Net retail price</span>
                   </div>
 
-                  <button
-                    onClick={(e) => quickAddToBag(product, e)}
-                    className="bg-black text-white hover:bg-neutral-800 text-xs font-bold px-3.5 py-2 rounded-kb-pill transition-all"
-                  >
-                    + Add to Bag
-                  </button>
+                  {product.isUnstitched || product.unitType === 'METER' ? (
+                    <Link
+                      href={`/products/${product.productId}`}
+                      className="bg-amber-900 hover:bg-black text-white text-xs font-bold px-3.5 py-2 rounded-kb-pill transition-all"
+                    >
+                      Choose Cut →
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={(e) => quickAddToBag(product, e)}
+                      className="bg-black text-white hover:bg-neutral-800 text-xs font-bold px-3.5 py-2 rounded-kb-pill transition-all"
+                    >
+                      + Add to Bag
+                    </button>
+                  )}
                 </div>
               </article>
             );

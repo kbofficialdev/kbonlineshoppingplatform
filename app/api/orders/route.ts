@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
         unitPrice: item.price,
         totalAmount: item.price * item.qty,
         size: item.size,
+        cutLength: item.cutLength || null,
+        configuration: item.configuration || null,
         image: p?.images?.[0]?.data,
       };
     });

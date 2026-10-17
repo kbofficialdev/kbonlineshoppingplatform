@@ -11,13 +11,37 @@ export default function AdminEditProductPage() {
 
   const [product, setProduct] = useState<any>(null);
   const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('Sarees');
+  const [productType, setProductType] = useState<string>('SAREE');
+  const [brand, setBrand] = useState('KB FASHIONS');
+  const [fabric, setFabric] = useState('Pure Cotton');
+  const [unitType, setUnitType] = useState<'PIECE' | 'METER'>('PIECE');
+  const [price, setPrice] = useState('899');
+  const [pricePerMeter, setPricePerMeter] = useState('550');
   const [compareAtPrice, setCompareAtPrice] = useState('');
-  const [stockQuantity, setStockQuantity] = useState('');
-  const [category, setCategory] = useState('Men');
+  const [stockQuantity, setStockQuantity] = useState('30');
   const [description, setDescription] = useState('');
+  const [fabricCare, setFabricCare] = useState('');
+  const [origin, setOrigin] = useState('Kalwaral, Telangana, India');
   const [imageData, setImageData] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Domain specifics
+  const [sareeLength, setSareeLength] = useState('6.3');
+  const [sareeHasBlouse, setSareeHasBlouse] = useState(true);
+  const [sareeBlouseLength, setSareeBlouseLength] = useState('0.8');
+  const [sareeWorkType, setSareeWorkType] = useState('');
+  const [sareeBorderType, setSareeBorderType] = useState('');
+  const [sareePallu, setSareePallu] = useState('');
+
+  const [fabricCutType, setFabricCutType] = useState('Shirt Piece');
+  const [fabricWidth, setFabricWidth] = useState('58');
+  const [standardCutMeters, setStandardCutMeters] = useState('1.6');
+  const [recommendedUse, setRecommendedUse] = useState('');
+
+  const [packSize, setPackSize] = useState('3');
+  const [chestSizes, setChestSizes] = useState('80cm, 85cm, 90cm, 95cm, 100cm');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,12 +61,42 @@ export default function AdminEditProductPage() {
       if (data?.product) {
         const p = data.product;
         setProduct(p);
-        setName(p.name);
-        setPrice(p.price.toString());
+        setName(p.name || '');
+        setTitle(p.title || '');
+        setCategory(p.category || 'Sarees');
+        setProductType(p.productType || 'GENERAL');
+        setBrand(p.brand || 'KB FASHIONS');
+        setFabric(p.fabric || 'Pure Cotton');
+        setUnitType(p.unitType || 'PIECE');
+        setPrice(p.price?.toString() || '0');
+        setPricePerMeter(p.pricePerMeter?.toString() || p.price?.toString() || '0');
         setCompareAtPrice(p.compareAtPrice ? p.compareAtPrice.toString() : '');
-        setStockQuantity(p.stockQuantity.toString());
-        setCategory(p.category);
-        setDescription(p.description);
+        setStockQuantity(p.stockQuantity?.toString() || '0');
+        setDescription(p.description || '');
+        setFabricCare(p.fabricCare || '');
+        setOrigin(p.origin || 'Kalwaral, Telangana, India');
+
+        if (p.sareeDetails) {
+          setSareeLength(p.sareeDetails.lengthMeters?.toString() || '6.3');
+          setSareeHasBlouse(p.sareeDetails.hasBlousePiece ?? true);
+          setSareeBlouseLength(p.sareeDetails.blouseLengthMeters?.toString() || '0.8');
+          setSareeWorkType(p.sareeDetails.workType || '');
+          setSareeBorderType(p.sareeDetails.borderType || '');
+          setSareePallu(p.sareeDetails.palluDetails || '');
+        }
+
+        if (p.unstitchedDetails) {
+          setFabricCutType(p.unstitchedDetails.fabricCutType || 'Shirt Piece');
+          setFabricWidth(p.unstitchedDetails.widthInches?.toString() || '58');
+          setStandardCutMeters(p.unstitchedDetails.standardLengthMeters?.toString() || '1.6');
+          setRecommendedUse(p.unstitchedDetails.recommendedUse || '');
+        }
+
+        if (p.essentialDetails) {
+          setPackSize(p.essentialDetails.packSize?.toString() || '3');
+          setChestSizes(p.essentialDetails.measurementValues?.join(', ') || '80cm, 85cm, 90cm, 95cm, 100cm');
+        }
+
         if (p.images?.[0]?.data) {
           setImagePreview(p.images[0].data);
         }
@@ -72,14 +126,54 @@ export default function AdminEditProductPage() {
     setErrorMsg(null);
 
     try {
+      const isUnstitched = unitType === 'METER' || productType === 'MEN_UNSTITCHED';
+
       const payload: any = {
         name: name.trim(),
-        price: parseFloat(price),
+        title: title.trim() || name.trim(),
+        description: description.trim(),
+        price: isUnstitched ? parseFloat(pricePerMeter) : parseFloat(price),
         compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
         stockQuantity: parseInt(stockQuantity, 10),
         category,
-        description: description.trim(),
+        productType,
+        brand,
+        fabric,
+        isUnstitched,
+        unitType,
+        pricePerMeter: isUnstitched ? parseFloat(pricePerMeter) : null,
+        fabricCare,
+        origin,
       };
+
+      if (productType === 'SAREE') {
+        payload.sareeDetails = {
+          lengthMeters: parseFloat(sareeLength),
+          hasBlousePiece: sareeHasBlouse,
+          blouseLengthMeters: sareeHasBlouse ? parseFloat(sareeBlouseLength) : 0,
+          workType: sareeWorkType,
+          borderType: sareeBorderType,
+          palluDetails: sareePallu,
+        };
+      }
+
+      if (isUnstitched) {
+        payload.unstitchedDetails = {
+          fabricCutType,
+          widthInches: parseFloat(fabricWidth),
+          standardLengthMeters: parseFloat(standardCutMeters),
+          recommendedUse,
+        };
+      }
+
+      if (productType === 'INNER_ESSENTIAL') {
+        payload.essentialDetails = {
+          packSize: parseInt(packSize, 10),
+          measurementUnit: 'cm',
+          measurementValues: chestSizes.split(',').map(s => s.trim()).filter(Boolean),
+        };
+      }
+
       if (imageData) {
         payload.imageData = imageData;
       }
@@ -113,11 +207,11 @@ export default function AdminEditProductPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div className="border-b border-kbBorder pb-4 flex justify-between items-baseline">
         <div>
           <h1 className="text-2xl font-black text-kbBlack">Edit Garment Details</h1>
-          <p className="text-xs text-neutral-500 mt-1">Updating product #{id} in database</p>
+          <p className="text-xs text-neutral-500 mt-1">Updating product #{id} in PostgreSQL database</p>
         </div>
         <Link href="/admin/products" className="text-xs font-bold text-neutral-600 hover:text-black underline">
           ← Back to Inventory
@@ -144,22 +238,86 @@ export default function AdminEditProductPage() {
           </div>
 
           <div>
-            <label className="font-bold text-neutral-700 block mb-1">Category *</label>
+            <label className="font-bold text-neutral-700 block mb-1">Department / Product Type *</label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={productType}
+              onChange={(e) => setProductType(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
             >
-              <option value="Men">Men</option>
-              <option value="Women">Women</option>
-              <option value="Ethnic & Traditional">Ethnic & Traditional</option>
-              <option value="Daily Wear">Daily Wear</option>
-              <option value="Accessories">Accessories</option>
+              <option value="SAREE">Saree (Gadwal, Pattu, Nirma)</option>
+              <option value="MEN_UNSTITCHED">Men’s Unstitched Fabric</option>
+              <option value="WOMEN_WEAR">Women’s Wear & Tops</option>
+              <option value="BLOUSE_PIECE">Blouse & Matching Bits</option>
+              <option value="DHOTI_TOWEL">Dhotis & Towels</option>
+              <option value="INNER_ESSENTIAL">Inners & Banians (cm)</option>
+              <option value="GENERAL">General Garments</option>
             </select>
           </div>
 
           <div>
-            <label className="font-bold text-neutral-700 block mb-1">Stock Quantity *</label>
+            <label className="font-bold text-neutral-700 block mb-1">Brand *</label>
+            <input
+              type="text"
+              required
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Fabric Composition *</label>
+            <input
+              type="text"
+              required
+              value={fabric}
+              onChange={(e) => setFabric(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Selling Mode *</label>
+            <select
+              value={unitType}
+              onChange={(e) => setUnitType(e.target.value as 'PIECE' | 'METER')}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+            >
+              <option value="PIECE">By Piece</option>
+              <option value="METER">By Meter (Custom Tailor Cut)</option>
+            </select>
+          </div>
+
+          {unitType === 'METER' ? (
+            <div>
+              <label className="font-bold text-amber-950 block mb-1">Rate Per Meter (₹) *</label>
+              <input
+                type="number"
+                required
+                min={1}
+                value={pricePerMeter}
+                onChange={(e) => setPricePerMeter(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-kb-sm border border-amber-300 bg-amber-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 text-xs font-mono font-bold"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="font-bold text-neutral-700 block mb-1">Retail Price (₹) *</label>
+              <input
+                type="number"
+                required
+                min={1}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-bold"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">
+              Stock ({unitType === 'METER' ? 'Meters' : 'Units'}) *
+            </label>
             <input
               type="number"
               required
@@ -167,18 +325,6 @@ export default function AdminEditProductPage() {
               value={stockQuantity}
               onChange={(e) => setStockQuantity(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="font-bold text-neutral-700 block mb-1">Retail Price (₹) *</label>
-            <input
-              type="number"
-              required
-              min={1}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-bold"
             />
           </div>
 
@@ -204,43 +350,80 @@ export default function AdminEditProductPage() {
           </div>
         </div>
 
-        {/* Image preview & replacement */}
-        <div className="border-t border-kbBorder pt-6 space-y-4">
-          <h3 className="font-bold text-neutral-900 uppercase tracking-wider text-xs">
-            Replace Garment Image in Database
-          </h3>
-          <div className="flex gap-6 items-center">
-            {imagePreview && (
-              <div className="w-24 h-28 rounded-kb-sm border border-kbBorder overflow-hidden bg-kbCardBg">
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+        {/* Unstitched details */}
+        {unitType === 'METER' && (
+          <div className="p-4 bg-amber-50/70 border border-amber-300 rounded-kb-md space-y-3">
+            <h3 className="font-black text-xs text-amber-950 uppercase tracking-wider">
+              ✂ Unstitched Bolt Fabric Specifications
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="font-bold text-amber-900 block mb-1">Width (Inches)</label>
+                <input
+                  type="number"
+                  value={fabricWidth}
+                  onChange={(e) => setFabricWidth(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-amber-200 bg-white text-xs font-mono"
+                />
               </div>
-            )}
+              <div>
+                <label className="font-bold text-amber-900 block mb-1">Standard Cut (Meters)</label>
+                <input
+                  type="number"
+                  step="0.05"
+                  value={standardCutMeters}
+                  onChange={(e) => setStandardCutMeters(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-amber-200 bg-white text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-amber-900 block mb-1">Recommended Tailoring</label>
+                <input
+                  type="text"
+                  value={recommendedUse}
+                  onChange={(e) => setRecommendedUse(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-amber-200 bg-white text-xs"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Image update */}
+        <div className="border-t border-kbBorder pt-6 space-y-3">
+          <label className="font-black text-sm text-neutral-900 block">
+            Update Photograph / Artwork (Saved in PostgreSQL Database)
+          </label>
+          <div className="flex gap-4 items-center">
+            <div className="w-20 h-24 bg-kbCardBg border border-kbBorder rounded overflow-hidden flex items-center justify-center">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-neutral-400 font-bold text-xs">No Image</span>
+              )}
+            </div>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageFileChange}
-              className="text-xs text-neutral-500"
+              className="text-xs text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-kb-pill file:border-0 file:text-xs file:font-bold file:bg-black file:text-white hover:file:bg-neutral-800"
             />
           </div>
         </div>
 
-        <div className="pt-6 border-t border-kbBorder flex justify-end gap-3">
-          <Link
-            href="/admin/products"
-            className="px-6 py-3 rounded-kb-pill border border-kbBorder font-bold text-neutral-600 hover:text-black"
-          >
+        <div className="border-t border-kbBorder pt-6 flex justify-between items-center">
+          <Link href="/admin/products" className="text-neutral-500 hover:text-black font-semibold">
             Cancel
           </Link>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-black text-white px-8 py-3 rounded-kb-pill font-bold hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50"
+            className="bg-black text-white font-bold px-8 py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50"
           >
-            {isSubmitting ? 'Updating...' : 'Update Product'}
+            {isSubmitting ? 'Updating...' : 'Save Changes →'}
           </button>
         </div>
       </form>
     </div>
   );
 }
-

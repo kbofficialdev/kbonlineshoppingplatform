@@ -11,6 +11,8 @@ interface CartItem {
   size: string;
   color: string;
   qty: number;
+  cutLength?: number | null;
+  configuration?: Record<string, any> | null;
 }
 
 export default function CartPage() {
@@ -173,8 +175,31 @@ export default function CartPage() {
                       <Link href={`/products/${item.productId}`} className="font-bold text-sm text-neutral-900 hover:underline">
                         {item.name}
                       </Link>
-                      <div className="text-xs text-neutral-500 mt-0.5">
-                        Size: <strong className="text-black">{item.size}</strong> • Handloom Cotton
+                      <div className="text-xs text-neutral-500 mt-0.5 space-y-0.5">
+                        <div>
+                          {item.cutLength ? (
+                            <span className="font-semibold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
+                              ✂ Unstitched Cut: {item.cutLength}m
+                            </span>
+                          ) : (
+                            <span>Size: <strong className="text-black">{item.size}</strong></span>
+                          )}
+                          {item.configuration?.chestSize && (
+                            <span className="ml-2 font-semibold text-sky-900">
+                              • Chest: {item.configuration.chestSize}
+                            </span>
+                          )}
+                        </div>
+                        {item.configuration?.fallPico && (
+                          <div className="text-[11px] text-emerald-700 font-semibold">
+                            ✓ Fall &amp; Pico Service Included (+₹80)
+                          </div>
+                        )}
+                        {item.configuration?.matchingBlouse && (
+                          <div className="text-[11px] text-rose-700 font-semibold">
+                            ✓ Matching 2x2 Rubia Blouse Piece (+₹180)
+                          </div>
+                        )}
                       </div>
                       <div className="text-xs font-extrabold text-black mt-1">
                         ₹{item.price} each

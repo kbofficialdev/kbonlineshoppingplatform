@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, ProductModel } from '@/lib/db';
 import { getAuthFromRequest } from '@/lib/auth';
 import { productUpdateSchema } from '@/lib/validations';
 
@@ -46,9 +46,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const current = db.products[productIndex];
-    const updated = {
+    const updated: ProductModel = {
       ...current,
-      ...parsed.data,
+      ...(parsed.data as any),
       updatedAt: new Date().toISOString(),
     };
 

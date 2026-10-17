@@ -428,7 +428,9 @@ export default function CheckoutPage() {
               <div key={idx} className="py-2.5 flex justify-between items-center">
                 <div>
                   <div className="font-bold text-neutral-900 line-clamp-1">{item.name}</div>
-                  <div className="text-[10px] text-neutral-400">Size: {item.size} • Qty: {item.qty}</div>
+                  <div className="text-[10px] text-neutral-500">
+                    {item.cutLength ? `✂ Cut: ${item.cutLength}m • ` : ''}Size: {item.size} • Qty: {item.qty}
+                  </div>
                 </div>
                 <div className="font-bold text-black text-right">
                   ₹{item.price * item.qty}

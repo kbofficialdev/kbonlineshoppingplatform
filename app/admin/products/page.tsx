@@ -129,21 +129,42 @@ export default function AdminProductsPage() {
                       <Link href={`/products/${product.productId}`} className="font-bold text-neutral-900 hover:underline block">
                         {product.name}
                       </Link>
-                      <span className="text-[10px] text-neutral-400">{product.productId}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] text-neutral-400 font-mono">{product.productId}</span>
+                        {product.brand && (
+                          <span className="text-[9px] font-bold bg-neutral-900 text-white px-1.5 py-0.2 rounded">
+                            {product.brand}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded text-[10px] font-semibold">
-                        {product.category}
-                      </span>
+                      <div className="space-y-1">
+                        <span className="bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded text-[10px] font-semibold block w-fit">
+                          {product.category}
+                        </span>
+                        {product.productType && (
+                          <span className="text-[9px] text-neutral-500 font-mono block">
+                            Type: {product.productType}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 font-black text-black">
-                      ₹{product.price}
+                    <td className="py-3 px-4">
+                      {product.isUnstitched || product.unitType === 'METER' ? (
+                        <div>
+                          <div className="font-black text-black">₹{product.pricePerMeter || product.price}</div>
+                          <div className="text-[10px] text-amber-800 font-bold">Per Meter</div>
+                        </div>
+                      ) : (
+                        <div className="font-black text-black">₹{product.price}</div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
                         isLowStock ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
                       }`}>
-                        {product.stockQuantity} units
+                        {product.stockQuantity} {product.unitType === 'METER' ? 'meters' : 'units'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-neutral-600 text-[11px]">

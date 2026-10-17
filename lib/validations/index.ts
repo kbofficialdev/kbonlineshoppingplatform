@@ -42,6 +42,13 @@ export const productCreateSchema = z.object({
   price: z.coerce.number().positive("Price must be greater than zero"),
   compareAtPrice: z.coerce.number().positive().optional().nullable(),
   category: z.string().min(1, "Category is required"),
+  productType: z.enum(['SAREE', 'MEN_UNSTITCHED', 'WOMEN_WEAR', 'BLOUSE_PIECE', 'DHOTI_TOWEL', 'INNER_ESSENTIAL', 'GENERAL']).default('GENERAL'),
+  brand: z.string().default("KB FASHIONS"),
+  fabric: z.string().default("Pure Cotton"),
+  isUnstitched: z.boolean().default(false),
+  unitType: z.enum(['PIECE', 'METER']).default('PIECE'),
+  pricePerMeter: z.coerce.number().positive().optional().nullable(),
+  availableMeters: z.array(z.coerce.number()).default([]),
   tags: z.array(z.string()).default([]),
   sizes: z.array(z.string()).default(['S', 'M', 'L', 'XL']),
   colors: z.array(z.string()).default(['Natural', 'Indigo', 'Earthy Ochre']),
@@ -49,6 +56,30 @@ export const productCreateSchema = z.object({
   fabricCare: z.string().optional(),
   origin: z.string().default("Kalwaral, Telangana, India"),
   isFeatured: z.boolean().default(false),
+  sareeDetails: z.object({
+    lengthMeters: z.coerce.number().default(6.3),
+    hasBlousePiece: z.boolean().default(true),
+    blouseLengthMeters: z.coerce.number().default(0.8),
+    workType: z.string().default("Handloom Weave"),
+    borderType: z.string().default("Zari Border"),
+    palluDetails: z.string().default("Rich Contrast Zari Pallu"),
+  }).optional().nullable(),
+  unstitchedDetails: z.object({
+    fabricCutType: z.string().default("Shirt Piece"),
+    widthInches: z.coerce.number().default(58),
+    standardLengthMeters: z.coerce.number().default(1.6),
+    recommendedUse: z.string().default("Office & Festive Wear"),
+  }).optional().nullable(),
+  essentialDetails: z.object({
+    packSize: z.coerce.number().default(1),
+    measurementUnit: z.string().default("cm"),
+    measurementValues: z.array(z.string()).default(['80cm', '85cm', '90cm', '95cm', '100cm']),
+  }).optional().nullable(),
+  matchingDetails: z.object({
+    matchingBlouseColor: z.string().optional(),
+    matchingFallPicoAvailable: z.boolean().default(true),
+    customDesignerNotes: z.string().optional(),
+  }).optional().nullable(),
   imageData: z.string().min(10, "Product image data is required (stored in database)"),
 });
 
@@ -62,6 +93,8 @@ export const cartAddSchema = z.object({
   size: z.string().default('M'),
   color: z.string().default('Natural'),
   qty: z.coerce.number().int().positive().default(1),
+  cutLength: z.coerce.number().positive().optional().nullable(),
+  configuration: z.record(z.any()).optional().nullable(),
   sessionId: z.string().default('default-guest'),
 });
 

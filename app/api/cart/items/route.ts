@@ -12,10 +12,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { productId, name, price, size, color, qty, sessionId } = parsed.data;
+    const { productId, name, price, size, color, qty, cutLength, configuration, sessionId } = parsed.data;
 
     const existing = db.cartItems.find(
-      i => i.sessionId === sessionId && (i.productId === productId || i.productId === `PRD-${productId}`) && i.size === size
+      i => i.sessionId === sessionId && 
+           (i.productId === productId || i.productId === `PRD-${productId}`) && 
+           i.size === size &&
+           i.cutLength === (cutLength || null)
     );
 
     if (existing) {
@@ -30,6 +33,8 @@ export async function POST(req: NextRequest) {
         size,
         color,
         qty,
+        cutLength: cutLength || null,
+        configuration: configuration || null,
         createdAt: new Date().toISOString(),
       });
     }
