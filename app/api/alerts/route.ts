@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       isPushed: body.isPushed !== undefined ? Boolean(body.isPushed) : false,
       displayLocation: body.displayLocation || 'TOP_BAR',
       badge: body.badge || null,
+      textColor: body.textColor || null,
     });
 
     return NextResponse.json({

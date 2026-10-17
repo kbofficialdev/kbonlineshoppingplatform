@@ -186,3 +186,4 @@ async function runPrompt10Tests() {
 }
 
 runPrompt10Tests();
+

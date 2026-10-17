@@ -22,6 +22,7 @@ export default function AdminAlertsBannersPage() {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('View Details →');
   const [pushAsToastNow, setPushAsToastNow] = useState(true);
+  const [alertTextColor, setAlertTextColor] = useState<'BLUE' | 'BLACK' | 'GREEN' | 'RED'>('BLACK');
 
   // New Banner Form state
   const [bannerTitle, setBannerTitle] = useState('');
@@ -151,6 +152,7 @@ export default function AdminAlertsBannersPage() {
           linkText: linkText.trim() || null,
           isActive: true,
           isPushed: pushAsToastNow,
+          textColor: alertTextColor,
         }),
       });
 
@@ -350,6 +352,35 @@ export default function AdminAlertsBannersPage() {
                   placeholder="e.g. /policies/shipping"
                   className="w-full px-3.5 py-2 rounded-lg border border-kb-gray bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-kb-blue"
                 />
+              </div>
+            </div>
+
+            {/* Standard Text Color Picker: Standard Blue, Black, Green, Red Only */}
+            <div>
+              <label className="font-bold text-neutral-700 block mb-1.5">
+                Standard Alert Text Color (Blue, Black, Green, Red Only) *
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { id: 'BLUE', label: 'Blue Text', bg: 'bg-blue-50 border-blue-500 text-blue-900', dot: 'bg-blue-600' },
+                  { id: 'BLACK', label: 'Black Text', bg: 'bg-neutral-100 border-neutral-600 text-black', dot: 'bg-black' },
+                  { id: 'GREEN', label: 'Green Text', bg: 'bg-emerald-50 border-emerald-500 text-emerald-950', dot: 'bg-emerald-600' },
+                  { id: 'RED', label: 'Red Text', bg: 'bg-rose-50 border-rose-500 text-rose-950', dot: 'bg-red-600' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setAlertTextColor(c.id as any)}
+                    className={`py-2 px-2 rounded-lg border text-center font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      alertTextColor === c.id
+                        ? `${c.bg} ring-2 ring-black/20 shadow-xs font-black`
+                        : 'border-slate-200 bg-white hover:bg-neutral-50 text-neutral-600'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${c.dot}`}></span>
+                    <span className="text-[11px]">{c.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 

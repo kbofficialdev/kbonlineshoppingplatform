@@ -87,3 +87,4 @@ export function detectAbuseLanguage(text: string): AbuseCheckResult {
     cleanSuggestion,
   };
 }
+

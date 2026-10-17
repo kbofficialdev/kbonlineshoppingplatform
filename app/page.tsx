@@ -312,24 +312,24 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 2.5 LIVE VILLAGE STORE STATUS & HYPERLOCAL CONCIERGE STRIP                 */}
       {/* ========================================================================= */}
-      <div className="bg-neutral-900 border-b border-neutral-800 text-white py-3 px-4 sm:px-6 text-xs">
+      <div className="bg-neutral-50 border-b border-slate-200 text-neutral-800 py-2.5 px-4 sm:px-6 text-xs">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 text-[10px]">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 text-[10px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               STORE OPEN TODAY 9 AM – 9 PM
             </span>
-            <span className="text-neutral-300 font-medium text-[11px]">
+            <span className="text-neutral-700 font-medium text-[11px]">
               📍 Kalwaral Village (PIN 503145) • Free Doorstep Delivery within 10 km
             </span>
           </div>
 
           <div className="flex items-center gap-4 text-[11px]">
-            <Link href="/policies/shipping" className="text-amber-300 font-bold hover:underline">
+            <Link href="/policies/shipping" className="text-blue-700 font-bold hover:underline">
               Check 10-km Villages →
             </Link>
-            <span className="text-neutral-600">|</span>
-            <Link href="/support" className="text-sky-300 font-bold hover:underline flex items-center gap-1">
+            <span className="text-neutral-300">|</span>
+            <Link href="/support" className="text-blue-700 font-bold hover:underline flex items-center gap-1">
               <span>🎫</span>
               <span>Online Support Desk</span>
             </Link>

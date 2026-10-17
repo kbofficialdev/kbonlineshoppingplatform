@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import TypewriterTicker from './TypewriterTicker';
 import StoreAlertBanner from './StoreAlertBanner';
 import BrandTooltip from './BrandTooltip';
-import CategoryStrip from './CategoryStrip';
+import { CATEGORIES_DATA } from './CategoryStrip';
 import { authFetch, clearClientSession } from '@/lib/clientAuth';
 import { useToast } from './ToastContext';
 
@@ -19,6 +18,9 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState<boolean>(false);
+  const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+
   const [store, setStore] = useState<any>({
     brandName: "KB",
     officialName: "KB FASHIONS",
@@ -49,6 +51,25 @@ export default function Header() {
       document.body.style.overflow = '';
     };
   }, [mobileMenuOpen]);
+
+  // Close categories dropdown on route changes
+  useEffect(() => {
+    setIsCategoriesOpen(false);
+  }, [pathname]);
+
+  // Click outside listener for categories dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        categoriesDropdownRef.current &&
+        !categoriesDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoriesOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -92,7 +113,7 @@ export default function Header() {
 
   useEffect(() => {
     loadData();
-    setMobileMenuOpen(false); // Close mobile drawer on page transition
+    setMobileMenuOpen(false);
     const interval = setInterval(loadData, 6000);
     return () => clearInterval(interval);
   }, [pathname]);
@@ -128,19 +149,19 @@ export default function Header() {
   return (
     <header
       id="main-store-header"
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${
         isScrolled
-          ? 'bg-white border-b border-slate-200/90 shadow-md'
-          : 'bg-white border-b border-slate-200 shadow-none'
+          ? 'border-b border-slate-200/90 shadow-md'
+          : 'border-b border-slate-200 shadow-none'
       }`}
     >
-      {/* Dynamic Push Alerts & Announcements Banner (Database Powered) */}
+      {/* Dynamic Push Alerts & Announcements Banner (Standard Blue, Black, Green, Red Text) */}
       <StoreAlertBanner />
 
-      {/* Main Top Navigation Bar (100% Solid Opaque Background) */}
-      <div className="bg-white max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-3 shrink-0">
+      {/* Main Top Navigation Bar (100% Solid Opaque White Background - Completely Hides Body Content On Scroll) */}
+      <div className="bg-white max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 relative">
+        {/* Brand Logo & Desktop Categories Trigger */}
+        <div className="flex items-center gap-3 shrink-0" ref={categoriesDropdownRef}>
           <BrandTooltip content={`${store.officialName} • Kalwaral`} subcontent="ESTD. 2006">
             <Link href="/" className="flex items-baseline gap-1 group">
               <span className="text-2xl font-black tracking-tight text-black group-hover:opacity-80 transition-opacity">
@@ -151,6 +172,29 @@ export default function Header() {
               </span>
             </Link>
           </BrandTooltip>
+
+          {/* Desktop Categories Dropdown Trigger Button */}
+          <div className="hidden lg:block relative ml-2">
+            <button
+              type="button"
+              id="desktop-categories-nav-trigger"
+              onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+              onMouseEnter={() => setIsCategoriesOpen(true)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-bold transition-all shadow-2xs ${
+                isCategoriesOpen
+                  ? 'bg-black text-white border-black ring-2 ring-black/10'
+                  : 'bg-neutral-50 text-neutral-800 border-slate-200 hover:bg-neutral-100 hover:border-black'
+              }`}
+              aria-expanded={isCategoriesOpen}
+              aria-haspopup="true"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+              <span>Categories</span>
+              <span className={`text-[10px] transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`}>▾</span>
+            </button>
+          </div>
         </div>
 
         {/* Global Search Input Field (Desktop / Tablet) */}
@@ -280,14 +324,69 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Sub-Navbar Horizontal Category Strip with Custom SVGs for Exact Village Product Lines */}
-      <CategoryStrip />
+      {/* ========================================================================= */}
+      {/* FLOATING CATEGORIES DROPDOWN MENU WITH SMOOTH TRANSITION EFFECT (DESKTOP) */}
+      {/* ========================================================================= */}
+      <div
+        id="floating-categories-dropdown"
+        onMouseEnter={() => setIsCategoriesOpen(true)}
+        onMouseLeave={() => setIsCategoriesOpen(false)}
+        className={`absolute top-full left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-2xl transition-all duration-300 ease-out origin-top ${
+          isCategoriesOpen
+            ? 'opacity-100 translate-y-0 pointer-events-auto visible'
+            : 'opacity-0 -translate-y-2 pointer-events-none invisible'
+        }`}
+      >
+        <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-kb-blue animate-pulse"></span>
+              <span className="text-xs font-black uppercase tracking-wider text-black">
+                Kalwaral Village Handlooms &amp; Master Cuts
+              </span>
+              <span className="text-[10px] text-neutral-400 font-telugu">చేనేత వస్త్ర విభాగాలు</span>
+            </div>
+            <Link
+              href="/search?category=All"
+              onClick={() => setIsCategoriesOpen(false)}
+              className="text-xs font-bold text-kb-blue hover:underline flex items-center gap-1"
+            >
+              <span>Explore All 12+ Weaves in Catalog</span>
+              <span>→</span>
+            </Link>
+          </div>
 
-      {/* Letter-by-Letter Animated Ticker Banner (Below Categories) */}
-      <TypewriterTicker />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+            {CATEGORIES_DATA.map((cat) => (
+              <Link
+                key={cat.id}
+                href={cat.href}
+                onClick={() => setIsCategoriesOpen(false)}
+                className="group flex items-start gap-3 p-3 rounded-2xl border border-slate-200/80 bg-white hover:border-black hover:bg-neutral-50/80 transition-all shadow-2xs hover:shadow-sm"
+              >
+                <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-800 group-hover:bg-black group-hover:text-white transition-colors shrink-0">
+                  {cat.iconSvg}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-neutral-900 group-hover:text-black">{cat.name}</span>
+                    {cat.badge && (
+                      <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                        {cat.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 font-telugu mt-0.5">{cat.nameTe}</p>
+                  <p className="text-[10px] text-neutral-400 line-clamp-1 mt-0.5">{cat.subtitle}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* ========================================================================= */}
-      {/* MOBILE CONSISTENT SIDEBAR DRAWER WITH STRICT GROUPING & SCROLL RETENTION  */}
+      {/* MOBILE CONSISTENT SIDEBAR DRAWER WITH STRICT GROUPING & CATEGORIES         */}
       {/* ========================================================================= */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 overflow-hidden">
@@ -347,116 +446,52 @@ export default function Header() {
                 <div className="text-[10px] text-neutral-400 mt-0.5">Coming soon for trusted customers (Telugu &amp; English)</div>
               </Link>
 
-              {/* Exact Categories Specified by User */}
-
-              {/* Group 1: Women's Collection */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 flex items-center gap-1.5 border-b border-neutral-100 pb-1">
-                  <span>👗</span>
-                  <span>Women's Collection</span>
+              {/* Complete Categories Included in Mobile Sidebar Drawer */}
+              <div className="space-y-3">
+                <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 flex items-center justify-between border-b border-neutral-100 pb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span>▦</span>
+                    <span>Browse All Categories</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-neutral-400">Kalwaral Weaves</span>
                 </div>
-                <div className="space-y-1 text-xs">
-                  <Link
-                    href="/search?category=Sarees"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Sarees (Nirma, Layered Zari, Pattu, Latest)</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                  <Link
-                    href="/search?category=Women&type=WOMEN_WEAR"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Tops, Leggings &amp; Daily Dresses</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                  <Link
-                    href="/search?category=Women&type=BLOUSE_PIECE"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Blouse Pieces &amp; Matching Cloths</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
+
+                <div className="grid grid-cols-1 gap-2">
+                  {CATEGORIES_DATA.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      href={cat.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:border-black hover:bg-neutral-50 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-800 shrink-0">
+                        {cat.iconSvg}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-900">{cat.name}</span>
+                          {cat.badge && (
+                            <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900">
+                              {cat.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                          <span className="font-telugu">{cat.nameTe}</span>
+                          <span>•</span>
+                          <span className="truncate">{cat.subtitle}</span>
+                        </div>
+                      </div>
+                      <span className="text-neutral-400 text-xs">→</span>
+                    </Link>
+                  ))}
                 </div>
               </div>
 
-              {/* Group 2: Men's Collection */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 flex items-center gap-1.5 border-b border-neutral-100 pb-1">
-                  <span>👔</span>
-                  <span>Men's Fabrics (Only Unstitched)</span>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <Link
-                    href="/search?category=Men&isUnstitched=true"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Raymond &amp; Brand Suitings (in Meters)</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                  <Link
-                    href="/search?category=Men&type=DHOTI_TOWEL"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Dhotis, Panchas &amp; Traditional Towels</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Group 3: General Essentials */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 flex items-center gap-1.5 border-b border-neutral-100 pb-1">
-                  <span>🎽</span>
-                  <span>General Essentials</span>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <Link
-                    href="/search?category=Men&type=INNER_ESSENTIAL"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Banians (80-100cm Combed Cotton) &amp; Inners</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                  <Link
-                    href="/search?category=Men&type=INNER_ESSENTIAL"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50"
-                  >
-                    <span>Pure Cotton Kerchiefs &amp; Handloom Towels</span>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Group 4: Older People */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 flex items-center gap-1.5 border-b border-neutral-100 pb-1">
-                  <span>👵</span>
-                  <span>Older People Heritage</span>
-                </div>
-                <div className="space-y-1 text-xs">
-                  <Link
-                    href="/search?category=Sarees&work=gadwal"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-lg bg-amber-50/60 border border-amber-200/60 text-amber-950 font-bold"
-                  >
-                    <span>Authentic Gadwal Sarees (Temple Border)</span>
-                    <span className="text-amber-700">★</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Village Store Identity Card */}
-              <div className="p-3 bg-neutral-50 border border-slate-200 rounded-xl text-[11px] space-y-1 text-neutral-600">
+              {/* Village Store Physical Landmark Info */}
+              <div className="p-3.5 bg-neutral-50 rounded-2xl border border-slate-200 text-[11px] text-neutral-600 space-y-1.5">
                 <div className="font-bold text-neutral-900 flex items-center gap-1.5">
-                  <span>📍</span>
+                  <span>🏛️</span>
                   <span>{store.officialName}</span>
                 </div>
                 <p>3-55/1, Kalwaral (Vil), Sadasivanagar (M), Kamareddy, Telangana 503145</p>

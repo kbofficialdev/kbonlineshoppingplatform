@@ -29,6 +29,7 @@ export interface StoreAlertModel {
   isPushed: boolean;
   displayLocation: 'TOP_BAR' | 'TOAST_ALERT' | 'BOTH';
   badge?: string | null;
+  textColor?: 'BLUE' | 'BLACK' | 'GREEN' | 'RED';
   createdAt: string;
   updatedAt: string;
 }
@@ -1498,6 +1499,7 @@ class DatabaseStore {
         isPushed: false,
         displayLocation: "TOP_BAR",
         badge: "🚚 LOCAL VILLAGE DELIVERY",
+        textColor: "BLUE",
         createdAt: now,
         updatedAt: now
       },
@@ -1512,6 +1514,7 @@ class DatabaseStore {
         isPushed: false,
         displayLocation: "TOP_BAR",
         badge: "✨ FESTIVE 10% OFF",
+        textColor: "GREEN",
         createdAt: now,
         updatedAt: now
       }
@@ -1632,6 +1635,7 @@ class DatabaseStore {
       isPushed: data.isPushed !== undefined ? data.isPushed : false,
       displayLocation: data.displayLocation || "TOP_BAR",
       badge: data.badge || null,
+      textColor: data.textColor || (data.type === 'OFFER' ? 'GREEN' : data.type === 'URGENT' || data.type === 'WARNING' ? 'RED' : data.type === 'INFO' ? 'BLUE' : 'BLACK'),
       createdAt: now,
       updatedAt: now,
     };
