@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, OrderModel } from '@/lib/db';
-import { checkoutOrderSchema } from '@/lib/validations';
+import { db, OrderModel, OrderTimelineEventModel } from '@/lib/db';
+import { checkoutSchema } from '@/lib/validations';
 import { calculateCart } from '@/lib/cart';
+import { getAuthFromRequest } from '@/lib/auth';
 
-let orderCounter = 1000;
-let invoiceCounter = 840;
-
-const pinDatabase: Record<string, { city: string; state: string; slaDays: number }> = {
-  "560038": { city: "Bengaluru", state: "Karnataka", slaDays: 2 },
-  "560001": { city: "Bengaluru", state: "Karnataka", slaDays: 2 },
-  "110001": { city: "New Delhi", state: "Delhi", slaDays: 3 },
-  "400001": { city: "Mumbai", state: "Maharashtra", slaDays: 3 },
-  "600001": { city: "Chennai", state: "Tamil Nadu", slaDays: 3 },
-  "700001": { city: "Kolkata", state: "West Bengal", slaDays: 4 },
-};
+let orderCounter = 1002;
+let billCounter = 842;
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = getAuthFromRequest(req);
     const body = await req.json();
-    const parsed = checkoutOrderSchema.safeParse(body);
+    const parsed = checkoutSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
@@ -28,92 +21,134 @@ export async function POST(req: NextRequest) {
     const cart = calculateCart(sessionId);
 
     if (!cart.items || cart.items.length === 0) {
-      return NextResponse.json({ error: 'Cannot checkout with an empty cart' }, { status: 400 });
+      return NextResponse.json({ error: 'Cannot checkout with an empty bag' }, { status: 400 });
     }
 
     orderCounter += 1;
-    invoiceCounter += 1;
+    billCounter += 1;
     const orderId = `ORD-2026-${orderCounter}`;
-    const invoiceNumber = `INV-2026-00${invoiceCounter}`;
-
-    const isIntraState = !customer.state || customer.state.toLowerCase() === 'karnataka';
-    const subtotal = cart.subtotal;
-    const discount = cart.discountAmount;
-    const shipping = cart.shippingFee;
-    const total = cart.total;
-
-    const taxableBase = Math.round((subtotal / 1.18) * 100) / 100;
-    const totalTax = Math.round((subtotal - taxableBase) * 100) / 100;
-    const cgst = isIntraState ? Math.round((totalTax / 2) * 100) / 100 : 0;
-    const sgst = isIntraState ? Math.round((totalTax / 2) * 100) / 100 : 0;
-    const igst = !isIntraState ? totalTax : 0;
+    const invoiceNumber = `BILL-2026-00${billCounter}`;
+    const now = new Date().toISOString();
 
     const orderItems = cart.items.map(item => {
-      const itemTotal = item.price * item.qty;
-      const itemBase = Math.round((itemTotal / 1.18) * 100) / 100;
-      const itemTax = Math.round((itemTotal - itemBase) * 100) / 100;
+      const p = db.products.find(prod => prod.productId === item.productId || prod.id === item.productId);
       return {
+        id: `item-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        orderId,
         productId: item.productId,
-        hsnCode: item.hsnCode,
         title: item.name,
         qty: item.qty,
         unitPrice: item.price,
-        taxAmount: itemTax,
-        totalAmount: itemTotal,
-        size: item.size
+        totalAmount: item.price * item.qty,
+        size: item.size,
+        image: p?.images?.[0]?.data,
       };
     });
 
-    const order: OrderModel = {
+    // Reduce stock quantities in database
+    cart.items.forEach(item => {
+      const prod = db.products.find(p => p.productId === item.productId || p.id === item.productId);
+      if (prod) {
+        prod.stockQuantity = Math.max(0, prod.stockQuantity - item.qty);
+      }
+    });
+
+    const initialTimeline: OrderTimelineEventModel[] = [
+      {
+        id: `tl-${orderId}-1`,
+        orderId,
+        stage: 'ORDER_PLACED',
+        title: 'Order Placed Successfully',
+        description: `Order received and recorded under Bill #${invoiceNumber}. Payment method: ${paymentMethod}.`,
+        location: `${db.storeSettings.officialName}, Kalwaral, Telangana`,
+        timestamp: now,
+      }
+    ];
+
+    const newOrder: OrderModel = {
       id: orderId,
       orderId,
       invoiceNumber,
+      userId: auth?.userId || null,
       customerName: customer.name,
       customerPhone: customer.phone,
-      customerEmail: customer.email || 'customer@example.com',
+      customerEmail: customer.email,
       streetAddress: customer.streetAddress,
-      pinCode: customer.pinCode,
-      city: customer.city,
+      villageOrCity: customer.villageOrCity,
+      mandalOrArea: customer.mandalOrArea || null,
+      district: customer.district,
       state: customer.state,
-      b2bGstin: customer.b2bGstin || undefined,
-      subtotal,
-      discountAmount: discount,
-      shippingFee: shipping,
-      taxableBase,
-      cgst,
-      sgst,
-      igst,
-      totalPaid: total,
+      pinCode: customer.pinCode,
+      subtotal: cart.subtotal,
+      discountAmount: cart.discountAmount,
+      shippingFee: cart.shippingFee,
+      totalPaid: cart.total,
       paymentMethod,
       paymentStatus: paymentMethod === 'COD' ? 'AUTHORIZED' : 'CAPTURED',
-      orderStatus: 'CONFIRMED',
-      estimatedDeliveryDays: pinDatabase[customer.pinCode]?.slaDays || 3,
-      createdAt: new Date().toISOString(),
-      items: orderItems
+      orderStatus: 'ORDER_PLACED',
+      courierPartner: 'India Post Speed Post',
+      trackingNumber: `KB${Math.floor(10000000 + Math.random() * 90000000)}IN`,
+      estimatedDeliveryDays: 3,
+      createdAt: now,
+      updatedAt: now,
+      items: orderItems,
+      timeline: initialTimeline,
     };
 
-    db.orders.push(order);
+    db.orders.unshift(newOrder);
 
-    // Record in immutable audit ledger
+    // Record in immutable SHA-256 audit ledger
     db.addAuditLog(
-      "CUSTOMER",
-      "CUSTOMER",
-      "ORDER_PLACED",
-      "ORDER",
+      auth?.email || customer.email,
+      auth?.role || 'CUSTOMER',
+      'ORDER_CREATED',
+      'ORDER',
       orderId,
-      { invoiceNumber, totalPaid: total, paymentMethod }
+      { invoiceNumber, totalPaid: newOrder.totalPaid, paymentMethod, itemsCount: orderItems.length }
     );
 
     // Clear cart for this session
     db.cartItems = db.cartItems.filter(i => i.sessionId !== sessionId);
     db.appliedPromos.delete(sessionId);
 
-    return NextResponse.json({ success: true, order }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      message: 'Order placed successfully',
+      order: newOrder,
+    }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-export async function GET() {
-  return NextResponse.json({ orders: db.orders });
+export async function GET(req: NextRequest) {
+  try {
+    const auth = getAuthFromRequest(req);
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+
+    let list = [...db.orders];
+
+    if (auth?.role !== 'ADMIN') {
+      // If customer, only show their orders (or match by email query if guest)
+      const email = searchParams.get('email');
+      if (auth?.userId) {
+        list = list.filter(o => o.userId === auth.userId || (auth.email && o.customerEmail === auth.email));
+      } else if (email) {
+        list = list.filter(o => o.customerEmail.toLowerCase() === email.toLowerCase());
+      }
+    }
+
+    if (status && status !== 'ALL') {
+      list = list.filter(o => o.orderStatus === status);
+    }
+
+    return NextResponse.json({
+      success: true,
+      count: list.length,
+      orders: list,
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

@@ -56,3 +56,10 @@
   outline: 2px solid #111111 !important;
   outline-offset: 2px !important;
 }
+
+@media print {
+  header, footer, .no-print {
+    display: none !important;
+  }
+}
+

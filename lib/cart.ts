@@ -15,15 +15,12 @@ export function calculateCart(sessionId = 'default-guest') {
     discountAmount = Math.min(subtotal, 50);
   }
 
-  const shippingFee = (subtotal >= 999 || subtotal === 0) ? 0 : 99;
-  const total = Math.max(0, subtotal - discountAmount + shippingFee);
-  const amountNeeded = Math.max(0, 999 - subtotal);
+  const freeShippingThreshold = db.storeSettings?.freeShippingThreshold ?? 999;
+  const flatShippingFee = db.storeSettings?.flatShippingFee ?? 70;
 
-  // 18% GST statutory calculation
-  const taxableBase = Math.round((subtotal / 1.18) * 100) / 100;
-  const totalTax = Math.round((subtotal - taxableBase) * 100) / 100;
-  const cgst = Math.round((totalTax / 2) * 100) / 100;
-  const sgst = Math.round((totalTax / 2) * 100) / 100;
+  const shippingFee = (subtotal >= freeShippingThreshold || subtotal === 0) ? 0 : flatShippingFee;
+  const total = Math.max(0, subtotal - discountAmount + shippingFee);
+  const amountNeeded = Math.max(0, freeShippingThreshold - subtotal);
 
   return {
     sessionId,
@@ -34,11 +31,10 @@ export function calculateCart(sessionId = 'default-guest') {
     discountAmount,
     shippingFee,
     total,
-    taxableBase,
-    cgst,
-    sgst,
-    freeShippingThreshold: 999,
+    freeShippingThreshold,
     amountNeededForFreeShipping: amountNeeded,
-    freeShippingUnlocked: subtotal >= 999
+    freeShippingUnlocked: subtotal >= freeShippingThreshold,
+    isGstExempt: true,
+    exemptionNotice: db.storeSettings?.exemptionNotice,
   };
 }

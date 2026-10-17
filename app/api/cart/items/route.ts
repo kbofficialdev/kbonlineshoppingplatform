@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { id, productId, name, price, size, color, qty, hsnCode, sessionId } = parsed.data;
+    const { productId, name, price, size, color, qty, sessionId } = parsed.data;
 
     const existing = db.cartItems.find(
-      i => i.sessionId === sessionId && (i.productId === productId || i.productId === `PRD-${id}`) && i.size === size
+      i => i.sessionId === sessionId && (i.productId === productId || i.productId === `PRD-${productId}`) && i.size === size
     );
 
     if (existing) {
@@ -24,14 +24,13 @@ export async function POST(req: NextRequest) {
       db.cartItems.push({
         id: `CI-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         sessionId,
-        productId: productId || `PRD-${id}`,
+        productId,
         name,
         price,
         size,
         color,
         qty,
-        taxRatePercent: 18,
-        hsnCode: hsnCode || '61091000'
+        createdAt: new Date().toISOString(),
       });
     }
 

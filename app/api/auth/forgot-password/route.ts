@@ -1,0 +1,62 @@
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { db } from '@/lib/db';
+import { forgotPasswordSchema } from '@/lib/validations';
+import { sendEmail } from '@/lib/auth';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const parsed = forgotPasswordSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
+    }
+
+    const { email } = parsed.data;
+    const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user) {
+      // Return success even if not found to prevent user enumeration attacks
+      return NextResponse.json({
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been dispatched.',
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+    user.resetToken = resetToken;
+    user.resetExpiresAt = resetExpiresAt;
+
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: 'KB FASHIONS — Password Reset Request',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #111;">
+          <h2>KB FASHIONS (Kalwaral, Telangana)</h2>
+          <p>Hello ${user.name},</p>
+          <p>We received a request to reset your password. Click the link below to set a new password:</p>
+          <p style="margin: 20px 0;">
+            <a href="${resetUrl}" style="background: #111; color: #fff; padding: 10px 20px; border-radius: 9999px; text-decoration: none; font-weight: bold;">
+              Reset My Password
+            </a>
+          </p>
+          <p style="color: #666; font-size: 12px;">Link: ${resetUrl}</p>
+          <p style="color: #666; font-size: 12px;">This link is valid for 1 hour. If you did not request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been dispatched.',
+      devResetToken: process.env.NODE_ENV !== 'production' ? resetToken : undefined,
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

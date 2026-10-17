@@ -1,4 +1,5 @@
-// Prisma Schema for KB Online Shopping Platform (PostgreSQL)
+// Prisma Schema for KB FASHIONS Online Shopping Platform (PostgreSQL)
+// Village Enterprise Edition - Kalwaral, Kamareddy, Telangana (GST Exempted Small Business)
 
 generator client {
   provider = "prisma-client-js"
@@ -9,34 +10,83 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Product {
-  id                    Int      @id @default(autoincrement())
-  productId             String   @unique @map("product_id")
-  merchantId            String   @map("merchant_id")
-  name                  String
-  title                 String
-  price                 Float
-  currency              String   @default("INR")
-  category              String
-  tags                  String[]
-  hsnCode               String   @map("hsn_code")
-  countryOfOrigin       String   @default("India") @map("country_of_origin")
-  isGovtVerifiedSeller  Boolean  @default(true) @map("is_govt_verified_seller")
-  taxRatePercent        Float    @default(18.0) @map("tax_rate_percent")
-  sizes                 String[]
-  colors                String[]
-  rating                Float    @default(4.8)
-  reviews               Int      @default(0)
-  stockQuantity         Int      @default(50) @map("stock_quantity")
-  manufacturerDetails   String   @map("manufacturer_details")
-  collection            String
-  fabricCare            String?  @map("fabric_care")
-  fitSizing             String?  @map("fit_sizing")
-  returnPolicy          String?  @map("return_policy")
-  createdAt             DateTime @default(now()) @map("created_at")
+model StoreSettings {
+  id                    String   @id @default("kb-fashions-main")
+  brandName             String   @default("KB") @map("brand_name")
+  officialName          String   @default("KB FASHIONS") @map("official_name")
+  address               String   @default("3-55/1, Kalwaral(Vil), Sadasivanagar(M), Kamareddy(D), Telangana(TG), 503145.")
+  village               String   @default("Kalwaral")
+  mandal                String   @default("Sadasivanagar")
+  district              String   @default("Kamareddy")
+  state                 String   @default("Telangana")
+  pinCode               String   @default("503145") @map("pin_code")
+  contactEmail          String   @default("kb.official.admin@gmail.com") @map("contact_email")
+  contactPhone          String   @default("+91 7989768200") @map("contact_phone")
+  gstExempt             Boolean  @default(true) @map("gst_exempt")
+  exemptionNotice       String   @default("Small rural artisan & retail occupation enterprise exempted from GST under Section 23 of CGST Act / Telangana SGST Act.") @map("exemption_notice")
+  historySince          String   @default("Serving our village & patrons for 20 years with ancestral dedication.") @map("history_since")
+  story                 String   @default("KB FASHIONS has been rooted in Kalwaral village for over two decades. Originating as part of our ancestral occupation in fine textiles, we now bring honest quality, durable fabrics, and traditional warmth directly online to customers across India.")
+  freeShippingThreshold Float    @default(999) @map("free_shipping_threshold")
+  flatShippingFee       Float    @default(70) @map("flat_shipping_fee")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
+  @@map("store_settings")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  phone          String    @unique
+  passwordHash   String    @map("password_hash")
+  role           String    @default("CUSTOMER") // "CUSTOMER" or "ADMIN"
+  isActive       Boolean   @default(true) @map("is_active")
+  otpCode        String?   @map("otp_code")
+  otpExpiresAt   DateTime? @map("otp_expires_at")
+  resetToken     String?   @map("reset_token")
+  resetExpiresAt DateTime? @map("reset_expires_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  productId       String         @unique @map("product_id")
+  name            String
+  title           String
+  description     String
+  price           Float
+  compareAtPrice  Float?         @map("compare_at_price")
+  category        String
+  tags            String[]
+  sizes           String[]
+  colors          String[]
+  stockQuantity   Int            @default(50) @map("stock_quantity")
+  rating          Float          @default(4.9)
+  reviews         Int            @default(0)
+  fabricCare      String?        @map("fabric_care")
+  origin          String         @default("Kalwaral, Telangana, India")
+  isFeatured      Boolean        @default(false) @map("is_featured")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  images          ProductImage[]
+
   @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  name      String
+  mimeType  String   @default("image/svg+xml") @map("mime_type")
+  data      String   @map("image_data") // Stored in PostgreSQL (Base64 data URL or SVG XML)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+  product   Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  @@map("product_images")
 }
 
 model Category {
@@ -50,116 +100,103 @@ model Category {
 }
 
 model CartItem {
-  id             String   @id @default(cuid())
-  sessionId      String   @map("session_id")
-  productId      String   @map("product_id")
-  name           String
-  price          Float
-  size           String
-  color          String   @default("#111111")
-  qty            Int      @default(1)
-  taxRatePercent Float    @default(18.0) @map("tax_rate_percent")
-  hsnCode        String   @map("hsn_code")
-  createdAt      DateTime @default(now()) @map("created_at")
+  id        String   @id @default(cuid())
+  sessionId String   @map("session_id")
+  userId    String?  @map("user_id")
+  productId String   @map("product_id")
+  name      String
+  price     Float
+  size      String
+  color     String   @default("#111111")
+  qty       Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("cart_items")
 }
 
 model Order {
-  id                    String      @id @default(cuid())
-  orderId               String      @unique @map("order_id")
-  invoiceNumber         String      @unique @map("invoice_number")
-  customerName          String      @map("customer_name")
-  customerPhone         String      @map("customer_phone")
-  customerEmail         String?     @map("customer_email")
-  streetAddress         String      @map("street_address")
-  pinCode               String      @map("pin_code")
-  city                  String
+  id                    String               @id @default(cuid())
+  orderId               String               @unique @map("order_id")
+  invoiceNumber         String               @unique @map("invoice_number")
+  userId                String?              @map("user_id")
+  customerName          String               @map("customer_name")
+  customerPhone         String               @map("customer_phone")
+  customerEmail         String               @map("customer_email")
+  streetAddress         String               @map("street_address")
+  villageOrCity         String               @map("village_or_city")
+  mandalOrArea          String?              @map("mandal_or_area")
+  district              String
   state                 String
-  b2bGstin              String?     @map("b2b_gstin")
+  pinCode               String               @map("pin_code")
   subtotal              Float
-  discountAmount        Float       @default(0) @map("discount_amount")
-  shippingFee           Float       @default(0) @map("shipping_fee")
-  taxableBase           Float       @map("taxable_base")
-  cgst                  Float       @default(0)
-  sgst                  Float       @default(0)
-  igst                  Float       @default(0)
-  totalPaid             Float       @map("total_paid")
-  paymentMethod         String      @map("payment_method")
-  paymentStatus         String      @default("CAPTURED") @map("payment_status")
-  orderStatus           String      @default("CONFIRMED") @map("order_status")
-  estimatedDeliveryDays Int         @default(3) @map("estimated_delivery_days")
-  createdAt             DateTime    @default(now()) @map("created_at")
+  discountAmount        Float                @default(0) @map("discount_amount")
+  shippingFee           Float                @default(0) @map("shipping_fee")
+  totalPaid             Float                @map("total_paid")
+  paymentMethod         String               @default("COD") @map("payment_method") // COD, UPI, CARD
+  paymentStatus         String               @default("PENDING") @map("payment_status") // PENDING, CAPTURED, REFUNDED
+  orderStatus           String               @default("ORDER_PLACED") @map("order_status") // ORDER_PLACED, CONFIRMED, DISPATCHED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+  courierPartner        String?              @map("courier_partner")
+  trackingNumber        String?              @map("tracking_number")
+  estimatedDeliveryDays Int                  @default(3) @map("estimated_delivery_days")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
   items                 OrderItem[]
+  timeline              OrderTimelineEvent[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String   @map("order_id")
-  productId   String   @map("product_id")
-  hsnCode     String   @map("hsn_code")
+  id          String  @id @default(cuid())
+  orderId     String  @map("order_id")
+  productId   String  @map("product_id")
   title       String
   qty         Int
-  unitPrice   Float    @map("unit_price")
-  taxAmount   Float    @map("tax_amount")
-  totalAmount Float    @map("total_amount")
+  unitPrice   Float   @map("unit_price")
+  totalAmount Float   @map("total_amount")
   size        String
-  order       Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order       Order   @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
 
   @@map("order_items")
 }
 
-model StatutoryTaxInvoice {
-  id               String   @id @default(cuid())
-  invoiceNumber    String   @unique @map("invoice_number")
-  orderId          String   @unique @map("order_id")
-  sellerLegalName  String   @map("seller_legal_name")
-  sellerGstin      String   @map("seller_gstin")
-  sellerAddress    String   @map("seller_address")
-  buyerName        String   @map("buyer_name")
-  buyerGstin       String?  @map("buyer_gstin")
-  totalPaid        Float    @map("total_paid")
-  verificationHash String   @map("verification_hash")
-  createdAt        DateTime @default(now()) @map("created_at")
+model OrderTimelineEvent {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  stage       String // ORDER_PLACED, CONFIRMED, DISPATCHED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+  title       String
+  description String
+  location    String
+  timestamp   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
 
-  @@map("statutory_tax_invoices")
+  @@map("order_timeline_events")
 }
 
-model MerchantKYC {
-  id                        String    @id @default(cuid())
-  merchantId                String    @unique @map("merchant_id")
-  legalBusinessName         String    @map("legal_business_name")
-  brandTradeName            String    @map("brand_trade_name")
-  entityType                String    @map("entity_type")
-  gstin                     String    @unique
-  incorporationNumber       String    @map("incorporation_number")
-  contactEmail              String    @map("contact_email")
-  contactPhone              String    @map("contact_phone")
-  registeredAddress         String    @map("registered_address")
-  qualityCertifications     String[]  @map("quality_certifications")
-  verificationStatus        String    @default("PENDING") @map("verification_status")
-  verificationSealTimestamp DateTime? @map("verification_seal_timestamp")
-  complianceNotes           String?   @map("compliance_notes")
-  createdAt                 DateTime  @default(now()) @map("created_at")
-  updatedAt                 DateTime  @updatedAt @map("updated_at")
+model RefundRequest {
+  id          String    @id @default(cuid())
+  orderId     String    @map("order_id")
+  reason      String
+  amount      Float
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes       String?
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  @@map("merchant_kyc")
+  @@map("refund_requests")
 }
 
 model AuditLog {
   id           String   @id @default(cuid())
-  logId        String   @unique @map("log_id")
-  timestamp    DateTime @default(now())
-  actorId      String   @map("actor_id")
-  actorRole    String   @map("actor_role")
+  actor        String
+  role         String
   action       String
-  resourceType String   @map("resource_type")
-  resourceId   String   @map("resource_id")
-  details      Json
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  metadata     String
   previousHash String   @map("previous_hash")
-  hash         String
+  currentHash  String   @map("current_hash")
+  timestamp    DateTime @default(now())
 
   @@map("audit_logs")
 }

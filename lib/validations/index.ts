@@ -1,22 +1,67 @@
 import { z } from 'zod';
 
-export const productFilterSchema = z.object({
-  category: z.string().optional(),
-  size: z.string().optional(),
-  maxPrice: z.coerce.number().positive().optional(),
-  sort: z.enum(['featured', 'price-low', 'price-high', 'rating']).optional(),
-  search: z.string().optional(),
+export const phoneRegex = /^(\+91[\-\s]?)?[0]?(91)?[6789]\d{9}$/;
+export const pinRegex = /^\d{6}$/;
+
+// 1. Auth Schemas
+export const signupSchema = z.object({
+  name: z.string().min(2, "Full Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().regex(phoneRegex, "Must be a valid 10-digit Indian phone number"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export const cartAddSchema = z.object({
-  id: z.coerce.number().optional(),
-  productId: z.string().optional(),
-  name: z.string().min(1, "Product name is required"),
+export const signinSchema = z.object({
+  emailOrPhone: z.string().min(3, "Email or phone number is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const otpRequestSchema = z.object({
+  emailOrPhone: z.string().min(3, "Email or phone number is required"),
+});
+
+export const otpVerifySchema = z.object({
+  emailOrPhone: z.string().min(3, "Email or phone number is required"),
+  otp: z.string().length(6, "OTP must be exactly 6 digits"),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+// 2. Product Schemas
+export const productCreateSchema = z.object({
+  name: z.string().min(3, "Product name is required"),
+  title: z.string().optional(),
+  description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.coerce.number().positive("Price must be greater than zero"),
+  compareAtPrice: z.coerce.number().positive().optional().nullable(),
+  category: z.string().min(1, "Category is required"),
+  tags: z.array(z.string()).default([]),
+  sizes: z.array(z.string()).default(['S', 'M', 'L', 'XL']),
+  colors: z.array(z.string()).default(['Natural', 'Indigo', 'Earthy Ochre']),
+  stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative").default(25),
+  fabricCare: z.string().optional(),
+  origin: z.string().default("Kalwaral, Telangana, India"),
+  isFeatured: z.boolean().default(false),
+  imageData: z.string().min(10, "Product image data is required (stored in database)"),
+});
+
+export const productUpdateSchema = productCreateSchema.partial();
+
+// 3. Cart Schemas
+export const cartAddSchema = z.object({
+  productId: z.string().min(1, "Product ID is required"),
+  name: z.string().min(1, "Product name is required"),
+  price: z.coerce.number().positive("Price must be positive"),
   size: z.string().default('M'),
-  color: z.string().default('#111111'),
+  color: z.string().default('Natural'),
   qty: z.coerce.number().int().positive().default(1),
-  hsnCode: z.string().default('61091000'),
   sessionId: z.string().default('default-guest'),
 });
 
@@ -31,47 +76,64 @@ export const applyPromoSchema = z.object({
   sessionId: z.string().default('default-guest'),
 });
 
-export const checkoutOrderSchema = z.object({
+// 4. Checkout & Order Schemas
+export const checkoutSchema = z.object({
   customer: z.object({
     name: z.string().min(2, "Full name must be at least 2 characters"),
-    phone: z.string().regex(/^(\+91[\-\s]?)?[0]?(91)?[6789]\d{9}$/, "Must be a valid 10-digit Indian phone number"),
-    email: z.string().email().optional().or(z.literal('')),
+    phone: z.string().regex(phoneRegex, "Must be a valid 10-digit Indian phone number"),
+    email: z.string().email("Valid email required for order notifications"),
     streetAddress: z.string().min(5, "Street address must be at least 5 characters"),
-    pinCode: z.string().regex(/^\d{6}$/, "PIN code must be exactly 6 digits"),
-    city: z.string().min(2, "City is required"),
+    villageOrCity: z.string().min(2, "Village or City is required"),
+    mandalOrArea: z.string().optional().nullable(),
+    district: z.string().min(2, "District is required"),
     state: z.string().min(2, "State is required"),
-    b2bGstin: z.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid 15-character GSTIN format").optional().nullable().or(z.literal('')),
+    pinCode: z.string().regex(pinRegex, "PIN code must be exactly 6 digits"),
   }),
-  paymentMethod: z.enum(['UPI', 'CARD', 'COD']).default('UPI'),
+  paymentMethod: z.enum(['COD', 'UPI', 'CARD', 'NETBANKING']).default('COD'),
   sessionId: z.string().default('default-guest'),
 });
 
-export const merchantOnboardSchema = z.object({
-  legalBusinessName: z.string().min(3, "Legal Business Name must be at least 3 characters"),
-  brandTradeName: z.string().optional(),
-  entityType: z.enum(['LLP', 'Private Limited', 'Public Limited', 'Partnership', 'Proprietorship', 'Co-operative', 'Artisan / Guild']).default('Private Limited'),
-  gstin: z.string().trim().toUpperCase().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "GSTIN must be a valid 15-character statutory alphanumeric code"),
-  incorporationNumber: z.string().optional(),
-  contactEmail: z.string().email("Valid statutory contact email is required"),
-  contactPhone: z.string().min(10, "Contact phone is required"),
-  registeredAddress: z.string().min(8, "Complete registered address is required"),
-  qualityCertifications: z.array(z.string()).default([]),
+// 5. Order Timeline Progression Schema
+export const orderTimelineUpdateSchema = z.object({
+  stage: z.enum(['ORDER_PLACED', 'CONFIRMED', 'DISPATCHED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']),
+  title: z.string().min(3, "Stage title is required"),
+  description: z.string().min(5, "Stage description is required"),
+  location: z.string().min(2, "Stage location or facility is required"),
+  courierPartner: z.string().optional(),
+  trackingNumber: z.string().optional(),
 });
 
-export const adminReviewSchema = z.object({
-  merchantId: z.string(),
-  action: z.enum(['APPROVE', 'REJECT']),
-  complianceNotes: z.string().optional(),
+// 6. Store Settings Schema
+export const storeSettingsUpdateSchema = z.object({
+  brandName: z.string().optional(),
+  officialName: z.string().optional(),
+  address: z.string().optional(),
+  village: z.string().optional(),
+  mandal: z.string().optional(),
+  district: z.string().optional(),
+  state: z.string().optional(),
+  pinCode: z.string().optional(),
+  contactEmail: z.string().email().optional(),
+  contactPhone: z.string().optional(),
+  story: z.string().optional(),
+  freeShippingThreshold: z.coerce.number().positive().optional(),
+  flatShippingFee: z.coerce.number().min(0).optional(),
 });
 
-export const adminRefundSchema = z.object({
+// 7. Refund Request Schema
+export const refundRequestSchema = z.object({
   orderId: z.string().min(1, "Order ID is required"),
-  amount: z.coerce.number().positive().optional(),
-  reason: z.string().default("Customer initiated statutory cancellation within SLA"),
+  reason: z.string().min(10, "Reason must be at least 10 characters"),
+  amount: z.coerce.number().positive("Refund amount must be positive"),
 });
 
+// 8. Payment Webhook Schema
 export const paymentWebhookSchema = z.object({
-  eventType: z.string(),
-  payload: z.record(z.any()),
+  eventType: z.string().default('payment.captured'),
+  payload: z.object({
+    orderId: z.string().optional(),
+    amount: z.number().optional(),
+    status: z.string().optional(),
+  }).passthrough(),
   idempotencyKey: z.string().optional(),
 });
