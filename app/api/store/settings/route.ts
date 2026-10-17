@@ -29,19 +29,39 @@ export async function PUT(req: NextRequest) {
       updatedAt: new Date().toISOString(),
     };
 
+    let emailsDispatched = 0;
+    if (parsed.data.notifyCustomersOnPolicyChange && parsed.data.policyUpdateTitle) {
+      const { sendPolicyUpdateNotificationEmail } = await import('@/lib/email');
+      const customers = db.users.filter(u => u.role === 'CUSTOMER' && u.email);
+      for (const cust of customers) {
+        try {
+          await sendPolicyUpdateNotificationEmail(
+            cust.email,
+            cust.name,
+            parsed.data.policyUpdateTitle,
+            parsed.data.policyUpdateSummary || 'Mandatory statutory and consumer rights policy terms update.'
+          );
+          emailsDispatched++;
+        } catch (e) {
+          console.error(`Failed to dispatch policy notice to ${cust.email}:`, e);
+        }
+      }
+    }
+
     db.addAuditLog(
       auth.email,
       'ADMIN',
       'SETTINGS_UPDATED',
       'STORE_SETTINGS',
       db.storeSettings.id,
-      parsed.data
+      { ...parsed.data, emailsDispatched }
     );
 
     return NextResponse.json({
       success: true,
-      message: 'Store settings successfully updated in database',
+      message: `Store settings successfully updated in database${emailsDispatched > 0 ? ` and policy update notice broadcast to ${emailsDispatched} registered customer(s)` : ''}`,
       settings: db.storeSettings,
+      emailsDispatched,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

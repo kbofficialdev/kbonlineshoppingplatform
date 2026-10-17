@@ -225,6 +225,165 @@ export default function AdminSettingsPage() {
             />
           </div>
 
+          {/* Section: Statutory Grievance Redressal Officer (Rules 2020) */}
+          <div className="sm:col-span-2 pt-4 border-t border-kbBorder">
+            <h3 className="text-sm font-black text-black mb-1 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+              Statutory Grievance Redressal Officer (Rule 5(9) Rules 2020)
+            </h3>
+            <p className="text-[11px] text-neutral-500 mb-4">
+              Officer details are displayed across the site, invoice slips, statutory declarations, and the Grievance Redressal policy page.
+            </p>
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Grievance Officer Name *</label>
+            <input
+              type="text"
+              value={settings.grievanceOfficerName || ''}
+              onChange={(e) => setSettings({ ...settings, grievanceOfficerName: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Officer Designation *</label>
+            <input
+              type="text"
+              value={settings.grievanceOfficerDesignation || ''}
+              onChange={(e) => setSettings({ ...settings, grievanceOfficerDesignation: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Officer Direct Email Desk *</label>
+            <input
+              type="email"
+              value={settings.grievanceOfficerEmail || ''}
+              onChange={(e) => setSettings({ ...settings, grievanceOfficerEmail: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Officer Helpline Phone *</label>
+            <input
+              type="text"
+              value={settings.grievanceOfficerPhone || ''}
+              onChange={(e) => setSettings({ ...settings, grievanceOfficerPhone: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-bold"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="font-bold text-neutral-700 block mb-1">Officer Postal / Physical Chamber Address</label>
+            <input
+              type="text"
+              value={settings.grievanceOfficerAddress || ''}
+              onChange={(e) => setSettings({ ...settings, grievanceOfficerAddress: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono"
+            />
+          </div>
+
+          {/* Section: Delivery Radius & Tariffs */}
+          <div className="sm:col-span-2 pt-4 border-t border-kbBorder">
+            <h3 className="text-sm font-black text-black mb-1 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+              Local Delivery Radius &amp; Postal Tariffs
+            </h3>
+            <p className="text-[11px] text-neutral-500 mb-4">
+              Configure 10-km radius boundary, central pincode (503145), and villages eligible for local direct delivery.
+            </p>
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Local Delivery Radius (Kilometers)</label>
+            <input
+              type="number"
+              value={settings.deliveryRadiusKm || 10}
+              onChange={(e) => setSettings({ ...settings, deliveryRadiusKm: parseFloat(e.target.value) })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-neutral-700 block mb-1">Primary Hub Pincode</label>
+            <input
+              type="text"
+              value={settings.deliveryPincode || '503145'}
+              onChange={(e) => setSettings({ ...settings, deliveryPincode: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-mono font-bold"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="font-bold text-neutral-700 block mb-1">Villages Covered Under 10km Delivery (Comma-separated)</label>
+            <input
+              type="text"
+              value={settings.deliveryVillages || ''}
+              onChange={(e) => setSettings({ ...settings, deliveryVillages: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="font-bold text-neutral-700 block mb-1">Tariff &amp; Postal Rates Description</label>
+            <input
+              type="text"
+              value={settings.tariffDescription || ''}
+              onChange={(e) => setSettings({ ...settings, tariffDescription: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+            />
+          </div>
+
+          {/* Section: Broadcast Policy Update Email to Customers */}
+          <div className="sm:col-span-2 pt-4 border-t border-kbBorder bg-amber-50/60 p-4 rounded-2xl border border-amber-200">
+            <h3 className="text-sm font-black text-amber-950 mb-1 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse"></span>
+              Statutory Policy Change Email Broadcaster
+            </h3>
+            <p className="text-[11px] text-amber-800 mb-3">
+              When statutory terms or policies are updated, notify all registered customer accounts via automated email broadcast.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-neutral-800 block mb-1">Policy Title / Scope</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Terms of Service & 10km Delivery Radius Update"
+                  value={settings.policyUpdateTitle || ''}
+                  onChange={(e) => setSettings({ ...settings, policyUpdateTitle: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-kb-sm border border-amber-300 bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-800 block mb-1">Summary of Modifications</label>
+                <textarea
+                  rows={2}
+                  placeholder="Briefly describe what changed for customers..."
+                  value={settings.policyUpdateSummary || ''}
+                  onChange={(e) => setSettings({ ...settings, policyUpdateSummary: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-kb-sm border border-amber-300 bg-white focus:outline-none focus:ring-1 focus:ring-black text-xs"
+                ></textarea>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={!!settings.notifyCustomersOnPolicyChange}
+                  onChange={(e) => setSettings({ ...settings, notifyCustomersOnPolicyChange: e.target.checked })}
+                  className="w-4 h-4 rounded text-black focus:ring-black"
+                />
+                <span className="text-xs font-bold text-neutral-900">
+                  Broadcast this policy update email to all registered patrons upon saving
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className="sm:col-span-2">
             <label className="font-bold text-neutral-700 block mb-1">20-Year Heritage Story</label>
             <textarea

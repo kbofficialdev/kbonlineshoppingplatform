@@ -48,6 +48,17 @@ export default function CheckoutPage() {
   // Payment Selection
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'UPI' | 'CARD'>('COD');
 
+  // Statutory Policies & Terms Consent
+  const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
+  const [agreeReturn, setAgreeReturn] = useState<boolean>(true);
+  const [agreePrivacy, setAgreePrivacy] = useState<boolean>(true);
+
+  // Checkout Confirmation OTP State
+  const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
+  const [orderOtp, setOrderOtp] = useState<string>('');
+  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
+  const [otpSentMessage, setOtpSentMessage] = useState<string | null>(null);
+
   const selectLocalVillage = (vName: string) => {
     setVillageOrCity(vName);
     setMandalOrArea('Sadasivanagar');
@@ -168,7 +179,59 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePlaceOrder = async () => {
+  const handleInitiateOrderOtp = async () => {
+    if (!agreeTerms || !agreeReturn || !agreePrivacy) {
+      showToast({
+        type: 'warning',
+        title: 'Policy Consent Required',
+        message: 'Please review and accept the statutory terms, return policy, and privacy policy before placing order.',
+      });
+      return;
+    }
+
+    setShowOtpModal(true);
+    setIsSendingOtp(true);
+    setOtpSentMessage(null);
+
+    try {
+      const res = await authFetch('/api/orders/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          name: name.trim(),
+          amount: cart.total,
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpSentMessage(`✓ Authorization code dispatched to ${email.trim()}`);
+        showToast({
+          type: 'info',
+          title: 'Order OTP Dispatched',
+          message: `6-digit authorization code dispatched to ${email.trim()}`,
+        });
+      } else {
+        setOtpSentMessage(data.error || 'Failed to dispatch OTP');
+      }
+    } catch (e: any) {
+      setOtpSentMessage('Error communicating with server');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handlePlaceOrder = async (codeOverride?: string) => {
+    const finalOtp = codeOverride || orderOtp;
+    if (!finalOtp || finalOtp.trim().length !== 6) {
+      showToast({
+        type: 'warning',
+        title: 'Enter Verification Code',
+        message: 'Please enter the 6-digit OTP code sent to your email.',
+      });
+      return;
+    }
+
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
@@ -190,6 +253,8 @@ export default function CheckoutPage() {
           },
           paymentMethod,
           sessionId: effectiveSessionId,
+          otp: finalOtp.trim(),
+          termsAccepted: true,
         })
       });
 
@@ -612,6 +677,52 @@ export default function CheckoutPage() {
                 </label>
               </div>
 
+              {/* Mandatory Policy Consent & Statutory Declarations */}
+              <div className="pt-4 border-t border-kbBorder space-y-3 bg-neutral-50 p-4 rounded-2xl border">
+                <div className="text-[11px] font-black uppercase tracking-wider text-black flex items-center gap-1.5">
+                  <span>📜</span>
+                  <span>Mandatory Statutory Consent &amp; E-Commerce Policies</span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
+                    />
+                    <span className="text-neutral-700 leading-snug">
+                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-blue-700">Terms of Sale</Link> and agree to 10-km local delivery / India Post delivery guidelines.
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreeReturn}
+                      onChange={(e) => setAgreeReturn(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
+                    />
+                    <span className="text-neutral-700 leading-snug">
+                      I agree to the <Link href="/policies/refunds" target="_blank" className="font-bold underline text-blue-700">Refund &amp; Return Policy</Link> (7-day window for packaged handloom garments).
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreePrivacy}
+                      onChange={(e) => setAgreePrivacy(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
+                    />
+                    <span className="text-neutral-700 leading-snug">
+                      I have reviewed the <Link href="/policies/privacy" target="_blank" className="font-bold underline text-blue-700">Privacy Policy</Link> and <Link href="/policies/statutory-declaration" target="_blank" className="font-bold underline text-blue-700">Section 23 CGST Tax Exemption Notice</Link>.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="pt-4 border-t border-kbBorder flex justify-between items-center">
                 <button
@@ -625,8 +736,8 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   id="confirm-place-order-btn"
-                  onClick={handlePlaceOrder}
-                  disabled={isSubmitting}
+                  onClick={handleInitiateOrderOtp}
+                  disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
                   className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
@@ -635,13 +746,89 @@ export default function CheckoutPage() {
                       <span>Confirming Order...</span>
                     </>
                   ) : (
-                    <span>Confirm &amp; Place Order Now →</span>
+                    <span>Verify OTP &amp; Place Order (₹{cart.total}) →</span>
                   )}
                 </button>
               </div>
             </div>
           )}
         </div>
+
+        {/* Modal: Order Confirmation OTP Popup */}
+        {showOtpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6 relative animate-scale-up">
+              <button
+                onClick={() => setShowOtpModal(false)}
+                className="absolute top-5 right-5 text-neutral-400 hover:text-black font-black text-xl"
+              >
+                ✕
+              </button>
+
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-blue-50 text-kb-blue border border-blue-200 rounded-full flex items-center justify-center mx-auto text-xl">
+                  🛡️
+                </div>
+                <h3 className="text-lg font-black text-black">Confirm Order Placement</h3>
+                <p className="text-xs text-neutral-500">
+                  Please enter the 6-digit confirmation code sent to <strong className="text-black">{email}</strong> to authorize your order of <strong>₹{cart.total}</strong>.
+                </p>
+                {otpSentMessage && (
+                  <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-1 px-3 rounded-full inline-block">
+                    {otpSentMessage}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 mb-1.5 text-center">
+                    6-Digit Order Confirmation Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    autoFocus
+                    placeholder="• • • • • •"
+                    value={orderOtp}
+                    onChange={(e) => setOrderOtp(e.target.value.replace(/\D/g, ''))}
+                    className="w-full text-center text-2xl font-mono font-black tracking-widest py-3 px-4 rounded-2xl border-2 border-slate-300 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
+                  />
+                  <p className="text-[10px] text-center text-neutral-400 mt-1">
+                    Valid for 5 minutes only. Check spam folder if not received in 30s.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInitiateOrderOtp()}
+                    disabled={isSendingOtp}
+                    className="w-1/3 py-3 text-xs font-bold text-neutral-600 hover:text-black border border-slate-200 rounded-2xl disabled:opacity-50"
+                  >
+                    {isSendingOtp ? 'Sending...' : 'Resend Code'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePlaceOrder()}
+                    disabled={isSubmitting || orderOtp.length !== 6}
+                    className="w-2/3 py-3 text-xs font-extrabold bg-black text-white hover:bg-neutral-800 rounded-2xl transition-all shadow-md disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <SmoothLoader size="xs" color="white" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <span>Verify &amp; Finalize Order →</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Right Col: Order Items Summary */}
         <div className="bg-kbSurfaceAlt border border-kbBorder p-6 rounded-kb-lg space-y-4">

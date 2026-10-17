@@ -75,15 +75,12 @@ function ProgressBarInner() {
       className="fixed top-0 left-0 right-0 z-[9999] h-[2.5px] pointer-events-none overflow-hidden bg-transparent"
     >
       <div
-        className="h-full bg-gradient-to-r from-kb-blue via-kb-violet to-amber-400 transition-all duration-200 ease-out shadow-[0_0_10px_#3478F6]"
+        className="h-full bg-black transition-all duration-200 ease-out shadow-[0_0_8px_rgba(0,0,0,0.5)]"
         style={{
           width: `${progress}%`,
           opacity: loading || progress > 0 ? 1 : 0,
         }}
-      >
-        {/* Glow Pip at front edge */}
-        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-r from-transparent to-white/60 blur-[1px]" />
-      </div>
+      />
     </div>
   );
 }

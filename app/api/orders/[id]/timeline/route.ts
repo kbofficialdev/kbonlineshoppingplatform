@@ -58,9 +58,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       { stage, title, location, trackingNumber }
     );
 
+    // Dispatch delivery stage update email to customer
+    try {
+      const { sendOrderStatusUpdateEmail } = await import('@/lib/email');
+      const recipientEmail = order.customerEmail;
+      const recipientName = order.customerName || 'Valued Customer';
+      if (recipientEmail) {
+        await sendOrderStatusUpdateEmail(
+          recipientEmail,
+          recipientName,
+          order.orderId,
+          stage,
+          description,
+          location
+        );
+      }
+    } catch (e) {
+      console.error('Delivery status email error:', e);
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Order stage advanced to ${stage}`,
+      message: `Order stage advanced to ${stage} and notification dispatched to customer`,
       order,
     });
   } catch (err: any) {

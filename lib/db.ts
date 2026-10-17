@@ -63,6 +63,18 @@ export interface StoreSettingsModel {
   story: string;
   freeShippingThreshold: number;
   flatShippingFee: number;
+  grievanceOfficerName: string;
+  grievanceOfficerDesignation: string;
+  grievanceOfficerEmail: string;
+  grievanceOfficerPhone: string;
+  grievanceOfficerAddress: string;
+  deliveryRadiusKm: number;
+  deliveryPincode: string;
+  deliveryVillages: string;
+  tariffDescription?: string;
+  lastPolicyUpdateTitle?: string;
+  lastPolicyUpdateSummary?: string;
+  lastPolicyUpdatedAt?: string;
   updatedAt: string;
 }
 
@@ -118,6 +130,9 @@ export interface UserModel {
   lockedUntil?: string | null;
   resetToken?: string | null;
   resetExpiresAt?: string | null;
+  emailVerified?: boolean;
+  emailVerificationToken?: string | null;
+  emailVerificationExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -423,6 +438,18 @@ class DatabaseStore {
     story: "KB FASHIONS has been rooted in Kalwaral village for over two decades. Originating as part of our ancestral occupation in fine textiles, we now bring honest quality, durable fabrics, and traditional warmth directly online to customers across India.",
     freeShippingThreshold: 999,
     flatShippingFee: 70,
+    grievanceOfficerName: "Sri K. Balaram",
+    grievanceOfficerDesignation: "Designated Grievance Redressal Officer & Managing Proprietor",
+    grievanceOfficerEmail: "kb.official.admin@gmail.com",
+    grievanceOfficerPhone: "+91 7989768200",
+    grievanceOfficerAddress: "3-55/1, Kalwaral(Vil), Sadasivanagar(M), Kamareddy(D), Telangana(TG), 503145.",
+    deliveryRadiusKm: 10,
+    deliveryPincode: "503145",
+    deliveryVillages: "Kalwaral, Sadasivanagar, Dharmaraopet, Tadwai, Padmavajiwadi, Modegaon, Markal, Brahmanpally, Utnoor, Kuprial",
+    tariffDescription: "Standard Rural & Postal Tariff: ₹70 flat shipping across all villages in 503145 and nearby areas. Free shipping for orders above ₹999.",
+    lastPolicyUpdateTitle: "Consumer Protection & Delivery Compliance 2026",
+    lastPolicyUpdateSummary: "Updated 10km rural delivery coverage radius, grievance officer statutory details, and 7-day return procedures.",
+    lastPolicyUpdatedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
@@ -436,6 +463,7 @@ class DatabaseStore {
   public navItems: NavItemModel[] = [];
   public cartItems: CartItemModel[] = [];
   public appliedPromos: Map<string, { code: string; percent: number }> = new Map();
+  public orderOtps: Map<string, { otp: string; expiresAt: number }> = new Map();
   public orders: OrderModel[] = [];
   public refundRequests: RefundRequestModel[] = [];
   public auditLogs: AuditLogModel[] = [];

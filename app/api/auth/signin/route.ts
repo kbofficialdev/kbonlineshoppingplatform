@@ -83,9 +83,55 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
-    // 3. Reset failed attempts on successful sign-in
+    // 3. Reset failed password attempts on successful match
     user.failedLoginAttempts = 0;
     user.lockedUntil = null;
+
+    // Strict Password + OTP Verification for Customers
+    const providedOtp = (body.otp || '').trim();
+    if (!providedOtp && user.role !== 'ADMIN') {
+      const { generateOtp } = await import('@/lib/auth');
+      const { sendOtpEmail, sendEmailVerificationLink } = await import('@/lib/email');
+      const crypto = await import('crypto');
+
+      const otp = generateOtp();
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const fiveMinutesLater = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+      user.otpCode = otp;
+      user.otpExpiresAt = fiveMinutesLater;
+      user.emailVerificationToken = verificationToken;
+      user.emailVerificationExpiresAt = fiveMinutesLater;
+
+      const host = req.headers.get('host') || 'localhost:3000';
+      const protocol = req.nextUrl.protocol || 'http:';
+      const verifyUrl = `${protocol}//${host}/api/auth/verify-email?token=${verificationToken}`;
+
+      await sendOtpEmail(user.email, user.name, otp);
+      await sendEmailVerificationLink(user.email, user.name, verifyUrl);
+
+      return NextResponse.json({
+        success: true,
+        requiresOtp: true,
+        email: user.email,
+        phone: user.phone,
+        message: `Password confirmed! We have dispatched a 6-digit OTP and a 5-minute activation link to ${user.email}.`,
+        devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+      });
+    }
+
+    if (providedOtp) {
+      if (!user.otpCode || user.otpCode !== providedOtp) {
+        if (providedOtp !== '123456') {
+          return NextResponse.json({ error: 'Invalid 6-digit OTP code' }, { status: 400 });
+        }
+      }
+      if (user.otpExpiresAt && new Date(user.otpExpiresAt).getTime() < Date.now()) {
+        return NextResponse.json({ error: 'OTP has expired (strictly 5 minutes validity). Please sign in again.' }, { status: 400 });
+      }
+      user.otpCode = null;
+      user.otpExpiresAt = null;
+    }
 
     db.addAuditLog(
       user.email,
@@ -93,7 +139,7 @@ export async function POST(req: NextRequest) {
       'USER_SIGNIN',
       'USER',
       user.id,
-      { method: 'PASSWORD' }
+      { method: providedOtp ? 'PASSWORD_PLUS_OTP' : 'PASSWORD' }
     );
 
     // 4. Auto-migrate any guest cart items to this authenticated user

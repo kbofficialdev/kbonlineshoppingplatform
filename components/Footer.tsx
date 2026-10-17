@@ -29,23 +29,19 @@ export default function Footer() {
           {/* Column 2: Shop Collections */}
           <div className="text-xs space-y-2.5">
             <h4 className="font-bold text-kb-gold uppercase tracking-widest text-[11px] mb-3">Shop Collections</h4>
-            <div><Link href="/search?category=All" className="text-neutral-400 hover:text-white transition-colors">All Collections</Link></div>
             <div><Link href="/search?category=Sarees" className="text-neutral-400 hover:text-white transition-colors">Handloom Gadwal &amp; Pattu</Link></div>
-            <div><Link href="/search?category=Men%27s+Unstitched" className="text-neutral-400 hover:text-white transition-colors">Men's Unstitched (Raymond &amp; Arvind)</Link></div>
+            <div><Link href="/search?category=Men%27s+Unstitched" className="text-neutral-400 hover:text-white transition-colors">Men's Unstitched (Raymond)</Link></div>
             <div><Link href="/search?category=Women" className="text-neutral-400 hover:text-white transition-colors">Women's Tops &amp; Leggings</Link></div>
-            <div><Link href="/ai" className="text-kb-violet font-semibold hover:text-white flex items-center gap-1 transition-colors">✦ KB Shopmate AI (Voice)</Link></div>
             <div><Link href="/search?category=Wedding" className="text-neutral-400 hover:text-white transition-colors">Wedding &amp; Festive Special</Link></div>
           </div>
 
-          {/* Column 3: Customer Support & Orders */}
+          {/* Column 3: Customer Support & Heritage */}
           <div className="text-xs space-y-2.5">
             <h4 className="font-bold text-kb-gold uppercase tracking-widest text-[11px] mb-3">Customer Support</h4>
-            <div><Link href="/account" className="text-neutral-400 hover:text-white transition-colors">My Profile &amp; Account</Link></div>
-            <div><Link href="/account?tab=orders" className="text-neutral-400 hover:text-white transition-colors">Order History &amp; Stages</Link></div>
             <div><Link href="/account?tab=tracking" className="text-neutral-400 hover:text-white transition-colors">Track Consignment</Link></div>
-            <div><Link href="/cart" className="text-neutral-400 hover:text-white transition-colors">Shopping Bag</Link></div>
-            <div><Link href="/wishlist" className="text-neutral-400 hover:text-white transition-colors">Saved Wishlist</Link></div>
             <div><Link href="/contact" className="text-neutral-400 hover:text-white transition-colors">Help Desk &amp; Inquiries</Link></div>
+            <div><Link href="/about" className="text-neutral-400 hover:text-white transition-colors">20-Year Village Story</Link></div>
+            <div><Link href="/policies/shipping" className="text-neutral-400 hover:text-white transition-colors">10 km Local Delivery Hub</Link></div>
           </div>
 
           {/* Column 4: Statutory Policies & Compliance */}
@@ -58,32 +54,12 @@ export default function Footer() {
             <div><Link href="/policies/grievance" className="text-neutral-400 hover:text-white transition-colors">Grievance Officer (Rules 2020)</Link></div>
             <div><Link href="/policies/statutory-declaration" className="text-neutral-400 hover:text-white transition-colors">Sec 23 CGST Tax Exemption</Link></div>
           </div>
-
-          {/* Column 5: Store Location & Official Contact */}
-          <div className="text-xs space-y-2.5 bg-[#101625] p-5 rounded-2xl border border-[#222E48]">
-            <h4 className="font-bold text-kb-gold uppercase tracking-widest text-[11px] mb-2">Physical Village Store</h4>
-            <div className="font-semibold text-white">{store.officialName}</div>
-            <div className="text-neutral-400 leading-relaxed font-mono text-[11px]">
-              {store.address}
-            </div>
-            <div className="pt-2 text-neutral-300">
-              <strong className="text-white">Phone:</strong> {store.contactPhone}
-            </div>
-            <div className="text-neutral-300">
-              <strong className="text-white">Email:</strong> {store.contactEmail}
-            </div>
-            <div className="pt-2 border-t border-[#1C273E]">
-              <Link href="/admin" className="text-[11px] font-bold text-kb-blue hover:text-white underline transition-colors">
-                Merchant Admin Portal →
-              </Link>
-            </div>
-          </div>
         </div>
 
         {/* Bottom Credits */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-neutral-500 gap-4">
           <div>
-            © 2006–2026 {store.officialName}. All rights reserved. Kalwaral(Vil), Kamareddy(D), Telangana, India.
+            © 2026 {store.officialName}. All rights reserved. Kalwaral(Vil), Kamareddy(D), Telangana, India.
           </div>
           <div className="flex flex-wrap gap-4">
             <Link href="/policies/privacy" className="hover:text-white transition-colors">Privacy</Link>

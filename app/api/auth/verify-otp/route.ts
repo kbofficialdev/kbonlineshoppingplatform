@@ -58,9 +58,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'OTP has expired. Please request a new one.' }, { status: 400 });
     }
 
-    // Clear used OTP and reset failed attempts
+    // Clear used OTP and mark verified
     user.otpCode = null;
     user.otpExpiresAt = null;
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpiresAt = null;
     user.failedLoginAttempts = 0;
     user.otpRequestCount = 0;
     user.lockedUntil = null;

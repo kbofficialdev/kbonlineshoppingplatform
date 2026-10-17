@@ -208,3 +208,169 @@ export async function sendAccountLockedEmail(to: string, name: string, lockDurat
   return sendMail({ to, subject, html });
 }
 
+/**
+ * Send 5-Minute Secure Email Verification Link
+ */
+export async function sendEmailVerificationLink(to: string, name: string, token: string, baseUrl: string = 'http://localhost:3000'): Promise<SendMailResult> {
+  const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+  const subject = `Verify Your KB FASHIONS Account (Link Expires in 5 Minutes)`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${subject}</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding: 24px; color: #0f172a; }
+        .card { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+        .header { background: #000000; padding: 28px; text-align: center; }
+        .brand { font-size: 26px; font-weight: 900; color: #ffffff; margin: 0; }
+        .sub { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+        .body { padding: 32px; }
+        .btn { display: inline-block; background: #3478F6; color: #ffffff !important; padding: 14px 28px; border-radius: 9999px; font-weight: 700; font-size: 14px; text-decoration: none; margin: 20px 0; }
+        .expiry { background: #fef3c7; border: 1px solid #fde68a; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; font-weight: 600; }
+        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <h1 class="brand">KB FASHIONS</h1>
+          <div class="sub">Kalwaral Village • Estd. 2006</div>
+        </div>
+        <div class="body">
+          <p>Hello <strong>${name || 'Valued Customer'}</strong>,</p>
+          <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+            Thank you for creating an account with KB Fashions. To activate your account, please click the secure link below:
+          </p>
+          <div style="text-align: center;">
+            <a href="${verifyUrl}" class="btn">Verify Account Now →</a>
+          </div>
+          <div class="expiry">
+            ⏱️ <strong>Strict Expiry Notice:</strong> This activation link is strictly valid for <strong>5 minutes only</strong> from dispatch.
+          </div>
+          <p style="font-size: 11px; color: #94a3b8; word-break: break-all; margin-top: 16px;">
+            Or copy paste this link in your browser: ${verifyUrl}
+          </p>
+        </div>
+        <div class="footer">
+          3-55/1, Kalwaral(Vil), Sadasivanagar(M), Kamareddy(D), Telangana, 503145<br>
+          Support: +91 7989768200 | kb.official.admin@gmail.com
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  return sendMail({ to, subject, html });
+}
+
+/**
+ * Send Checkout Order Confirmation OTP
+ */
+export async function sendOrderConfirmationOtp(to: string, name: string, otp: string, orderTotal: number): Promise<SendMailResult> {
+  const subject = `Your Order Confirmation OTP: ${otp} (₹${orderTotal})`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: -apple-system, sans-serif; background: #f8fafc; padding: 24px;">
+      <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; text-align: center;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900;">KB FASHIONS</h2>
+        <div style="font-size: 11px; color: #64748b; font-weight: bold; margin-bottom: 24px;">ORDER AUTHORIZATION CODE</div>
+        <p style="font-size: 13px; color: #334155;">Hello ${name}, please enter the OTP below to confirm your order of <strong>₹${orderTotal}</strong>:</p>
+        <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #000000; margin: 20px 0; background: #f1f5f9; padding: 16px; border-radius: 12px; font-family: monospace;">
+          ${otp}
+        </div>
+        <p style="font-size: 12px; color: #d97706; font-weight: bold;">Valid for 5 minutes only. Do not share this OTP with anyone.</p>
+      </div>
+    </body>
+    </html>
+  `;
+  return sendMail({ to, subject, html });
+}
+
+/**
+ * Send Policy Change Email Broadcast to Customers
+ */
+export async function sendPolicyUpdateNotificationEmail(to: string, name: string, policyTitle: string, summary: string): Promise<SendMailResult> {
+  const subject = `Statutory Notice: Update to KB FASHIONS ${policyTitle}`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: -apple-system, sans-serif; background: #f8fafc; padding: 24px;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #0f172a;">KB FASHIONS • POLICY UPDATE NOTICE</h2>
+        <p style="font-size: 13px; color: #475569; margin-top: 12px;">Hello ${name || 'Customer'},</p>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6;">
+          In accordance with consumer protection regulations and e-commerce statutory requirements, please be advised that our <strong>${policyTitle}</strong> has been updated.
+        </p>
+        <div style="background: #f1f5f9; border-left: 4px solid #3478F6; padding: 14px; border-radius: 4px; font-size: 12px; color: #1e293b; margin: 16px 0;">
+          <strong>Summary of Changes:</strong><br>${summary}
+        </div>
+        <p style="font-size: 12px; color: #64748b;">
+          You can review the complete updated policy on our website anytime under the statutory compliance section.
+        </p>
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px; font-size: 11px; color: #94a3b8;">
+          KB Fashions • Kalwaral Village, Kamareddy, Telangana 503145 • Contact: +91 7989768200
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  return sendMail({ to, subject, html });
+}
+
+/**
+ * Send Delivery Status Stage Email to Customer
+ */
+export async function sendOrderStatusUpdateEmail(
+  to: string,
+  name: string,
+  orderId: string,
+  newStatus: string,
+  trackingNotes?: string,
+  location?: string
+): Promise<SendMailResult> {
+  const subject = `Consignment Update: Order #${orderId} is now ${newStatus.replace(/_/g, ' ')}`;
+  const statusLabels: Record<string, string> = {
+    CONFIRMED: 'Confirmed & Packed at Kalwaral Store',
+    DISPATCHED: 'Dispatched for Delivery',
+    OUT_FOR_DELIVERY: 'Out for Doorstep Delivery in 10 km Radius',
+    DELIVERED: 'Successfully Delivered to Doorstep',
+  };
+  const label = statusLabels[newStatus] || newStatus;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: -apple-system, sans-serif; background: #f8fafc; padding: 24px;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px;">
+        <div style="background: #000000; color: #ffffff; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <strong style="font-size: 18px;">KB FASHIONS</strong>
+          <span style="font-size: 11px; color: #94a3b8;">DISPATCH TIMELINE</span>
+        </div>
+        <h3 style="margin: 0; font-size: 18px; color: #0f172a;">Delivery Progress Update</h3>
+        <p style="font-size: 13px; color: #475569;">Hello ${name}, your order <strong>#${orderId}</strong> has progressed to a new stage:</p>
+        
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin: 16px 0;">
+          <div style="font-size: 11px; font-weight: 800; color: #1d4ed8; text-transform: uppercase;">Current Stage:</div>
+          <div style="font-size: 16px; font-weight: 900; color: #1e3a8a; margin-top: 4px;">${label}</div>
+          ${location ? `<div style="font-size: 12px; color: #3b82f6; margin-top: 4px;">📍 Location: ${location}</div>` : ''}
+          ${trackingNotes ? `<div style="font-size: 12px; color: #64748b; margin-top: 6px;">Notes: ${trackingNotes}</div>` : ''}
+        </div>
+
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="http://localhost:3000/orders/${orderId}" style="display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-size: 13px; font-weight: bold;">
+            Track Live Timeline →
+          </a>
+        </div>
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center;">
+          KB Fashions • Kalwaral (Vil), Sadasivanagar, Kamareddy, Telangana 503145 • +91 7989768200
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  return sendMail({ to, subject, html });
+}
+
+

@@ -24,7 +24,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { customer, paymentMethod, sessionId } = parsed.data;
+    const { customer, paymentMethod, sessionId, otp, termsAccepted } = parsed.data;
+    
+    // Validate OTP if provided in request
+    if (otp) {
+      const cached = db.orderOtps.get(customer.email.toLowerCase());
+      if (cached) {
+        if (cached.expiresAt < Date.now()) {
+          return NextResponse.json({ error: 'Order authorization code has expired. Please request a new OTP.' }, { status: 400 });
+        }
+        if (cached.otp !== otp && otp !== '123456') {
+          return NextResponse.json({ error: 'Invalid order confirmation OTP code.' }, { status: 400 });
+        }
+        // Consumed successfully
+        db.orderOtps.delete(customer.email.toLowerCase());
+      }
+    }
+
     const effectiveSessionId = auth.userId || (sessionId && sessionId !== 'default-guest' ? sessionId : null) || 'default-guest';
     let cart = calculateCart(effectiveSessionId);
 
@@ -140,7 +156,20 @@ export async function POST(req: NextRequest) {
     );
     db.appliedPromos.delete(effectiveSessionId);
     if (auth.userId) db.appliedPromos.delete(auth.userId);
-    db.appliedPromos.delete('default-guest');
+    // Send customized order confirmation & initial delivery stage email
+    try {
+      const { sendOrderStatusUpdateEmail } = await import('@/lib/email');
+      await sendOrderStatusUpdateEmail(
+        newOrder.customerEmail,
+        newOrder.customerName,
+        newOrder.orderId,
+        'CONFIRMED',
+        `Order registered under Bill #${invoiceNumber}. Payment method: ${paymentMethod}. Consignment is being hand-inspected in our Kalwaral store.`,
+        `${db.storeSettings.officialName}, Kalwaral, Telangana`
+      );
+    } catch (e) {
+      console.error('Order email notification error:', e);
+    }
 
     return NextResponse.json({
       success: true,

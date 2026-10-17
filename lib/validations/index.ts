@@ -124,6 +124,8 @@ export const checkoutSchema = z.object({
   }),
   paymentMethod: z.enum(['COD', 'UPI', 'CARD', 'NETBANKING']).default('COD'),
   sessionId: z.string().default('default-guest'),
+  otp: z.string().optional(),
+  termsAccepted: z.boolean().optional(),
 });
 
 // 5. Order Timeline Progression Schema
@@ -151,6 +153,18 @@ export const storeSettingsUpdateSchema = z.object({
   story: z.string().optional(),
   freeShippingThreshold: z.coerce.number().positive().optional(),
   flatShippingFee: z.coerce.number().min(0).optional(),
+  grievanceOfficerName: z.string().optional(),
+  grievanceOfficerDesignation: z.string().optional(),
+  grievanceOfficerEmail: z.string().email().optional(),
+  grievanceOfficerPhone: z.string().optional(),
+  grievanceOfficerAddress: z.string().optional(),
+  deliveryRadiusKm: z.coerce.number().positive().optional(),
+  deliveryPincode: z.string().optional(),
+  deliveryVillages: z.string().optional(),
+  tariffDescription: z.string().optional(),
+  notifyCustomersOnPolicyChange: z.boolean().optional(),
+  policyUpdateTitle: z.string().optional(),
+  policyUpdateSummary: z.string().optional(),
 });
 
 // 7. Refund Request Schema
