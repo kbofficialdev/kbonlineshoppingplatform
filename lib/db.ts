@@ -33,6 +33,36 @@ export interface StoreAlertModel {
   updatedAt: string;
 }
 
+export interface TicketMessageModel {
+  id: string;
+  ticketId: string;
+  senderRole: 'CUSTOMER' | 'ADMIN' | 'SUPPORT_AGENT';
+  senderName: string;
+  message: string;
+  attachments?: string[];
+  createdAt: string;
+}
+
+export interface SupportTicketModel {
+  id: string;
+  ticketNumber: string;
+  userId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  category: 'ORDER_ISSUE' | 'DELIVERY_DELAY' | 'HANDLOOM_QUALITY' | 'PAYMENT_BILLING' | 'ACCOUNT_ACCESS' | 'GENERAL';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  orderId?: string | null;
+  subject: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_CUSTOMER' | 'RESOLVED' | 'CLOSED';
+  slaHours: number;
+  createdAt: string;
+  updatedAt: string;
+  firstResponseAt?: string | null;
+  resolvedAt?: string | null;
+  messages: TicketMessageModel[];
+}
+
 export interface NavItemModel {
   id: string;
   label: string;
@@ -466,6 +496,7 @@ class DatabaseStore {
   public orderOtps: Map<string, { otp: string; expiresAt: number }> = new Map();
   public orders: OrderModel[] = [];
   public refundRequests: RefundRequestModel[] = [];
+  public supportTickets: SupportTicketModel[] = [];
   public auditLogs: AuditLogModel[] = [];
   private lastAuditHash: string = "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -1486,7 +1517,82 @@ class DatabaseStore {
       }
     ];
 
-    // 7. Initial Audit Log
+    // 7. Initial Support Tickets (Online Streamlined Support)
+    this.supportTickets = [
+      {
+        id: "tkt-1",
+        ticketNumber: "TKT-2026-10482",
+        userId: "usr-cust-1",
+        customerName: "Rahul Sharma",
+        customerEmail: "customer@example.com",
+        customerPhone: "+919876543210",
+        category: "ORDER_ISSUE",
+        priority: "MEDIUM",
+        orderId: "ord-1001",
+        subject: "Verification of Raymond fine suiting custom cut length",
+        status: "IN_PROGRESS",
+        slaHours: 24,
+        createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+        updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        firstResponseAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        messages: [
+          {
+            id: "msg-101",
+            ticketId: "tkt-1",
+            senderRole: "CUSTOMER",
+            senderName: "Rahul Sharma",
+            message: "Namaste KB Fashions team, I placed order for 3.25 meters of Raymond Dark Navy suiting fabric. Can you please confirm if the extra 0.25m allowance for tailored trousers is included from the bolt?",
+            createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+          },
+          {
+            id: "msg-102",
+            ticketId: "tkt-1",
+            senderRole: "ADMIN",
+            senderName: "KB Fashions Support (Sri K. Balaram)",
+            message: "Namaskaram Sri Rahul garu! We have physically verified your cut length on our wooden measuring table in Kalwaral store. Exactly 3.25 meters plus a 5cm complimentary artisan selvage buffer has been precision cut. Your package is sealed and ready for dispatch.",
+            createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+          }
+        ]
+      },
+      {
+        id: "tkt-2",
+        ticketNumber: "TKT-2026-09841",
+        userId: "usr-cust-1",
+        customerName: "Rahul Sharma",
+        customerEmail: "customer@example.com",
+        customerPhone: "+919876543210",
+        category: "DELIVERY_DELAY",
+        priority: "LOW",
+        orderId: null,
+        subject: "Doorstep delivery timing for Sadasivanagar local radius",
+        status: "RESOLVED",
+        slaHours: 24,
+        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+        firstResponseAt: new Date(Date.now() - 86400000 * 1.8).toISOString(),
+        resolvedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+        messages: [
+          {
+            id: "msg-201",
+            ticketId: "tkt-2",
+            senderRole: "CUSTOMER",
+            senderName: "Rahul Sharma",
+            message: "Could you let me know if evening delivery after 6:00 PM is available for Sadasivanagar village?",
+            createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+          },
+          {
+            id: "msg-202",
+            ticketId: "tkt-2",
+            senderRole: "SUPPORT_AGENT",
+            senderName: "KB Village Dispatcher (Ramesh)",
+            message: "Yes sir! Our local delivery assistant covers Sadasivanagar daily between 5:30 PM and 8:00 PM. We will give you a phone confirmation prior to arrival.",
+            createdAt: new Date(Date.now() - 86400000 * 1.8).toISOString(),
+          }
+        ]
+      }
+    ];
+
+    // 8. Initial Audit Log
     this.addAuditLog(
       "SYSTEM",
       "SYSTEM",
@@ -1827,6 +1933,156 @@ class DatabaseStore {
         isCurrent: currentIdx === idx,
       })),
     };
+  }
+
+  // Support Tickets Operations
+  public getSupportTickets(filter?: { userId?: string; status?: string; category?: string; priority?: string }): SupportTicketModel[] {
+    let result = [...this.supportTickets];
+    if (filter?.userId) {
+      result = result.filter(t => t.userId === filter.userId);
+    }
+    if (filter?.status && filter.status !== 'ALL') {
+      result = result.filter(t => t.status === filter.status);
+    }
+    if (filter?.category && filter.category !== 'ALL') {
+      result = result.filter(t => t.category === filter.category);
+    }
+    if (filter?.priority && filter.priority !== 'ALL') {
+      result = result.filter(t => t.priority === filter.priority);
+    }
+    return result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }
+
+  public getSupportTicketById(id: string): SupportTicketModel | undefined {
+    return this.supportTickets.find(t => t.id === id || t.ticketNumber === id);
+  }
+
+  public createSupportTicket(data: {
+    userId: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    category: SupportTicketModel['category'];
+    priority: SupportTicketModel['priority'];
+    orderId?: string | null;
+    subject: string;
+    initialMessage: string;
+  }): SupportTicketModel {
+    const now = new Date().toISOString();
+    const id = `tkt-${Date.now()}`;
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+    const ticketNumber = `TKT-2026-${randomDigits}`;
+
+    const initialMsg: TicketMessageModel = {
+      id: `msg-${Date.now()}-1`,
+      ticketId: id,
+      senderRole: 'CUSTOMER',
+      senderName: data.customerName,
+      message: data.initialMessage,
+      createdAt: now,
+    };
+
+    const newTicket: SupportTicketModel = {
+      id,
+      ticketNumber,
+      userId: data.userId,
+      customerName: data.customerName,
+      customerEmail: data.customerEmail,
+      customerPhone: data.customerPhone,
+      category: data.category,
+      priority: data.priority,
+      orderId: data.orderId || null,
+      subject: data.subject,
+      status: 'OPEN',
+      slaHours: data.priority === 'URGENT' ? 6 : data.priority === 'HIGH' ? 12 : 24,
+      createdAt: now,
+      updatedAt: now,
+      messages: [initialMsg],
+    };
+
+    this.supportTickets.unshift(newTicket);
+    this.addAuditLog(
+      data.customerEmail,
+      'CUSTOMER',
+      'SUPPORT_TICKET_CREATED',
+      'TICKET',
+      newTicket.id,
+      { ticketNumber: newTicket.ticketNumber, category: newTicket.category, subject: newTicket.subject }
+    );
+
+    return newTicket;
+  }
+
+  public addTicketMessage(ticketId: string, messageData: {
+    senderRole: 'CUSTOMER' | 'ADMIN' | 'SUPPORT_AGENT';
+    senderName: string;
+    message: string;
+    attachments?: string[];
+  }): TicketMessageModel | null {
+    const ticket = this.supportTickets.find(t => t.id === ticketId || t.ticketNumber === ticketId);
+    if (!ticket) return null;
+
+    const now = new Date().toISOString();
+    const newMsg: TicketMessageModel = {
+      id: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      ticketId: ticket.id,
+      senderRole: messageData.senderRole,
+      senderName: messageData.senderName,
+      message: messageData.message,
+      attachments: messageData.attachments || [],
+      createdAt: now,
+    };
+
+    ticket.messages.push(newMsg);
+    ticket.updatedAt = now;
+
+    if (messageData.senderRole === 'ADMIN' || messageData.senderRole === 'SUPPORT_AGENT') {
+      if (!ticket.firstResponseAt) {
+        ticket.firstResponseAt = now;
+      }
+      if (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') {
+        ticket.status = 'WAITING_FOR_CUSTOMER';
+      }
+    } else if (messageData.senderRole === 'CUSTOMER') {
+      if (ticket.status === 'WAITING_FOR_CUSTOMER' || ticket.status === 'RESOLVED') {
+        ticket.status = 'IN_PROGRESS';
+      }
+    }
+
+    this.addAuditLog(
+      messageData.senderName,
+      messageData.senderRole,
+      'TICKET_MESSAGE_POSTED',
+      'TICKET',
+      ticket.id,
+      { ticketNumber: ticket.ticketNumber, role: messageData.senderRole }
+    );
+
+    return newMsg;
+  }
+
+  public updateTicketStatus(ticketId: string, status: SupportTicketModel['status'], updaterName?: string): SupportTicketModel | null {
+    const ticket = this.supportTickets.find(t => t.id === ticketId || t.ticketNumber === ticketId);
+    if (!ticket) return null;
+
+    const now = new Date().toISOString();
+    ticket.status = status;
+    ticket.updatedAt = now;
+
+    if (status === 'RESOLVED' || status === 'CLOSED') {
+      ticket.resolvedAt = now;
+    }
+
+    this.addAuditLog(
+      updaterName || 'SUPPORT_SYSTEM',
+      'SYSTEM',
+      'TICKET_STATUS_UPDATED',
+      'TICKET',
+      ticket.id,
+      { ticketNumber: ticket.ticketNumber, status }
+    );
+
+    return ticket;
   }
 }
 

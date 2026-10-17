@@ -58,6 +58,9 @@ export function getAuthFromRequest(req: NextRequest): TokenPayload | null {
   return verifyToken(token);
 }
 
+// Alias for getAuthFromRequest
+export const verifyAuth = getAuthFromRequest;
+
 // Generate 6-digit numeric OTP
 export function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();

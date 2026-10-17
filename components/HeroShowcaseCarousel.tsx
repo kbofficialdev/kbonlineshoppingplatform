@@ -207,7 +207,7 @@ export default function HeroShowcaseCarousel() {
 
   return (
     <section
-      className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl border border-slate-200/80 bg-neutral-950 text-white select-none group"
+      className="relative w-full overflow-hidden bg-neutral-950 text-white select-none group border-b border-neutral-800"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -216,12 +216,12 @@ export default function HeroShowcaseCarousel() {
       aria-label="KB Fashions Featured Collections & Top Arrivals"
     >
       {/* Slide Content Display */}
-      <div className="relative min-h-[380px] sm:min-h-[460px] lg:min-h-[500px] flex items-center">
+      <div className="relative min-h-[340px] sm:min-h-[460px] lg:min-h-[540px] flex items-center w-full">
         {currentSlide.type === 'BANNER' ? (
           /* ============================================================== */
-          /* FULL-CARD BANNER SLIDE (Completely Visible Uncropped Display)  */
+          /* FULL-VIEWPORT BANNER SLIDE (Edge-to-Edge 100vw Display)        */
           /* ============================================================== */
-          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[520px] min-h-[240px] sm:min-h-[360px] overflow-hidden bg-neutral-950 flex items-center justify-center">
+          <div className="relative w-full h-[340px] sm:h-[460px] lg:h-[540px] overflow-hidden bg-neutral-950 flex items-center justify-center">
             {/* Ambient Blurred Artwork for Edge Softening */}
             <img
               src={currentSlide.imageSrc}
@@ -241,19 +241,19 @@ export default function HeroShowcaseCarousel() {
             <div className="absolute inset-0 z-15 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
             {/* Interactive Floating Overlay CTAs and Badge */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 w-full p-3 sm:p-6 lg:p-8 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-              <div className="space-y-1 max-w-xl">
-                <span className="inline-block px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-extrabold tracking-wider bg-black/80 text-kb-gold border border-amber-400/40 backdrop-blur-md">
+            <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-4 sm:px-6 lg:px-8 pt-6 pb-8 sm:pb-6 flex items-center justify-between gap-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+              <div className="space-y-0.5 sm:space-y-1 max-w-xl">
+                <span className="inline-block px-2 sm:px-3 py-0.5 rounded-full text-[9px] sm:text-[11px] font-extrabold tracking-wider bg-black/80 text-kb-gold border border-amber-400/40 backdrop-blur-md">
                   {currentSlide.badge}
                 </span>
-                <h3 className="text-sm sm:text-lg lg:text-2xl font-black text-white drop-shadow-lg truncate">
+                <h3 className="text-xs sm:text-lg lg:text-2xl font-black text-white drop-shadow-lg truncate max-w-[180px] sm:max-w-none">
                   {currentSlide.title}
                 </h3>
               </div>
               <div className="flex items-center gap-2">
                 <Link
                   href={currentSlide.linkUrl}
-                  className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-xl flex items-center gap-1.5"
+                  className="px-3.5 sm:px-6 py-1.5 sm:py-2.5 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-xl flex items-center gap-1"
                 >
                   <span>{currentSlide.ctaText}</span>
                   <span aria-hidden="true">→</span>
@@ -271,7 +271,7 @@ export default function HeroShowcaseCarousel() {
           /* ============================================================== */
           /* PRODUCT SHOWCASE SLIDE (Top 5 New Arrivals)                    */
           /* ============================================================== */
-          <div className="w-full h-full grid grid-cols-1 md:grid-cols-12 items-center p-6 sm:p-10 lg:p-14 gap-6 relative z-10">
+          <div className="w-full h-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center p-6 sm:p-10 lg:p-14 gap-6 relative z-10">
             {/* Left Content */}
             <div className="md:col-span-7 space-y-4 sm:space-y-5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kb-blue/20 border border-kb-blue/50 text-sky-400 text-[11px] font-bold tracking-wider">
@@ -381,7 +381,8 @@ export default function HeroShowcaseCarousel() {
       </button>
 
       {/* Pagination Indicators & Slide Counter */}
-      <div className="absolute bottom-4 left-0 right-0 z-20 flex items-center justify-center gap-2">
+      <div className="absolute bottom-2 sm:bottom-3 left-0 right-0 z-30 flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-none">
+        <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
         {slides.map((_, idx) => (
           <button
             key={idx}
@@ -397,6 +398,7 @@ export default function HeroShowcaseCarousel() {
         <span className="ml-3 text-[10px] font-mono text-neutral-400 bg-black/60 px-2 py-0.5 rounded-full border border-white/10">
           {currentIndex + 1} / {slides.length}
         </span>
+        </div>
       </div>
     </section>
   );

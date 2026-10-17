@@ -303,11 +303,39 @@ export default function HomePage() {
   return (
     <div className="bg-white text-kb-black">
       {/* ========================================================================= */}
-      {/* 2. DYNAMIC HERO CAROUSEL: TOP 5 ARRIVALS & OFFICIAL BRAND BANNERS         */}
+      {/* 2. FULL-VIEWPORT HERO CAROUSEL: ZERO SIDE GAPS (100vw EDGE-TO-EDGE)       */}
       {/* ========================================================================= */}
-      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6">
+      <section className="w-full pb-0">
         <HeroShowcaseCarousel />
       </section>
+
+      {/* ========================================================================= */}
+      {/* 2.5 LIVE VILLAGE STORE STATUS & HYPERLOCAL CONCIERGE STRIP                 */}
+      {/* ========================================================================= */}
+      <div className="bg-neutral-900 border-b border-neutral-800 text-white py-3 px-4 sm:px-6 text-xs">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 text-[10px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              STORE OPEN TODAY 9 AM – 9 PM
+            </span>
+            <span className="text-neutral-300 font-medium text-[11px]">
+              📍 Kalwaral Village (PIN 503145) • Free Doorstep Delivery within 10 km
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4 text-[11px]">
+            <Link href="/policies/shipping" className="text-amber-300 font-bold hover:underline">
+              Check 10-km Villages →
+            </Link>
+            <span className="text-neutral-600">|</span>
+            <Link href="/support" className="text-sky-300 font-bold hover:underline flex items-center gap-1">
+              <span>🎫</span>
+              <span>Online Support Desk</span>
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {/* ========================================================================= */}
       {/* 3. KB SHOPMATE AI ANNOUNCEMENT BANNER (AI Blue-Violet Gradient 7%)       */}
@@ -601,9 +629,12 @@ export default function HomePage() {
             <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-xl mx-auto text-kb-black">
               📞
             </div>
-            <h3 className="font-bold text-sm text-kb-black">Direct Village Handover</h3>
+            <h3 className="font-bold text-sm text-kb-black">Direct Village Support</h3>
             <p className="text-xs text-kb-slate leading-relaxed">
-              Have questions? Talk directly to our shopkeepers in Kalwaral at +91 7989768200 via call or WhatsApp.
+              Call us at +91 7989768200 or open a ticket at our{' '}
+              <Link href="/support" className="text-kb-blue font-semibold hover:underline">
+                Online Support Desk →
+              </Link>
             </p>
           </div>
         </div>

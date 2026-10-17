@@ -73,3 +73,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL(`/auth/signin?error=${encodeURIComponent(err.message)}`, req.url));
   }
 }
+
