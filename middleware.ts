@@ -75,11 +75,41 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 5. Protect Order Placement API (POST /api/orders)
-  if (pathname === '/api/orders' && req.method === 'POST') {
+  // 5. Protect Shopping Bag / Cart Pages (/cart and /cart/*) — Zero Anonymous Sessions
+  if (pathname === '/cart' || pathname.startsWith('/cart/')) {
+    if (!token || !payload) {
+      const signinUrl = new URL('/auth/signin', req.url);
+      signinUrl.searchParams.set('redirect', pathname);
+      signinUrl.searchParams.set('reason', 'auth_required');
+      return NextResponse.redirect(signinUrl);
+    }
+  }
+
+  // 6. Protect Wishlist Pages (/wishlist and /wishlist/*) — Valid Customer Session Required
+  if (pathname === '/wishlist' || pathname.startsWith('/wishlist/')) {
+    if (!token || !payload) {
+      const signinUrl = new URL('/auth/signin', req.url);
+      signinUrl.searchParams.set('redirect', pathname);
+      signinUrl.searchParams.set('reason', 'auth_required');
+      return NextResponse.redirect(signinUrl);
+    }
+  }
+
+  // 7. Protect Order Tracking & Invoice Pages (/orders/*, /invoices/*)
+  if (pathname.startsWith('/orders') || pathname.startsWith('/invoices')) {
+    if (!token || !payload) {
+      const signinUrl = new URL('/auth/signin', req.url);
+      signinUrl.searchParams.set('redirect', pathname);
+      signinUrl.searchParams.set('reason', 'auth_required');
+      return NextResponse.redirect(signinUrl);
+    }
+  }
+
+  // 8. Protect Order Placement & Cart Mutation APIs
+  if (pathname.startsWith('/api/orders') || pathname.startsWith('/api/cart')) {
     if (!token || !payload) {
       return NextResponse.json(
-        { error: 'Authentication Required: You must be signed in to place an order.', requiresAuth: true },
+        { error: 'Authentication Required: Valid customer session required. Anonymous sessions are strictly prohibited.', requiresAuth: true },
         { status: 401 }
       );
     }
@@ -94,8 +124,15 @@ export const config = {
     '/account/:path*',
     '/checkout',
     '/checkout/:path*',
+    '/cart',
+    '/cart/:path*',
+    '/wishlist',
+    '/wishlist/:path*',
+    '/orders/:path*',
+    '/invoices/:path*',
     '/api/admin/:path*',
-    '/api/orders',
+    '/api/orders/:path*',
+    '/api/cart/:path*',
   ],
 };
 

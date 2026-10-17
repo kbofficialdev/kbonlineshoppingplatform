@@ -1,6 +1,23 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 
+export interface BannerModel {
+  id: string;
+  bannerId: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  category: 'HERO' | 'WELCOME' | 'FEATURE' | 'AI';
+  mediaId: string;
+  imageUrl: string;
+  linkUrl: string;
+  ctaText: string;
+  position: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StoreSettingsModel {
   id: string;
   brandName: string;
@@ -345,6 +362,7 @@ class DatabaseStore {
   public users: UserModel[] = [];
   public products: ProductModel[] = [];
   public productImages: ProductImageModel[] = [];
+  public banners: BannerModel[] = [];
   public cartItems: CartItemModel[] = [];
   public appliedPromos: Map<string, { code: string; percent: number }> = new Map();
   public orders: OrderModel[] = [];
@@ -1072,7 +1090,91 @@ class DatabaseStore {
       }
     ];
 
-    // 4. Initial Audit Log
+    // 4. Initial Database Banners and Media Assets (Read from disk into PostgreSQL DB records)
+    let traditionData = '';
+    let shopmateData = '';
+
+    if (typeof window === 'undefined') {
+      try {
+        const nodeFs = eval('require')('fs');
+        const nodePath = eval('require')('path');
+        const traditionBannerPath = nodePath.join(process.cwd(), 'externals', 'KB Fashions_ Tradition Meets Trend.png');
+        const shopmateBannerPath = nodePath.join(process.cwd(), 'externals', 'kb-shopmate-ai-banner.png');
+
+        if (nodeFs.existsSync(traditionBannerPath)) {
+          const buf = nodeFs.readFileSync(traditionBannerPath);
+          traditionData = `data:image/png;base64,${buf.toString('base64')}`;
+        }
+
+        if (nodeFs.existsSync(shopmateBannerPath)) {
+          const buf = nodeFs.readFileSync(shopmateBannerPath);
+          shopmateData = `data:image/png;base64,${buf.toString('base64')}`;
+        }
+      } catch (e) {
+        // Fallback gracefully if running in a client bundle
+      }
+    }
+
+    if (traditionData) {
+      this.productImages.push({
+        id: "banner-tradition-meets-trend",
+        productId: "banner-tradition",
+        name: "KB Fashions - Tradition Meets Trend Official Welcome Hero",
+        mimeType: "image/png",
+        data: traditionData,
+        isPrimary: true,
+        createdAt: now,
+      });
+    }
+
+    if (shopmateData) {
+      this.productImages.push({
+        id: "banner-shopmate-ai",
+        productId: "banner-shopmate-ai",
+        name: "KB Shopmate AI Voice & Visual Assistant Official Banner",
+        mimeType: "image/png",
+        data: shopmateData,
+        isPrimary: true,
+        createdAt: now,
+      });
+    }
+
+    this.banners = [
+      {
+        id: "bnr-1",
+        bannerId: "banner-tradition",
+        title: "Tradition Meets Trend",
+        subtitle: "20 Years of Generational Handlooms, Gadwal Craft & Authentic Unstitched Fabrics from Kalwaral Village",
+        badge: "✨ HERITAGE COLLECTION 2026",
+        category: "HERO",
+        mediaId: "banner-tradition-meets-trend",
+        imageUrl: "/api/media/banner-tradition-meets-trend",
+        linkUrl: "/search?category=All",
+        ctaText: "Explore Collection",
+        position: 1,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "bnr-2",
+        bannerId: "banner-shopmate-ai",
+        title: "KB Shopmate AI: The Future of Village Shopping",
+        subtitle: "Personalized Telugu & English Voice AI Shopping for Sarees, Unstitched Fabrics, and Family Garments",
+        badge: "✦ NEW AI FEATURE LAUNCH",
+        category: "AI",
+        mediaId: "banner-shopmate-ai",
+        imageUrl: "/api/media/banner-shopmate-ai",
+        linkUrl: "/ai",
+        ctaText: "Experience Voice AI",
+        position: 2,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      }
+    ];
+
+    // 5. Initial Audit Log
     this.addAuditLog(
       "SYSTEM",
       "SYSTEM",
@@ -1081,6 +1183,18 @@ class DatabaseStore {
       "KB-CATALOG",
       { totalProducts: this.products.length, village: "Kalwaral", status: "ONLINE_READY" }
     );
+  }
+
+  public getBanners(): BannerModel[] {
+    return this.banners.filter(b => b.isActive).sort((a, b) => a.position - b.position);
+  }
+
+  public getBannerById(id: string): BannerModel | undefined {
+    return this.banners.find(b => b.id === id || b.bannerId === id);
+  }
+
+  public getTopNewProducts(limit = 5): ProductModel[] {
+    return [...this.products].slice(0, limit);
   }
 
   public getStoreSettings(): StoreSettingsModel {

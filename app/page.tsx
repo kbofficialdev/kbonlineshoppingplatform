@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useModalAlert } from '@/components/ModalContext';
+import HeroShowcaseCarousel from '@/components/HeroShowcaseCarousel';
 
 interface Product {
   id: string;
@@ -301,58 +302,10 @@ export default function HomePage() {
   return (
     <div className="bg-white text-kb-black">
       {/* ========================================================================= */}
-      {/* 2. MAIN FASHION CAMPAIGN HERO (Obsidian Black Foundation 25%, Gold 3%) */}
+      {/* 2. DYNAMIC HERO CAROUSEL: TOP 5 ARRIVALS & OFFICIAL BRAND BANNERS         */}
       {/* ========================================================================= */}
-      <section className="bg-kb-black text-white py-16 md:py-24 border-b border-neutral-800 relative overflow-hidden">
-        <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-3xl space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-kb-pill bg-neutral-900 border border-kb-gold/30 text-[11px] font-mono text-kb-gold">
-              <span className="w-2 h-2 rounded-full bg-kb-gold animate-pulse"></span>
-              <span>20 Years in Kalwaral Village, Telangana • Ancestral Heritage</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
-              Better Clothes.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-100 to-kb-gold">
-                Honest Village Prices.
-              </span>
-            </h1>
-
-            <p className="text-neutral-300 text-sm sm:text-base leading-relaxed">
-              Welcome to <strong className="text-white font-semibold">{store.officialName}</strong>. Coming online after two decades of serving our patrons in Kalwaral village (Kamareddy, Telangana). Discover authentic handloom Gadwal sarees, Raymond &amp; Arvind tailored unstitched pieces, and everyday pure cotton essentials without middlemen markups.
-            </p>
-
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Link
-                href="/search?category=All"
-                className="bg-kb-blue hover:bg-blue-600 text-white font-semibold text-sm px-7 py-3.5 rounded-kb-pill transition-all flex items-center gap-2 shadow-sm"
-              >
-                Explore Full Collection →
-              </Link>
-              <Link
-                href="/about"
-                className="border border-neutral-700 hover:border-kb-gold hover:text-kb-gold text-white font-medium text-sm px-6 py-3.5 rounded-kb-pill transition-all"
-              >
-                Our 20-Year Story
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-6 border-t border-neutral-800 text-xs text-neutral-400">
-              <div>
-                <strong className="block text-white text-lg font-bold">2006–2026</strong>
-                <span>20 Years Serving Patrons</span>
-              </div>
-              <div>
-                <strong className="block text-white text-lg font-bold">100% Handloom &amp; Cotton</strong>
-                <span>Direct Ancestral Sourcing</span>
-              </div>
-              <div className="col-span-2 sm:col-span-1">
-                <strong className="block text-kb-gold text-lg font-bold">GST Exempted</strong>
-                <span>Section 23 CGST Act (Small Shop)</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6">
+        <HeroShowcaseCarousel />
       </section>
 
       {/* ========================================================================= */}
@@ -437,11 +390,14 @@ export default function HomePage() {
             return (
               <article
                 key={product.id}
-                className="group select-none bg-white border border-[#E8EAF0] hover:border-kb-black rounded-kb-card p-4 transition-all hover:shadow-md flex flex-col justify-between"
+                className="group select-none bg-white/95 backdrop-blur-xs border border-slate-200/80 hover:border-kb-blue/60 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(52,120,246,0.14),0_6px_20px_rgba(0,0,0,0.06)] hover:ring-2 hover:ring-kb-blue/20 flex flex-col justify-between relative overflow-hidden"
               >
+                {/* Subtle light colored line animated on hover */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-kb-blue/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
                 <div>
                   {/* Image Container with Consistent Aspect Ratio */}
-                  <Link href={`/products/${product.productId}`} className="block relative aspect-[4/5] bg-neutral-100 rounded-lg overflow-hidden mb-4">
+                  <Link href={`/products/${product.productId}`} className="block relative aspect-[4/5] bg-neutral-100 rounded-xl overflow-hidden mb-4">
                     {imageSrc ? (
                       <img
                         src={imageSrc}

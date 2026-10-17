@@ -9,6 +9,14 @@ export default function WishlistPage() {
   const [wishlist, setWishlist] = useState<any[]>([]);
 
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (!data?.authenticated) {
+          window.location.href = '/auth/signin?redirect=%2Fwishlist&reason=auth_required';
+        }
+      })
+      .catch(() => {});
     loadWishlist();
   }, []);
 

@@ -26,10 +26,10 @@ export default function RootLayout({
         />
         <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
       </head>
-      <body className="bg-kb-white text-kb-black font-sans antialiased selection:bg-kb-blue selection:text-white min-h-screen flex flex-col justify-between">
+      <body className="bg-gradient-to-b from-[#F8FAFD] via-[#FFFFFF] to-[#F3F5FA] text-kb-black font-sans antialiased selection:bg-kb-blue selection:text-white min-h-screen flex flex-col justify-between">
         <ModalProvider>
           <Header />
-          <main className="flex-1">
+          <main className="flex-1 pt-24 sm:pt-[96px]">
             {children}
           </main>
           <Footer />

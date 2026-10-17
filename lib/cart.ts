@@ -1,9 +1,26 @@
 import { db } from '@/lib/db';
 
-export function calculateCart(sessionId = 'default-guest') {
-  const items = db.cartItems.filter(i => i.sessionId === sessionId);
+export function calculateCart(userId: string) {
+  if (!userId) {
+    return {
+      userId: '',
+      items: [],
+      appliedPromo: null,
+      discountPercent: 0,
+      subtotal: 0,
+      discountAmount: 0,
+      shippingFee: 0,
+      total: 0,
+      freeShippingThreshold: 999,
+      amountNeededForFreeShipping: 999,
+      freeShippingUnlocked: false,
+      isGstExempt: true,
+      exemptionNotice: db.storeSettings?.exemptionNotice,
+    };
+  }
+  const items = db.cartItems.filter(i => i.sessionId === userId || i.userId === userId);
   const subtotal = items.reduce((acc, i) => acc + (i.price * i.qty), 0);
-  const appliedPromo = db.appliedPromos.get(sessionId);
+  const appliedPromo = db.appliedPromos.get(userId);
 
   let discountAmount = 0;
   let discountPercent = 0;
@@ -23,7 +40,8 @@ export function calculateCart(sessionId = 'default-guest') {
   const amountNeeded = Math.max(0, freeShippingThreshold - subtotal);
 
   return {
-    sessionId,
+    sessionId: userId,
+    userId,
     items,
     appliedPromo: appliedPromo?.code || null,
     discountPercent,

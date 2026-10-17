@@ -55,7 +55,15 @@ export default function CartPage() {
     try {
       setIsLoading(true);
       const res = await fetch('/api/cart');
+      if (res.status === 401) {
+        router.push('/auth/signin?redirect=%2Fcart&reason=auth_required');
+        return;
+      }
       const data = await res.json();
+      if (data?.requiresAuth) {
+        router.push('/auth/signin?redirect=%2Fcart&reason=auth_required');
+        return;
+      }
       setCart(data);
     } catch (e) {
     } finally {

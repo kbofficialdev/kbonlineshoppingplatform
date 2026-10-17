@@ -215,3 +215,23 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+model Banner {
+  id        String   @id @default(cuid())
+  bannerId  String   @unique @map("banner_id")
+  title     String
+  subtitle  String?
+  badge     String?
+  category  String   @default("HERO") // HERO, WELCOME, FEATURE, AI
+  mediaId   String   @map("media_id")
+  imageUrl  String   @map("image_url")
+  linkUrl   String   @default("/search") @map("link_url")
+  ctaText   String   @default("Explore Collection") @map("cta_text")
+  position  Int      @default(0)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("banners")
+}
+

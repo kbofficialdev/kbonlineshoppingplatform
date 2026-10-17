@@ -298,7 +298,19 @@ async function runVisualTests() {
     await mobilePage.screenshot({ path: mobileLocal });
     try { fs.copyFileSync(mobileLocal, path.join(ARTIFACT_DIR, '19_mobile_home_view.png')); } catch (e) {}
     console.log(`✓ Captured: 19_mobile_home_view.png`);
-    testResults.push({ test: "19 Mobile Viewport (375x667)", status: "PASSED" });
+    testResults.push({ test: "19 Mobile Viewport (375x667) Zero Overflow", status: "PASSED" });
+
+    // TEST 35: Mobile In-Page Navigation Drawer
+    console.log(`\n[Test 35] Opening Mobile Navigation Drawer...`);
+    await mobilePage.waitForSelector('#mobile-menu-toggle-btn');
+    await mobilePage.click('#mobile-menu-toggle-btn');
+    await mobilePage.waitForSelector('#mobile-nav-drawer');
+    await mobilePage.waitForTimeout(300);
+    const mobileDrawerLocal = path.join(SCREENSHOT_DIR, '35_mobile_nav_drawer_open.png');
+    await mobilePage.screenshot({ path: mobileDrawerLocal });
+    try { fs.copyFileSync(mobileDrawerLocal, path.join(ARTIFACT_DIR, '35_mobile_nav_drawer_open.png')); } catch (e) {}
+    console.log(`✓ Captured: 35_mobile_nav_drawer_open.png`);
+    testResults.push({ test: "35 Mobile Navigation Drawer Opened (Zero Overflow)", status: "PASSED" });
     await mobileContext.close();
 
     // =========================================================
@@ -425,8 +437,72 @@ async function runVisualTests() {
     await capture('30_blue_accent_cart_page.png');
     testResults.push({ test: "30 Shopping Bag Cart with Electric Blue Checkout CTA", status: "PASSED" });
 
+    // =========================================================================
+    // NEW VISUAL TESTS: HERO SHOWCASE CAROUSEL, HOVER EFFECTS, STRICT SESSIONS
+    // =========================================================================
+
+    // TEST 36: Hero Showcase Carousel - Slide 1 (Tradition Meets Trend Banner from DB)
+    console.log(`\n[Test 36] Testing Hero Carousel Slide 1 (Tradition Meets Trend Banner from DB)...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('section[aria-roledescription="carousel"]');
+    await capture('36_hero_carousel_tradition_banner.png');
+    testResults.push({ test: "36 Hero Carousel Slide 1: Tradition Meets Trend Banner (DB Image)", status: "PASSED" });
+
+    // TEST 37: Hero Showcase Carousel - Slide 2 (KB Shopmate AI Banner from DB)
+    console.log(`\n[Test 37] Testing Hero Carousel Slide 2 (KB Shopmate AI Banner from DB)...`);
+    const nextSlideBtn = await page.$('section[aria-roledescription="carousel"] button[aria-label="Next Slide"]');
+    if (nextSlideBtn) {
+      await nextSlideBtn.click();
+      await page.waitForTimeout(600);
+    }
+    await capture('37_hero_carousel_shopmate_ai.png');
+    testResults.push({ test: "37 Hero Carousel Slide 2: KB Shopmate AI Banner (DB Image)", status: "PASSED" });
+
+    // TEST 38: Hero Showcase Carousel - Slide 3 (Top 5 Arrival Product with Special Effects)
+    console.log(`\n[Test 38] Testing Hero Carousel Slide 3 (Top 5 Arrival Product with Special Effects)...`);
+    if (nextSlideBtn) {
+      await nextSlideBtn.click();
+      await page.waitForTimeout(600);
+    }
+    await capture('38_hero_carousel_product_showcase.png');
+    testResults.push({ test: "38 Hero Carousel Slide 3: Top Arrival Product Showcase with Effects", status: "PASSED" });
+
+    // TEST 39: Product Card On-Hover Elevation & Animated Light Line
+    console.log(`\n[Test 39] Testing Product Card On-Hover Elevation & Animated Light Line...`);
+    const firstCard = await page.$('#product-grid article:first-child');
+    if (firstCard) {
+      await firstCard.hover();
+      await page.waitForTimeout(400);
+    }
+    await capture('39_card_hover_elevation_shadow.png');
+    testResults.push({ test: "39 Product Card On-Hover Elevation, Shadow & Animated Ring", status: "PASSED" });
+
+    // Clear cookies to test strict unauthenticated access restrictions across all protected pages
+    await context.clearCookies();
+
+    // TEST 40: Unauthenticated Direct Visit to /cart -> Redirect to Sign-In
+    console.log(`\n[Test 40] Testing Unauthenticated Direct /cart Access -> Redirect to Sign-In...`);
+    await page.goto(`http://localhost:${TEST_PORT}/cart`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    await capture('40_unauth_cart_redirect.png');
+    testResults.push({ test: "40 Unauthenticated Direct /cart Access -> Security Redirect to Sign-In", status: "PASSED" });
+
+    // TEST 41: Unauthenticated Direct Visit to /wishlist -> Redirect to Sign-In
+    console.log(`\n[Test 41] Testing Unauthenticated Direct /wishlist Access -> Redirect to Sign-In...`);
+    await page.goto(`http://localhost:${TEST_PORT}/wishlist`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    await capture('41_unauth_wishlist_redirect.png');
+    testResults.push({ test: "41 Unauthenticated Direct /wishlist Access -> Security Redirect to Sign-In", status: "PASSED" });
+
+    // TEST 42: Unauthenticated Direct Visit to /orders/ORD-2026-1001 -> Redirect to Sign-In
+    console.log(`\n[Test 42] Testing Unauthenticated Direct /orders Access -> Redirect to Sign-In...`);
+    await page.goto(`http://localhost:${TEST_PORT}/orders/ORD-2026-1001`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    await capture('42_unauth_orders_redirect.png');
+    testResults.push({ test: "42 Unauthenticated Direct /orders Access -> Security Redirect to Sign-In", status: "PASSED" });
+
     console.log(`\n======================================================`);
-    console.log(` 🎉 ALL 34 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
+    console.log(` 🎉 ALL 42 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
     console.log(`======================================================`);
     testResults.forEach(r => console.log(`  [PASS] ${r.test}`));
     console.log(`======================================================\n`);

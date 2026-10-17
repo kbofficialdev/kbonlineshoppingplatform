@@ -168,8 +168,9 @@ function SearchContent() {
               return (
                 <article
                   key={prodId}
-                  className="bg-white border border-kbBorder hover:border-black rounded-kb-md p-4 transition-all hover:shadow-lg flex flex-col justify-between"
+                  className="group bg-white/95 backdrop-blur-xs border border-slate-200/80 hover:border-kb-blue/60 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(52,120,246,0.14),0_6px_20px_rgba(0,0,0,0.06)] hover:ring-2 hover:ring-kb-blue/20 flex flex-col justify-between relative overflow-hidden"
                 >
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-kb-blue/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div>
                     <Link href={`/products/${prodId}`} className="block relative aspect-[4/5] bg-kbCardBg rounded-kb-sm overflow-hidden mb-3">
                       {imageSrc ? (
