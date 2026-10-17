@@ -8,20 +8,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [accessDenied, setAccessDenied] = useState<boolean>(false);
 
   useEffect(() => {
     checkAdmin();
-  }, []);
+  }, [pathname]);
 
   const checkAdmin = async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/auth/me');
       const data = await res.json();
-      if (data?.authenticated) {
+
+      if (data?.authenticated && data.user?.role === 'ADMIN') {
         setUser(data.user);
+        setAccessDenied(false);
+      } else {
+        setAccessDenied(true);
+        const reason = data?.authenticated ? 'forbidden' : 'admin_required';
+        window.location.href = `/auth/signin?redirect=${encodeURIComponent(pathname)}&reason=${reason}`;
       }
     } catch (e) {
+      setAccessDenied(true);
+      window.location.href = `/auth/signin?redirect=${encodeURIComponent(pathname)}&reason=admin_required`;
     } finally {
       setLoading(false);
     }
@@ -37,13 +46,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Store Settings', href: '/admin/settings', icon: '⚙️' },
   ];
 
+  if (loading || !user || user.role !== 'ADMIN' || accessDenied) {
+    return (
+      <div className="min-h-screen bg-kb-white flex items-center justify-center p-6 text-center">
+        <div className="max-w-md space-y-4 bg-kb-white p-8 rounded-kb-panel border border-kb-gray shadow-sm">
+          <div className="w-10 h-10 border-2 border-kb-blue border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <h2 className="text-base font-bold text-kb-black">Verifying Administrator Session...</h2>
+          <p className="text-xs text-kb-slate">
+            Secure authorization check in progress. Unauthenticated visits are automatically redirected to Sign-In.
+          </p>
+          <Link
+            href={`/auth/signin?redirect=${encodeURIComponent(pathname)}&reason=admin_required`}
+            className="inline-block bg-kb-blue text-white text-xs font-semibold px-5 py-2.5 rounded-kb-pill hover:bg-blue-600 transition-all"
+          >
+            Go to Admin Sign In →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-neutral-50 min-h-screen">
       {/* Top Admin Sub-bar */}
-      <div className="bg-neutral-900 text-white border-b border-neutral-800">
+      <div className="bg-kb-black text-white border-b border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <span className="bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="bg-kb-blue text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
               Admin Portal
             </span>
             <span className="text-xs font-bold text-neutral-300">
@@ -63,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Admin Tab Navigation */}
-      <div className="bg-white border-b border-kbBorder sticky top-16 z-30">
+      <div className="bg-white border-b border-kb-gray sticky top-16 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 text-xs font-bold scrollbar-none">
             {navItems.map((item) => {
@@ -74,8 +103,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href={item.href}
                   className={`px-3.5 py-2 rounded-kb-pill whitespace-nowrap flex items-center gap-1.5 transition-all ${
                     isActive
-                      ? 'bg-black text-white shadow-sm'
-                      : 'text-neutral-600 hover:text-black hover:bg-neutral-100'
+                      ? 'bg-kb-black text-white shadow-sm'
+                      : 'text-kb-slate hover:text-kb-black hover:bg-neutral-100'
                   }`}
                 >
                   <span>{item.icon}</span>
@@ -94,4 +123,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
-

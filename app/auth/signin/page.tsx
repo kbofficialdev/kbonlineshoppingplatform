@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+  const reason = searchParams.get('reason');
+
   const [mode, setMode] = useState<'PASSWORD' | 'OTP'>('PASSWORD');
   const [emailOrPhone, setEmailOrPhone] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -32,13 +36,10 @@ export default function SignInPage() {
       const data = await res.json();
 
       if (data.success && data.user) {
-        if (data.user.role === 'ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/account/orders');
-        }
+        const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account/orders');
+        router.push(dest);
       } else {
-        setErrorMsg(data.error || 'Failed to sign in');
+        setErrorMsg(data.error || 'Failed to sign in. Please verify your credentials.');
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Error communicating with server');
@@ -100,11 +101,8 @@ export default function SignInPage() {
       const data = await res.json();
 
       if (data.success && data.user) {
-        if (data.user.role === 'ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/account/orders');
-        }
+        const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account/orders');
+        router.push(dest);
       } else {
         setErrorMsg(data.error || 'Invalid OTP code');
       }
@@ -117,22 +115,59 @@ export default function SignInPage() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
-      <div className="bg-white border border-kbBorder p-8 rounded-kb-xl shadow-sm space-y-6">
+      <div className="bg-kb-white border border-kb-gray p-8 rounded-kb-card shadow-sm space-y-6">
         <div className="text-center space-y-1">
-          <Link href="/" className="text-2xl font-black tracking-tight text-black inline-block mb-1">
+          <Link href="/" className="text-2xl font-black tracking-tight text-kb-black inline-block mb-1">
             KB.
           </Link>
-          <h1 className="text-xl font-black text-kbBlack">Sign In to Your Account</h1>
-          <p className="text-xs text-neutral-500">Access orders, tracking, and customer services</p>
+          <h1 className="text-xl font-bold text-kb-black">Sign In to Your Account</h1>
+          <p className="text-xs text-kb-slate">Access orders, tracking, and customer services</p>
         </div>
 
+        {/* Security Alert Banners */}
+        {reason === 'admin_required' && (
+          <div className="bg-amber-50 border border-amber-300 text-amber-900 text-xs p-3.5 rounded-kb-sm space-y-1">
+            <div className="font-bold flex items-center gap-1.5">
+              <span>⚠️</span>
+              <span>Administrator Authentication Required</span>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              You attempted to access an administration route. Please sign in with an authorized KB Fashions store administrator account.
+            </p>
+          </div>
+        )}
+
+        {reason === 'forbidden' && (
+          <div className="bg-red-50 border border-red-300 text-red-900 text-xs p-3.5 rounded-kb-sm space-y-1">
+            <div className="font-bold flex items-center gap-1.5">
+              <span>🚫</span>
+              <span>Access Denied (403 Forbidden)</span>
+            </div>
+            <p className="text-[11px] text-red-800 leading-relaxed">
+              Your account does not possess store administrator privileges. Please sign in with an authorized administrator credential.
+            </p>
+          </div>
+        )}
+
+        {reason === 'auth_required' && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-900 text-xs p-3.5 rounded-kb-sm space-y-1">
+            <div className="font-bold flex items-center gap-1.5">
+              <span>🔒</span>
+              <span>Account Sign In Required</span>
+            </div>
+            <p className="text-[11px] text-blue-800 leading-relaxed">
+              Please sign in to view your orders, account settings, and personalized services.
+            </p>
+          </div>
+        )}
+
         {/* Mode Selector Tabs */}
-        <div className="flex border-b border-kbBorder text-xs font-bold">
+        <div className="flex border-b border-kb-gray text-xs font-semibold">
           <button
             type="button"
             onClick={() => { setMode('PASSWORD'); setErrorMsg(null); setSuccessMsg(null); }}
             className={`flex-1 py-2.5 text-center border-b-2 transition-all ${
-              mode === 'PASSWORD' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+              mode === 'PASSWORD' ? 'border-kb-blue text-kb-blue font-bold' : 'border-transparent text-kb-slate hover:text-kb-black'
             }`}
           >
             Password Sign In
@@ -141,7 +176,7 @@ export default function SignInPage() {
             type="button"
             onClick={() => { setMode('OTP'); setErrorMsg(null); setSuccessMsg(null); }}
             className={`flex-1 py-2.5 text-center border-b-2 transition-all ${
-              mode === 'OTP' ? 'border-black text-black' : 'border-transparent text-neutral-400 hover:text-black'
+              mode === 'OTP' ? 'border-kb-blue text-kb-blue font-bold' : 'border-transparent text-kb-slate hover:text-kb-black'
             }`}
           >
             Instant OTP Login
@@ -149,131 +184,142 @@ export default function SignInPage() {
         </div>
 
         {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-kb-sm">
+          <div className="bg-red-50 border border-red-200 text-kb-error text-xs p-3 rounded-kb-sm">
             ⚠️ {errorMsg}
           </div>
         )}
 
         {successMsg && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs p-3 rounded-kb-sm">
+          <div className="bg-emerald-50 border border-emerald-200 text-kb-success text-xs p-3 rounded-kb-sm">
             ✓ {successMsg}
           </div>
         )}
 
-        {devOtpHint && (
-          <div className="bg-neutral-100 border border-neutral-300 text-neutral-700 text-xs p-3 rounded-kb-sm font-mono">
-            <strong>Development OTP:</strong> {devOtpHint}
-          </div>
-        )}
-
-        {mode === 'PASSWORD' ? (
+        {/* MODE 1: PASSWORD LOGIN */}
+        {mode === 'PASSWORD' && (
           <form onSubmit={handlePasswordSignIn} className="space-y-4 text-xs">
             <div>
-              <label className="font-bold text-neutral-700 block mb-1">Email or Phone Number</label>
+              <label className="font-semibold text-kb-black block mb-1">Email or Phone Number</label>
               <input
                 type="text"
                 required
+                id="signin-email-input"
                 value={emailOrPhone}
                 onChange={(e) => setEmailOrPhone(e.target.value)}
-                placeholder="customer@example.com or +919876543210"
-                className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                placeholder="kb.official.admin@gmail.com or 10-digit mobile"
+                className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kb-gray bg-white text-xs text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="font-bold text-neutral-700">Password</label>
-                <Link href="/auth/forgot-password" className="text-neutral-500 hover:text-black underline text-[11px]">
-                  Forgot password?
+                <label className="font-semibold text-kb-black">Password</label>
+                <Link href="/auth/forgot-password" className="text-[11px] text-kb-blue hover:underline">
+                  Forgot Password?
                 </Link>
               </div>
               <input
                 type="password"
                 required
+                id="signin-password-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kb-gray bg-white text-xs text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
               />
             </div>
 
             <button
               type="submit"
+              id="signin-submit-btn"
               disabled={isLoading}
-              className="w-full bg-black text-white text-xs font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50"
+              className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
             >
-              {isLoading ? 'Signing In...' : 'Sign In with Password'}
+              {isLoading ? 'Verifying...' : 'Sign In Now →'}
             </button>
-
-            <div className="text-[11px] text-neutral-400 bg-neutral-50 p-2.5 rounded text-center">
-              Admin demo: <code>kb.official.admin@gmail.com</code> / <code>Admin@KBFashions2026</code>
-            </div>
           </form>
-        ) : (
-          <div>
+        )}
+
+        {/* MODE 2: OTP LOGIN */}
+        {mode === 'OTP' && (
+          <div className="space-y-4 text-xs">
             {!otpSent ? (
-              <form onSubmit={handleSendOtp} className="space-y-4 text-xs">
+              <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Registered Email or Phone</label>
+                  <label className="font-semibold text-kb-black block mb-1">Registered Phone or Email</label>
                   <input
                     type="text"
                     required
                     value={emailOrPhone}
                     onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="Enter email or phone number"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="Enter 10-digit mobile or email..."
+                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kb-gray bg-white text-xs text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
                   />
+                  <p className="text-[10px] text-kb-slate mt-1">
+                    We will send a 6-digit authentication passcode.
+                  </p>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-black text-white text-xs font-bold py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50"
+                  className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
                 >
-                  {isLoading ? 'Sending OTP...' : 'Send One-Time Password (OTP)'}
+                  {isLoading ? 'Sending Passcode...' : 'Send 6-Digit OTP →'}
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleVerifyOtp} className="space-y-4 text-xs">
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Enter 6-Digit OTP</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-semibold text-kb-black">Enter 6-Digit Passcode</label>
+                    <button
+                      type="button"
+                      onClick={() => setOtpSent(false)}
+                      className="text-[11px] text-kb-blue hover:underline"
+                    >
+                      Change Contact
+                    </button>
+                  </div>
                   <input
                     type="text"
-                    maxLength={6}
                     required
+                    maxLength={6}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="123456"
-                    className="w-full text-center tracking-widest font-mono text-lg font-bold px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="e.g. 123456"
+                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kb-gray bg-white text-xs text-center font-mono font-bold tracking-widest text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
                   />
+                  {devOtpHint && (
+                    <div className="mt-2 text-[10px] text-amber-800 bg-amber-50 p-2 rounded border border-amber-200">
+                      🔑 Test passcode for development: <strong>{devOtpHint}</strong>
+                    </div>
+                  )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-emerald-800 text-white text-xs font-bold py-3.5 rounded-kb-pill hover:bg-emerald-900 transition-all shadow-md disabled:opacity-50"
+                  className="w-full bg-kb-blue text-white hover:bg-blue-600 font-semibold text-xs py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
                 >
-                  {isLoading ? 'Verifying...' : 'Verify OTP & Sign In'}
+                  {isLoading ? 'Verifying Passcode...' : 'Verify OTP & Continue →'}
                 </button>
-
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => { setOtpSent(false); setOtpCode(''); }}
-                    className="text-neutral-500 hover:text-black underline text-[11px]"
-                  >
-                    Change Phone / Resend OTP
-                  </button>
-                </div>
               </form>
             )}
           </div>
         )}
 
-        <div className="text-center pt-4 border-t border-kbBorder text-xs text-neutral-500">
-          Don't have an account yet?{' '}
-          <Link href="/auth/signup" className="font-bold text-black hover:underline">
-            Create an Account →
+        {/* Demo Credentials Box */}
+        <div className="border-t border-kb-gray pt-4 text-[11px] text-kb-slate bg-neutral-50 p-3 rounded-kb-sm space-y-1">
+          <div className="font-bold text-kb-black">Authorized Store Admin Credentials:</div>
+          <div className="font-mono text-[10px]">Email: kb.official.admin@gmail.com</div>
+          <div className="font-mono text-[10px]">Password: Admin@KBFashions2026</div>
+        </div>
+
+        <div className="border-t border-kb-gray pt-4 text-center text-xs text-kb-slate">
+          <span>Don't have an account yet? </span>
+          <Link href="/auth/signup" className="text-kb-blue font-semibold hover:underline">
+            Register New Account
           </Link>
         </div>
       </div>
@@ -281,3 +327,10 @@ export default function SignInPage() {
   );
 }
 
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md mx-auto py-20 text-center text-xs text-kb-slate">Loading Sign In...</div>}>
+      <SignInContent />
+    </Suspense>
+  );
+}

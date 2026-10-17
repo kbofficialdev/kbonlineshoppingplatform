@@ -49,25 +49,25 @@ export interface ProductImageModel {
 }
 
 export interface SareeDetails {
-  lengthMeters: number; // e.g. 5.5, 6.3
-  hasBlousePiece: boolean;
+  lengthMeters?: number; // e.g. 5.5, 6.3
+  hasBlousePiece?: boolean;
   blouseLengthMeters?: number;
-  workType: string; // "Gadwal Handloom", "Pure Pattu Silk", "Nirma Daily", "Layered Heavy Zari Work"
-  borderType: string; // "Pure Zari", "Temple Border", "Contrast Kaddi", "Broad Border"
-  palluDetails: string;
+  workType?: string; // "Gadwal Handloom", "Pure Pattu Silk", "Nirma Daily", "Layered Heavy Zari Work"
+  borderType?: string; // "Pure Zari", "Temple Border", "Contrast Kaddi", "Broad Border"
+  palluDetails?: string;
 }
 
 export interface UnstitchedDetails {
-  fabricCutType: string; // "Shirt Piece", "Pant Piece", "Safari Suit Length", "Full Kurta Material", "By Meter"
-  widthInches: number; // e.g. 58" or 36"
-  standardLengthMeters: number; // e.g. 1.6
-  recommendedUse: string; // "Formal Trouser", "Wedding Kurta", "Office Shirt"
+  fabricCutType?: string; // "Shirt Piece", "Pant Piece", "Safari Suit Length", "Full Kurta Material", "By Meter"
+  widthInches?: number; // e.g. 58" or 36"
+  standardLengthMeters?: number; // e.g. 1.6
+  recommendedUse?: string; // "Formal Trouser", "Wedding Kurta", "Office Shirt"
 }
 
 export interface EssentialDetails {
-  packSize: number; // 1, 3, 6, 12
-  measurementUnit: string; // "cm (Chest)", "Inches"
-  measurementValues: string[]; // ["80cm", "85cm", "90cm", "95cm", "100cm"]
+  packSize?: number; // 1, 3, 6, 12
+  measurementUnit?: string; // "cm (Chest)", "Inches"
+  measurementValues?: string[]; // ["80cm", "85cm", "90cm", "95cm", "100cm"]
 }
 
 export interface MatchingDetails {

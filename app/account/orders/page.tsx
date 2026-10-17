@@ -14,12 +14,19 @@ export default function AccountOrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
+      const authRes = await fetch('/api/auth/me');
+      const authData = await authRes.json();
+      if (!authData?.authenticated) {
+        window.location.href = '/auth/signin?redirect=/account/orders&reason=auth_required';
+        return;
+      }
       const res = await fetch('/api/orders');
       const data = await res.json();
       if (data?.orders) {
         setOrders(data.orders);
       }
     } catch (e) {
+      window.location.href = '/auth/signin?redirect=/account/orders&reason=auth_required';
     } finally {
       setIsLoading(false);
     }

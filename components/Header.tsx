@@ -9,6 +9,7 @@ export default function Header() {
   const [cartCount, setCartCount] = useState<number>(0);
   const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [user, setUser] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [store, setStore] = useState<any>({
     brandName: "KB",
     officialName: "KB FASHIONS",
@@ -68,14 +69,23 @@ export default function Header() {
     } catch (e) {}
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+    } else {
+      window.location.href = '/search?category=All';
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-kbBorder">
+    <header className="sticky top-0 z-40 bg-kb-white/95 backdrop-blur-md border-b border-kb-gray">
       {/* Top Banner with Store Details */}
-      <aside className="bg-kbBlack text-white text-[11px] py-1.5 px-4 font-mono">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+      <aside className="bg-kb-black text-white text-[11px] py-1.5 px-4 font-mono">
+        <div className="max-w-kb-content mx-auto flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>{store.officialName} • {store.village}, {store.district}, {store.state} (503145) • 20 Years of Heritage</span>
+            <span className="w-2 h-2 rounded-full bg-kb-blue"></span>
+            <span>{store.officialName} • {store.village}, {store.district}, {store.state} (503145) • 20 Years Heritage</span>
           </div>
           <div className="flex items-center gap-4 text-neutral-300">
             <span>Free Express Delivery over ₹{store.freeShippingThreshold || 999}</span>
@@ -86,50 +96,73 @@ export default function Header() {
       </aside>
 
       {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-8">
+      <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        {/* Brand Logo & Categories */}
+        <div className="flex items-center gap-6 lg:gap-8">
           <Link href="/" className="flex items-baseline gap-1 group">
-            <span className="text-2xl font-black tracking-tight text-kbBlack group-hover:opacity-80 transition-opacity">
+            <span className="text-2xl font-black tracking-tight text-kb-black group-hover:opacity-80 transition-opacity">
               {store.brandName}.
             </span>
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:inline">
+            <span className="text-[10px] font-bold text-kb-slate uppercase tracking-widest hidden sm:inline">
               FASHIONS
             </span>
           </Link>
 
-          {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-neutral-600">
-            <Link href="/search?category=All" className="hover:text-black transition-colors">All Collections</Link>
-            <Link href="/search?category=Men" className="hover:text-black transition-colors">Men</Link>
-            <Link href="/search?category=Women" className="hover:text-black transition-colors">Women</Link>
-            <Link href="/search?category=Ethnic %26 Traditional" className="hover:text-black transition-colors">Traditional & Dhoti</Link>
-            <Link href="/search?category=Daily Wear" className="hover:text-black transition-colors">Daily Wear</Link>
-            <Link href="/about" className="hover:text-black transition-colors">About Shop</Link>
-            <Link href="/contact" className="hover:text-black transition-colors">Contact</Link>
+          {/* Nav Categories */}
+          <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-kb-slate">
+            <Link href="/search?category=Men" className="hover:text-kb-black transition-colors">Men</Link>
+            <Link href="/search?category=Women" className="hover:text-kb-black transition-colors">Women</Link>
+            <Link href="/search?category=Sarees" className="hover:text-kb-black transition-colors">Sarees</Link>
+            <Link href="/search?category=Kids" className="hover:text-kb-black transition-colors">Kids</Link>
+            <Link href="/search?category=Wedding" className="hover:text-kb-black transition-colors">Wedding</Link>
+            <Link href="/search?category=Trending" className="hover:text-kb-black transition-colors">Trending</Link>
+            <Link href="/about" className="hover:text-kb-black transition-colors">About</Link>
           </nav>
         </div>
 
-        {/* Right Actions: Search, Wishlist, Bag, Account, Admin */}
-        <div className="flex items-center gap-3">
-          {/* Search Button */}
+        {/* Global Search Input Field with Thin Border */}
+        <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center flex-1 max-w-xs relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search cottons, sarees, unstitched..."
+            className="w-full px-3.5 py-1.5 pl-8 rounded-kb-pill border border-kb-gray bg-white text-xs text-kb-black placeholder-kb-slate/60 focus:outline-none focus:ring-1 focus:ring-kb-blue"
+          />
+          <span className="absolute left-2.5 text-xs text-kb-slate pointer-events-none">🔍</span>
+        </form>
+
+        {/* Right Actions: AI Button, Wishlist, Bag, Account */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Dedicated Blue-Violet KB Shopmate AI Button */}
+          <Link
+            href="/ai"
+            id="kb-shopmate-ai-nav-btn"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-kb-blue to-kb-violet text-white text-xs font-semibold hover:brightness-110 active:scale-98 transition-all shadow-sm"
+          >
+            <span aria-hidden="true">✦</span>
+            <span className="hidden sm:inline">Shop with KB AI</span>
+            <span className="sm:hidden">AI Shop</span>
+          </Link>
+
+          {/* Search Button for Mobile */}
           <Link
             href="/search"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-kb-pill bg-kbLight border border-kbBorder text-xs text-neutral-600 hover:text-black hover:border-black transition-all"
+            className="md:hidden w-9 h-9 rounded-full border border-kb-gray flex items-center justify-center text-xs hover:border-kb-black transition-colors"
+            title="Search"
           >
-            <span>🔍</span>
-            <span className="hidden sm:inline">Search...</span>
+            🔍
           </Link>
 
           {/* Wishlist Link */}
           <Link
             href="/wishlist"
-            className="relative w-9 h-9 rounded-full border border-kbBorder flex items-center justify-center text-xs hover:border-black transition-colors"
+            className="relative w-9 h-9 rounded-full border border-kb-gray flex items-center justify-center text-xs hover:border-kb-black transition-colors"
             title="Wishlist"
           >
             ♡
             {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-kb-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {wishlistCount}
               </span>
             )}
@@ -139,45 +172,45 @@ export default function Header() {
           <Link
             href="/cart"
             id="header-cart-link"
-            className="relative px-3.5 py-1.5 rounded-kb-pill bg-kbBlack text-white text-xs font-bold hover:bg-neutral-800 transition-all flex items-center gap-1.5"
+            className="relative px-3.5 py-1.5 rounded-kb-pill bg-kb-black text-white text-xs font-semibold hover:bg-neutral-800 transition-all flex items-center gap-1.5"
             title="Shopping Bag"
           >
             <span>Bag</span>
-            <span className="bg-white text-black text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+            <span className="bg-kb-blue text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
               {cartCount}
             </span>
           </Link>
 
           {/* Account / Auth Links */}
           {user ? (
-            <div className="flex items-center gap-2 border-l border-kbBorder pl-3 ml-1 text-xs">
-              <Link href="/account/orders" className="font-semibold text-neutral-800 hover:text-black underline">
+            <div className="flex items-center gap-2 border-l border-kb-gray pl-3 ml-1 text-xs">
+              <Link href="/account/orders" className="font-semibold text-kb-black hover:text-kb-blue">
                 Orders
               </Link>
               {user.role === 'ADMIN' && (
                 <Link
                   href="/admin"
-                  className="bg-emerald-800 text-white px-2.5 py-1 rounded-kb-pill text-[10px] font-bold uppercase tracking-wider"
+                  className="bg-kb-black text-white px-2.5 py-1 rounded-kb-pill text-[10px] font-bold uppercase tracking-wider"
                 >
                   Admin
                 </Link>
               )}
               <button
                 onClick={handleLogout}
-                className="text-neutral-400 hover:text-red-600 text-[11px]"
+                className="text-kb-slate hover:text-kb-error text-[11px]"
                 title="Logout"
               >
                 Sign out
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 border-l border-kbBorder pl-3 ml-1 text-xs font-semibold">
-              <Link href="/auth/signin" className="text-neutral-700 hover:text-black">
+            <div className="flex items-center gap-2 border-l border-kb-gray pl-3 ml-1 text-xs font-semibold">
+              <Link href="/auth/signin" className="text-kb-black hover:text-kb-blue">
                 Sign In
               </Link>
               <Link
                 href="/auth/signup"
-                className="hidden sm:inline border border-kbBorder px-2.5 py-1 rounded-kb-pill hover:border-black"
+                className="hidden sm:inline border border-kb-gray px-2.5 py-1 rounded-kb-pill hover:border-kb-black"
               >
                 Sign Up
               </Link>
@@ -188,4 +221,3 @@ export default function Header() {
     </header>
   );
 }
-

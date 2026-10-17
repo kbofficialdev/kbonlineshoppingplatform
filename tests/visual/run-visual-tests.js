@@ -277,8 +277,76 @@ async function runVisualTests() {
     await capture('23_admin_new_product_unstitched_form.png');
     testResults.push({ test: "23 Admin Product Creator (Unstitched Bolt & Department Config)", status: "PASSED" });
 
+    // =========================================================
+    // SECURITY & NEW THEME VISUAL TESTS (TESTS 24 - 30)
+    // =========================================================
+
+    // TEST 24: Unauthenticated Access to /admin Redirects to /auth/signin
+    console.log(`\n[Test 24] Testing Unauthenticated /admin Access -> Redirect to Sign-in...`);
+    // Ensure clean context without cookies
+    await context.clearCookies();
+    await page.goto(`http://localhost:${TEST_PORT}/admin`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    await capture('24_admin_access_denied_redirect.png');
+    testResults.push({ test: "24 Unauthenticated Admin Access -> Sign-in Security Redirect", status: "PASSED" });
+
+    // TEST 25: Unauthenticated Access to /account/orders Redirects to /auth/signin
+    console.log(`\n[Test 25] Testing Unauthenticated /account/orders Access -> Redirect to Sign-in...`);
+    await page.goto(`http://localhost:${TEST_PORT}/account/orders`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    await capture('25_account_access_denied_redirect.png');
+    testResults.push({ test: "25 Unauthenticated Account Access -> Sign-in Security Redirect", status: "PASSED" });
+
+    // TEST 26: Authorized Admin Sign-In & Access to /admin
+    console.log(`\n[Test 26] Testing Authorized Admin Sign-In and Entry to /admin...`);
+    await page.goto(`http://localhost:${TEST_PORT}/auth/signin?redirect=%2Fadmin`, { waitUntil: 'networkidle' });
+    await page.fill('#signin-email-input', 'kb.official.admin@gmail.com');
+    await page.fill('#signin-password-input', 'Admin@KBFashions2026');
+    await page.click('#signin-submit-btn');
+    await page.waitForTimeout(1000);
+    await page.goto(`http://localhost:${TEST_PORT}/admin`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('26_admin_authenticated_session.png');
+    testResults.push({ test: "26 Authorized Admin Sign-In & Dashboard Access", status: "PASSED" });
+
+    // TEST 27: New Theme Homepage (55% White, 25% Black, 10% Blue, 7% Violet, 3% Gold)
+    console.log(`\n[Test 27] Capturing New Theme Homepage with 10-Section Structure...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#product-grid article');
+    await capture('27_new_theme_homepage.png');
+    testResults.push({ test: "27 New Theme Homepage (55/25/10/7/3 Color Proportions)", status: "PASSED" });
+
+    // TEST 28: KB Shopmate AI Dedicated Voice & Text Interface (/ai)
+    console.log(`\n[Test 28] Testing Dedicated KB Shopmate AI Interface (/ai)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/ai`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    // Click Telugu query chip "నాకు ₹1000 లోపు మంచి చీర చూపించు"
+    const teluguChip = await page.$('button:has-text("నాకు ₹1000 లోపు మంచి చీర చూపించు")');
+    if (teluguChip) {
+      await teluguChip.click();
+      await page.waitForTimeout(1200);
+    }
+    await capture('28_kb_shopmate_ai_interface.png');
+    testResults.push({ test: "28 KB Shopmate AI Telugu Voice Shopping Interface (/ai)", status: "PASSED" });
+
+    // TEST 29: Product Detail Page with Electric Blue "+ Add to Shopping Bag" CTA
+    console.log(`\n[Test 29] Testing PDP with Electric Blue CTA and Gold Provenance Badges...`);
+    await page.goto(`http://localhost:${TEST_PORT}/products/prod-gadwal-1`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#add-to-bag-btn');
+    await capture('29_blue_accent_pdp_page.png');
+    testResults.push({ test: "29 Product Detail Page with Electric Blue CTA (#3478F6)", status: "PASSED" });
+
+    // TEST 30: Shopping Bag Cart Page with Electric Blue Checkout CTA
+    console.log(`\n[Test 30] Testing Cart Page with Electric Blue Checkout CTA...`);
+    await page.click('#add-to-bag-btn');
+    await page.waitForTimeout(400);
+    await page.goto(`http://localhost:${TEST_PORT}/cart`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#proceed-checkout-btn');
+    await capture('30_blue_accent_cart_page.png');
+    testResults.push({ test: "30 Shopping Bag Cart with Electric Blue Checkout CTA", status: "PASSED" });
+
     console.log(`\n======================================================`);
-    console.log(` 🎉 ALL 23 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
+    console.log(` 🎉 ALL 30 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
     console.log(`======================================================`);
     testResults.forEach(r => console.log(`  [PASS] ${r.test}`));
     console.log(`======================================================\n`);

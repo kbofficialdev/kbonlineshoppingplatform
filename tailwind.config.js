@@ -9,29 +9,47 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        kbBlack: '#111111',
+        // Official KB FASHIONS Brand Design Tokens
+        kb: {
+          black: "#08090C",
+          white: "#FFFFFF",
+          blue: "#3478F6",
+          violet: "#9333EA",
+          gold: "#D6AC55",
+          gray: "#E8EAF0",
+          slate: "#555963",
+          success: "#16805D",
+          error: "#C62828",
+        },
+        // Legacy compatibility mappings
+        kbBlack: '#08090C',
         kbDark: '#181818',
-        kbMuted: '#737373',
-        kbLight: '#f7f7f5',
-        kbSurfaceAlt: '#f4f4f1',
-        kbCardBg: '#f2f2f0',
-        kbBorder: '#e8e8e8',
-        kbEmerald: '#047857',
+        kbMuted: '#555963',
+        kbLight: '#F8F9FA',
+        kbSurfaceAlt: '#FAFAFB',
+        kbCardBg: '#FFFFFF',
+        kbBorder: '#E8EAF0',
+        kbEmerald: '#16805D',
         kbEmeraldBg: '#ecfdf5',
-        kbTrustBlue: '#1e3a8a',
+        kbTrustBlue: '#3478F6',
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        sans: ['Inter', 'Noto Sans Telugu', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       borderRadius: {
+        'kb-card': '14px',
+        'kb-panel': '20px',
         'kb-xl': '30px',
-        'kb-lg': '28px',
-        'kb-md': '20px',
-        'kb-sm': '18px',
-        'kb-xs': '12px',
+        'kb-lg': '20px',
+        'kb-md': '14px',
+        'kb-sm': '10px',
+        'kb-xs': '6px',
         'kb-pill': '999px',
+      },
+      maxWidth: {
+        'kb-content': '1280px',
       }
     },
   },
   plugins: [],
-}
+};

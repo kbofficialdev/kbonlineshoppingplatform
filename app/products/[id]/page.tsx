@@ -511,15 +511,15 @@ export default function ProductDetailPage() {
               type="button"
               id="add-to-bag-btn"
               onClick={() => handleAddToBag(false)}
-              className="flex-1 bg-kbBlack text-white hover:bg-neutral-800 font-bold text-xs py-4 rounded-kb-pill transition-all"
+              className="flex-1 bg-kb-blue text-white hover:bg-blue-600 font-semibold text-sm py-4 rounded-kb-pill transition-all shadow-sm flex items-center justify-center gap-2"
             >
-              + Add to Shopping Bag
+              <span>+ Add to Shopping Bag</span>
             </button>
             <button
               type="button"
               id="buy-now-btn"
               onClick={() => handleAddToBag(true)}
-              className="flex-1 bg-emerald-800 text-white hover:bg-emerald-900 font-bold text-xs py-4 rounded-kb-pill transition-all"
+              className="flex-1 bg-kb-black text-white hover:bg-neutral-800 font-semibold text-sm py-4 rounded-kb-pill transition-all text-center"
             >
               Buy Now (Proceed to Checkout) →
             </button>

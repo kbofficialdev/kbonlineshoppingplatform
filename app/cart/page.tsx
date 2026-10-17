@@ -310,7 +310,7 @@ export default function CartPage() {
             <Link
               href="/checkout"
               id="proceed-checkout-btn"
-              className="block w-full bg-kbBlack text-white hover:bg-neutral-800 text-center font-bold text-xs py-4 rounded-kb-pill transition-all shadow-md"
+              className="block w-full bg-kb-blue text-white hover:bg-blue-600 text-center font-semibold text-sm py-4 rounded-kb-pill transition-all shadow-sm"
             >
               Proceed to Delivery & Payment →
             </Link>

@@ -2,47 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Scrollbar */
+/* KB Shopmate AI brand gradient */
+.kb-ai-gradient {
+  background-image: linear-gradient(
+    110deg,
+    #3478F6 0%,
+    #6558F5 50%,
+    #9333EA 100%
+  );
+}
+
+/* Shared interaction */
+.kb-interactive {
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.kb-interactive:active {
+  transform: scale(0.98);
+}
+
+/* Accessible focus outline */
+.kb-focus:focus-visible,
+*:focus-visible {
+  outline: 2px solid #3478F6 !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Custom Clean Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f7f7f5;
+  background: #FFFFFF;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d1d1;
+  background: #E8EAF0;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #111111;
-}
-
-/* Chart Container */
-.chart-container {
-  position: relative;
-  width: 100%;
-  max-width: 580px;
-  margin-left: auto;
-  margin-right: auto;
-  height: 220px;
-  max-height: 260px;
-}
-@media (max-width: 640px) {
-  .chart-container {
-    height: 190px;
-  }
-}
-
-/* KB Watermark Placeholder Styling */
-.watermark-kb::after {
-  content: "KB";
-  position: absolute;
-  font-weight: 800;
-  font-size: 55px;
-  color: #e2e2df;
-  user-select: none;
-  pointer-events: none;
+  background: #555963;
 }
 
 /* Touch Target Optimization */
@@ -51,15 +66,8 @@
   min-height: 44px;
 }
 
-/* Focus Visible Rings for Keyboard Accessibility */
-*:focus-visible {
-  outline: 2px solid #111111 !important;
-  outline-offset: 2px !important;
-}
-
 @media print {
   header, footer, .no-print {
     display: none !important;
   }
 }
-

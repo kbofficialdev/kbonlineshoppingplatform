@@ -23,12 +23,12 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div className="text-xs space-y-2.5">
-            <h4 className="font-bold text-black uppercase tracking-wider text-[11px] mb-3">Shop Collections</h4>
-            <div><Link href="/search?category=All" className="text-neutral-500 hover:text-black">All Collections</Link></div>
-            <div><Link href="/search?category=Men" className="text-neutral-500 hover:text-black">Men's Handspun & Linen</Link></div>
-            <div><Link href="/search?category=Women" className="text-neutral-500 hover:text-black">Women's Kurtis & Anarkalis</Link></div>
-            <div><Link href="/search?category=Ethnic %26 Traditional" className="text-neutral-500 hover:text-black">Traditional Dhoti Sets</Link></div>
-            <div><Link href="/search?category=Daily Wear" className="text-neutral-500 hover:text-black">Daily Wear Tees & Comforts</Link></div>
+            <h4 className="font-bold text-kb-black uppercase tracking-wider text-[11px] mb-3">Shop Collections</h4>
+            <div><Link href="/search?category=All" className="text-kb-slate hover:text-kb-black">All Collections</Link></div>
+            <div><Link href="/search?category=Sarees" className="text-kb-slate hover:text-kb-black">Gadwal &amp; Pattu Sarees</Link></div>
+            <div><Link href="/search?category=Men%27s+Unstitched" className="text-kb-slate hover:text-kb-black">Men&apos;s Unstitched (Raymond &amp; Arvind)</Link></div>
+            <div><Link href="/ai" className="text-kb-violet font-semibold hover:underline flex items-center gap-1">✦ KB Shopmate AI (Voice)</Link></div>
+            <div><Link href="/search?category=Wedding" className="text-kb-slate hover:text-kb-black">Wedding &amp; Ceremonial</Link></div>
           </div>
 
           {/* Customer & Orders */}

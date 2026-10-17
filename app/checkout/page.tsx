@@ -299,7 +299,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={handleProceedToPayment}
-                  className="bg-black text-white text-xs font-bold px-8 py-3.5 rounded-kb-pill hover:bg-neutral-800 transition-all shadow-md"
+                  className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm"
                 >
                   Continue to Payment Selection →
                 </button>
@@ -408,7 +408,7 @@ export default function CheckoutPage() {
                   id="confirm-place-order-btn"
                   onClick={handlePlaceOrder}
                   disabled={isSubmitting}
-                  className="bg-emerald-800 text-white text-xs font-bold px-8 py-3.5 rounded-kb-pill hover:bg-emerald-900 transition-all shadow-md disabled:opacity-50"
+                  className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? 'Placing Order...' : 'Confirm & Place Order Now →'}
                 </button>
