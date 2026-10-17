@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  kb-api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kb-online-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - DATABASE_URL=postgresql://kb_user:kb_pass@postgres:5432/kb_online_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kb-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: kb-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=kb_user
+      - POSTGRES_PASSWORD=kb_pass
+      - POSTGRES_DB=kb_online_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb_user -d kb_online_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kb-network
+
+volumes:
+  pgdata:
+
+networks:
+  kb-network:
+    driver: bridge

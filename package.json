@@ -1,0 +1,23 @@
+{
+  "name": "kbonlineapp",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build:types": "npm run --workspace=@kb/shared-types build",
+    "build": "npm run build:types",
+    "start:services": "node orchestrator.js",
+    "test:visual": "node tests/visual/run-visual-tests.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.42.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.3.0"
+  }
+}
