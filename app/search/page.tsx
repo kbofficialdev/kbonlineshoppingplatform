@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { authFetch } from '@/lib/clientAuth';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -44,7 +45,7 @@ function SearchContent() {
 
   const handleQuickAdd = async (product: any) => {
     try {
-      await fetch('/api/cart/items', {
+      await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

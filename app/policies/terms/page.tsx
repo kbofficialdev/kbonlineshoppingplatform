@@ -2,86 +2,79 @@ import React from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 
+export const metadata = {
+  title: 'Terms & Conditions | KB FASHIONS',
+  description: 'Statutory terms of sale and platform usage for KB FASHIONS, Kalwaral village, Telangana.',
+};
+
 export default function TermsAndConditionsPage() {
   const store = db.storeSettings;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-8">
-      {/* Header */}
-      <div className="border-b border-slate-200 pb-6 space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-kb-blue text-xs font-bold uppercase tracking-wider">
-          Legal Agreement • Consumer Protection (E-Commerce) Rules 2020
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      {/* Breadcrumb */}
+      <div className="text-xs text-neutral-500 mb-6 flex items-center gap-2">
+        <Link href="/" className="hover:underline">Home</Link>
+        <span>/</span>
+        <span className="text-black font-semibold">Terms &amp; Conditions</span>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-12 shadow-sm space-y-8 text-neutral-800 leading-relaxed text-sm">
+        <div className="border-b border-slate-200 pb-6">
+          <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 mb-3">
+            LEGAL AGREEMENT • INDIAN CONTRACT ACT, 1872
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-kb-black">Terms &amp; Conditions of Sale</h1>
+          <p className="text-xs text-neutral-500 mt-2">
+            Effective Date: October 2026 • Governing Law: Jurisdiction of Kamareddy, Telangana
+          </p>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-kb-black tracking-tight">
-          Terms &amp; Conditions
-        </h1>
-        <p className="text-xs text-neutral-500 font-mono">
-          Effective Date: October 2026 • Governing Terms of {store.officialName}
-        </p>
-      </div>
 
-      {/* Body Content */}
-      <div className="prose prose-sm max-w-none text-neutral-700 space-y-6 text-xs sm:text-sm leading-relaxed">
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">1. General Overview &amp; Acceptance</h2>
+          <h2 className="text-base font-bold text-black">1. Acceptance of Terms</h2>
           <p>
-            These Terms and Conditions (“Terms”) constitute a binding legal agreement between you (“Customer,” “User”) and <strong>{store.officialName}</strong>, having its registered business premises at <strong>{store.address}</strong>. By accessing our platform, registering an account, or placing an order, you agree to be bound by these Terms.
+            Welcome to {store.officialName} (&quot;KB FASHIONS&quot;). By browsing our catalog, signing into an authenticated account, placing orders, or utilizing our services, you enter into a legally binding contract governed by the Indian Contract Act, 1872, and the Consumer Protection (E-Commerce) Rules, 2020. If you do not agree to these terms, please refrain from using our e-commerce platform.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">2. Small Business &amp; GST Exemption Notice</h2>
+          <h2 className="text-base font-bold text-black">2. Authentic Village Origin &amp; Handloom Characteristics</h2>
           <p>
-            <strong>{store.officialName}</strong> is a traditional rural textile occupation enterprise rooted in Kalwaral village for over 20 years. As per <strong>Section 23 of the Central Goods and Services Tax (CGST) Act, 2017</strong> and corresponding State GST laws, our annual aggregate turnover does not exceed the statutory threshold requiring registration. Consequently:
+            KB FASHIONS is rooted in Kalwaral village, Kamareddy District, Telangana. We specialize in authentic handloom Gadwal sarees, Kuttu zari borders, pure cotton weaves, and mill-fresh unstitched suitings and shirtings.
           </p>
-          <ul className="list-disc pl-5 space-y-1 text-neutral-600">
-            <li>No Goods and Services Tax (GST) is charged on customer purchases.</li>
-            <li>All sales are documented via an authentic retail <strong>“Bill of Supply”</strong> (Cash Memo) bearing our official business address and invoice number.</li>
-            <li>Displayed prices represent the final net purchase price without unexpected tax additions at checkout.</li>
+          <ul className="list-disc pl-5 space-y-1.5 text-xs text-neutral-600">
+            <li><strong>Handloom Weave Distinctiveness:</strong> Handwoven garments may possess slight organic variations in weave tension, slubs, or zari interlock. These represent hallmarks of genuine manual loom craftsmanship and are not considered manufacturing defects.</li>
+            <li><strong>Color Reproduction:</strong> While we endeavor to photograph textiles with true natural fidelity, minute color shade nuances may vary depending on monitor calibrations and ambient display lighting.</li>
           </ul>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">3. Product Specifications &amp; Unstitched Fabric Cuts</h2>
+          <h2 className="text-base font-bold text-black">3. Unstitched Fabrics &amp; Meter Measurement Standards</h2>
           <p>
-            We take pride in offering genuine handlooms, Gadwal cotton-silk weaves, and Raymond/Arvind unstitched suiting and shirting:
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-neutral-600">
-            <li><strong>Handloom Characteristics:</strong> Natural slight variations in hand-spun cotton thread, dye hues, and traditional zari pleats are authentic markers of artisan craftsmanship, not manufacturing flaws.</li>
-            <li><strong>Unstitched Fabric Cuts:</strong> Fabrics ordered by the meter (e.g. 2.25m for shirtings) are measured using calibrated steel yardsticks. A tolerance of ±1 cm is standard industry practice.</li>
-            <li><strong>Cut Fabric Non-Returnability:</strong> Once a bolt of fabric is cut to your custom requested meter length, it cannot be restocked or returned unless verified as damaged upon arrival.</li>
-          </ul>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">4. Account Responsibilities &amp; Strict Session Guard</h2>
-          <p>
-            To protect your order history and prevent unauthorized bookings, all shopping cart and checkout services strictly require a verified customer account. You are responsible for maintaining the confidentiality of your sign-in credentials.
+            For men&apos;s unstitched shirting and suiting fabrics (such as Raymond and Arvind bolts), fabrics are precision-cut by the meter from continuous rolls according to your bespoke order selection (e.g. 1.6m, 2.25m, 3.0m). Standard textile industry cutting tolerance of ±1.5 cm is acknowledged and applied.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">5. Pricing &amp; Payment Gateway Settlement</h2>
+          <h2 className="text-base font-bold text-black">4. Pricing &amp; GST Exemption Declaration</h2>
           <p>
-            All prices are denominated in Indian Rupees (INR ₹). Payment can be completed through Cash on Delivery (COD) or instant digital settlement (UPI, Debit/Credit Card) via our authorized payment gateway partners. In the event of network disruption during payment, settlements will be reconciled within 24 hours.
+            All prices listed on the platform are in Indian Rupees (INR) and represent honest village artisan pricing without middleman markups. {store.officialName} operates as a rural micro-enterprise exempted from mandatory GST registration under Section 23 of the Central Goods and Services Tax (CGST) Act, 2017. Transactions are issued under statutory retail &quot;Bill of Supply&quot; documents without tax charges.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">6. Governing Law &amp; Jurisdiction</h2>
+          <h2 className="text-base font-bold text-black">5. Account Responsibilities &amp; Abuse Prevention</h2>
           <p>
-            These Terms shall be governed by and construed in accordance with the laws of the Republic of India. Any disputes arising out of transactions on this platform shall be subject to the exclusive jurisdiction of the competent courts in <strong>Kamareddy District, Telangana, India</strong>.
+            Customers are responsible for maintaining the confidentiality of their sign-in credentials. Automated 10-minute security freezes are enforced on accounts that trigger multiple consecutive authentication failures to guard against brute force interference.
           </p>
         </section>
-      </div>
 
-      <div className="pt-6 border-t border-slate-200 flex justify-between items-center text-xs">
-        <Link href="/policies/privacy" className="text-neutral-600 hover:text-black font-semibold">
-          ← Privacy Policy
-        </Link>
-        <Link href="/policies/refunds" className="text-kb-blue hover:underline font-bold">
-          Refund &amp; Return Policy →
-        </Link>
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-black">6. Dispute Resolution &amp; Jurisdiction</h2>
+          <p>
+            Any disputes arising under these terms shall first be submitted to our Grievance Redressal Desk for amicable settlement within 30 days. Unresolved claims shall fall under the exclusive jurisdiction of the competent courts in Kamareddy, Telangana, India.
+          </p>
+        </section>
       </div>
     </div>
   );

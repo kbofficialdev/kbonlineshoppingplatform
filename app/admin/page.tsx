@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -14,7 +15,7 @@ export default function AdminDashboardPage() {
   const fetchAnalytics = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/admin/analytics');
+      const res = await authFetch('/api/admin/analytics');
       const json = await res.json();
       if (json?.analytics) {
         setData(json.analytics);

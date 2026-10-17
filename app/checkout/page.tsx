@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -35,12 +36,12 @@ export default function CheckoutPage() {
   const fetchCartAndUser = async () => {
     try {
       setIsLoading(true);
-      const cartRes = await fetch('/api/cart');
+      const cartRes = await authFetch('/api/cart');
       const cartData = await cartRes.json();
       setCart(cartData);
 
       // Verify user authentication
-      const userRes = await fetch('/api/auth/me');
+      const userRes = await authFetch('/api/auth/me');
       const userData = await userRes.json();
       if (userData?.authenticated && userData.user) {
         setName(userData.user.name || '');
@@ -138,7 +139,7 @@ export default function CheckoutPage() {
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/orders', {
+      const res = await authFetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

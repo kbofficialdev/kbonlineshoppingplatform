@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminNewProductPage() {
   const router = useRouter();
@@ -193,7 +194,7 @@ export default function AdminNewProductPage() {
         };
       }
 
-      const res = await fetch('/api/catalog/products', {
+      const res = await authFetch('/api/catalog/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

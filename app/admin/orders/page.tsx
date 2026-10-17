@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -17,7 +18,7 @@ export default function AdminOrdersPage() {
     try {
       setIsLoading(true);
       const url = filterStage === 'ALL' ? '/api/orders' : `/api/orders?status=${filterStage}`;
-      const res = await fetch(url);
+      const res = await authFetch(url);
       const data = await res.json();
       if (data?.orders) {
         setOrders(data.orders);

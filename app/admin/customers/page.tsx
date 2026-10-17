@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -14,7 +15,7 @@ export default function AdminCustomersPage() {
   const fetchCustomers = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/admin/customers');
+      const res = await authFetch('/api/admin/customers');
       const data = await res.json();
       if (data?.customers) {
         setCustomers(data.customers);
@@ -27,7 +28,7 @@ export default function AdminCustomersPage() {
 
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      const res = await fetch('/api/admin/customers', {
+      const res = await authFetch('/api/admin/customers', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, isActive: !currentStatus }),

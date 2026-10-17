@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -24,7 +25,7 @@ export default function OrderTrackingPage() {
   const fetchOrder = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/orders/${id}`);
+      const res = await authFetch(`/api/orders/${id}`);
       const data = await res.json();
       if (data?.order) {
         setOrder(data.order);
@@ -44,7 +45,7 @@ export default function OrderTrackingPage() {
     }
     setRefundError(null);
     try {
-      const res = await fetch('/api/admin/refunds', {
+      const res = await authFetch('/api/admin/refunds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

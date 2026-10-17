@@ -2,103 +2,72 @@ import React from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 
+export const metadata = {
+  title: 'Statutory GST Exemption Declaration | KB FASHIONS',
+  description: 'Official tax declaration under Section 23 of Central Goods and Services Tax Act for KB FASHIONS, Kalwaral village.',
+};
+
 export default function StatutoryDeclarationPage() {
   const store = db.storeSettings;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-8">
-      {/* Header */}
-      <div className="border-b border-slate-200 pb-6 space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-          Statutory Compliance Disclosure • Tax Exemption Certificate
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-kb-black tracking-tight">
-          Statutory Declaration &amp; Small Business Exemption
-        </h1>
-        <p className="text-xs text-neutral-500 font-mono">
-          Official Declaration under Section 23 of the Central Goods &amp; Services Tax (CGST) Act, 2017
-        </p>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      {/* Breadcrumb */}
+      <div className="text-xs text-neutral-500 mb-6 flex items-center gap-2">
+        <Link href="/" className="hover:underline">Home</Link>
+        <span>/</span>
+        <span className="text-black font-semibold">Statutory GST Exemption Declaration</span>
       </div>
 
-      {/* Body Content */}
-      <div className="prose prose-sm max-w-none text-neutral-700 space-y-6 text-xs sm:text-sm leading-relaxed">
-        {/* Official Certificate Card */}
-        <div className="bg-gradient-to-br from-white via-slate-50 to-amber-50/20 border-2 border-slate-300 rounded-3xl p-6 sm:p-8 shadow-md space-y-6 relative">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <div>
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Enterprise Profile</span>
-              <h2 className="text-xl font-black text-black">{store.officialName}</h2>
-              <span className="text-xs font-mono text-neutral-500">Brand: {store.brandName} FASHIONS</span>
-            </div>
-            <div className="text-right">
-              <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300">
-                ✓ GST EXEMPTED
-              </span>
-            </div>
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-12 shadow-sm space-y-8 text-neutral-800 leading-relaxed text-sm">
+        <div className="border-b border-slate-200 pb-6">
+          <div className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 mb-3">
+            SECTION 23 OF CGST ACT, 2017 • OFFICIAL BUSINESS DECLARATION
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-neutral-400 block text-[10px] uppercase font-bold tracking-wider">Nature of Business</span>
-              <span className="font-semibold text-black">
-                Traditional Rural Artisan &amp; Textile Occupation Retail Enterprise
-              </span>
-            </div>
-
-            <div>
-              <span className="text-neutral-400 block text-[10px] uppercase font-bold tracking-wider">Operational Vintage</span>
-              <span className="font-semibold text-black">
-                Over 20 Years of Generational Ancestral Heritage (Since 2006)
-              </span>
-            </div>
-
-            <div className="sm:col-span-2">
-              <span className="text-neutral-400 block text-[10px] uppercase font-bold tracking-wider">Registered Shop Location</span>
-              <span className="font-mono text-neutral-800 leading-relaxed font-semibold">
-                {store.address}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-neutral-400 block text-[10px] uppercase font-bold tracking-wider">Statutory Invoicing Mode</span>
-              <span className="font-semibold text-black">
-                Retail "Bill of Supply" (Cash Memo) under Section 31(3)(c) of CGST Act
-              </span>
-            </div>
-
-            <div>
-              <span className="text-neutral-400 block text-[10px] uppercase font-bold tracking-wider">Applicable Exemption Provision</span>
-              <span className="font-semibold text-emerald-700 font-mono">
-                Section 23 of CGST Act, 2017 &amp; Telangana SGST Act
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-white border border-slate-200 text-xs text-neutral-600 leading-relaxed space-y-2">
-            <div className="font-bold text-black">Solemn Business Affirmation:</div>
-            <p>
-              “We hereby declare and affirm that <strong>{store.officialName}</strong> is a traditional family-run rural retail enterprise operating in Kalwaral village, Kamareddy district, Telangana. We are not registered under the GST Act as our aggregate annual turnover is below the mandatory registration threshold prescribed under the Goods and Services Tax laws. We do not collect any Goods and Services Tax from our buyers, nor do we claim input tax credit. All transactions are supported by our statutory retail Bill of Supply.”
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-kb-black">Statutory Tax Exemption &amp; Retail Bill of Supply Declaration</h1>
+          <p className="text-xs text-neutral-500 mt-2">
+            Village Micro-Enterprise Exemption Notice under Goods and Services Tax (GST) Laws of India
+          </p>
         </div>
 
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-kb-black">Legal Significance for Patrons &amp; Payment Partners</h2>
-          <ul className="list-disc pl-5 space-y-1.5 text-neutral-600 text-xs sm:text-sm">
-            <li><strong>Zero GST Charged:</strong> No 5%, 12%, or 18% GST surcharges are levied on any saree or unstitched fabric. The price you see is the final price.</li>
-            <li><strong>Legally Valid Purchase Bill:</strong> Your purchase is accompanied by an official retail Bill of Supply bearing serial numbers, customer details, and Kalwaral village shop address.</li>
-            <li><strong>Payment Gateway Compliance:</strong> This declaration satisfies RBI and Payment Aggregator merchant on-boarding requirements for unincorporated sole-proprietor/family artisan businesses in rural India.</li>
+          <h2 className="text-base font-bold text-black">1. Statutory Exemption Declaration</h2>
+          <p>
+            This public declaration certifies that <strong>{store.officialName}</strong> (Brand: {store.brandName}), established in Kalwaral village, Sadasivanagar Mandal, Kamareddy District, Telangana, operates as an ancestral village occupation enterprise engaged in the retail distribution of authentic handloom sarees, unstitched fabrics, and traditional textiles.
+          </p>
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-900 font-medium leading-relaxed">
+            <strong>Statutory Exemption Notice:</strong> Under Section 23 of the Central Goods and Services Tax (CGST) Act, 2017, and the corresponding provisions of the Telangana State Goods and Services Tax (TGST) Act, persons engaged exclusively in supplies not liable to tax, or whose aggregate annual turnover is below the statutory mandatory registration threshold for rural retail goods, are explicitly exempted from obtaining GSTIN registration.
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-black">2. Retail Bill of Supply Documentation</h2>
+          <p>
+            In accordance with Rule 49 of the CGST Rules, non-taxable small enterprises issue an official <strong>Retail Bill of Supply</strong> (Cash Memo) in lieu of a standard Tax Invoice.
+          </p>
+          <ul className="list-disc pl-5 space-y-1.5 text-xs text-neutral-600">
+            <li><strong>Zero GST Charged:</strong> No Central GST (CGST), State GST (SGST), or Integrated GST (IGST) is collected or billed to customers.</li>
+            <li><strong>Pure Value:</strong> Prices reflect pure artisan and wholesale mill rates, ensuring that village and urban patrons pay honest prices free of inflated bureaucratic surcharges.</li>
+            <li><strong>Official Invoice Generation:</strong> Every confirmed transaction produces a downloadable, numbered statutory Bill of Supply containing store coordinates, consignment breakdown, and payment details.</li>
           </ul>
         </section>
-      </div>
 
-      <div className="pt-6 border-t border-slate-200 flex justify-between items-center text-xs">
-        <Link href="/policies/grievance" className="text-neutral-600 hover:text-black font-semibold">
-          ← Grievance Redressal Policy
-        </Link>
-        <Link href="/about" className="text-kb-blue hover:underline font-bold">
-          Read Our 20-Year Kalwaral Heritage Story →
-        </Link>
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-black">3. Enterprise Identity &amp; Physical Verification</h2>
+          <div className="bg-neutral-50 border border-slate-200 rounded-2xl p-5 text-xs space-y-2">
+            <div><strong>Commercial Entity:</strong> {store.officialName}</div>
+            <div><strong>Ancestral History:</strong> {store.historySince}</div>
+            <div><strong>Physical Village Store:</strong> {store.address}</div>
+            <div><strong>Direct Contact:</strong> {store.contactPhone} | {store.contactEmail}</div>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-black">4. Payment Gateway &amp; Commercial Banking Compliance</h2>
+          <p>
+            This declaration confirms to RBI-regulated payment aggregators, commercial banks, and regulatory bodies that {store.officialName} legitimately operates within the statutory boundaries of Indian tax legislation, delivering genuine handloom merchandise directly from artisan weavers to households across India.
+          </p>
+        </section>
       </div>
     </div>
   );

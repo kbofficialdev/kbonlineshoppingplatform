@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AccountOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -14,13 +15,13 @@ export default function AccountOrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const authRes = await fetch('/api/auth/me');
+      const authRes = await authFetch('/api/auth/me');
       const authData = await authRes.json();
       if (!authData?.authenticated) {
         window.location.href = '/auth/signin?redirect=/account/orders&reason=auth_required';
         return;
       }
-      const res = await fetch('/api/orders');
+      const res = await authFetch('/api/orders');
       const data = await res.json();
       if (data?.orders) {
         setOrders(data.orders);

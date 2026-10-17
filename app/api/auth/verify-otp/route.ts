@@ -21,17 +21,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Check if account is frozen
+    if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+      const remainingMinutes = Math.ceil((new Date(user.lockedUntil).getTime() - Date.now()) / 60000);
+      return NextResponse.json({
+        error: `Security Alert: Account is temporarily frozen for ${remainingMinutes} minute(s).`,
+        isLocked: true,
+        remainingMinutes,
+      }, { status: 423 });
+    }
+
     if (!user.otpCode || user.otpCode !== otp) {
-      return NextResponse.json({ error: 'Invalid OTP code. Please check and try again.' }, { status: 400 });
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= 3) {
+        user.lockedUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        user.otpCode = null;
+        user.otpExpiresAt = null;
+
+        const { sendAccountLockedEmail } = await import('@/lib/email');
+        await sendAccountLockedEmail(user.email, user.name, 10);
+
+        return NextResponse.json({
+          error: 'Security Alert: Account frozen for 10 minutes due to multiple invalid OTP attempts.',
+          isLocked: true,
+          remainingMinutes: 10,
+        }, { status: 423 });
+      }
+
+      return NextResponse.json({
+        error: `Invalid OTP code. Warning: Attempt ${user.failedLoginAttempts} of 3.`,
+        attemptsRemaining: 3 - user.failedLoginAttempts,
+      }, { status: 400 });
     }
 
     if (user.otpExpiresAt && new Date(user.otpExpiresAt).getTime() < Date.now()) {
       return NextResponse.json({ error: 'OTP has expired. Please request a new one.' }, { status: 400 });
     }
 
-    // Clear used OTP
+    // Clear used OTP and reset failed attempts
     user.otpCode = null;
     user.otpExpiresAt = null;
+    user.failedLoginAttempts = 0;
+    user.otpRequestCount = 0;
+    user.lockedUntil = null;
 
     db.addAuditLog(
       user.email,
@@ -49,6 +81,8 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
+    const isHttps = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
+
     const response = NextResponse.json({
       success: true,
       message: 'OTP verified successfully',
@@ -58,13 +92,22 @@ export async function POST(req: NextRequest) {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        avatar: user.avatar || null,
       },
       token,
     });
 
     response.cookies.set('kb_auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false,
+      secure: isHttps,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 3600,
+    });
+
+    response.cookies.set('kb_session_active', '1', {
+      httpOnly: false,
+      secure: isHttps,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 3600,

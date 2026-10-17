@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<any>({
@@ -49,7 +50,7 @@ export default function AdminSettingsPage() {
     setErrorMsg(null);
 
     try {
-      const res = await fetch('/api/store/settings', {
+      const res = await authFetch('/api/store/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),

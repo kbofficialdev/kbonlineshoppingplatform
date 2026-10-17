@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -16,7 +17,7 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/catalog/products');
+      const res = await authFetch('/api/catalog/products');
       const data = await res.json();
       if (data?.products) {
         setProducts(data.products);
@@ -31,7 +32,7 @@ export default function AdminProductsPage() {
     if (!confirm(`Are you sure you want to delete "${name}" from store inventory?`)) return;
 
     try {
-      const res = await fetch(`/api/catalog/products/${productId}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/catalog/products/${productId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         setActionMessage(`✓ Product "${name}" successfully deleted.`);

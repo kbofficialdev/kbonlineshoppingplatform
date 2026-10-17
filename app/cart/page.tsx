@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
+import { authFetch } from '@/lib/clientAuth';
 
 interface CartItem {
   id: string;
@@ -44,7 +45,7 @@ export default function CartPage() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await authFetch('/api/auth/me');
       const data = await res.json();
       if (data?.authenticated) setUser(data.user);
       else setUser(null);
@@ -54,7 +55,7 @@ export default function CartPage() {
   const fetchCart = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/cart');
+      const res = await authFetch('/api/cart');
       if (res.status === 401) {
         router.push('/auth/signin?redirect=%2Fcart&reason=auth_required');
         return;
@@ -73,7 +74,7 @@ export default function CartPage() {
 
   const handleUpdateQty = async (productId: string, size: string, delta: number) => {
     try {
-      const res = await fetch(`/api/cart/items/${productId}`, {
+      const res = await authFetch(`/api/cart/items/${productId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ size, delta })
@@ -85,7 +86,7 @@ export default function CartPage() {
 
   const handleRemove = async (productId: string, size: string) => {
     try {
-      const res = await fetch(`/api/cart/items/${productId}?size=${encodeURIComponent(size)}`, {
+      const res = await authFetch(`/api/cart/items/${productId}?size=${encodeURIComponent(size)}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -100,7 +101,7 @@ export default function CartPage() {
 
   const handleClearCart = async () => {
     try {
-      const res = await fetch('/api/cart/clear', { method: 'DELETE' });
+      const res = await authFetch('/api/cart/clear', { method: 'DELETE' });
       const data = await res.json();
       setCart(data);
       showModal({
@@ -116,7 +117,7 @@ export default function CartPage() {
     setPromoError(null);
     setPromoMessage(null);
     try {
-      const res = await fetch('/api/cart/apply-promo', {
+      const res = await authFetch('/api/cart/apply-promo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: promoCode.trim().toUpperCase() })

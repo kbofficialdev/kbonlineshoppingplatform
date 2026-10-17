@@ -65,10 +65,20 @@ export async function POST(req: NextRequest) {
       token,
     }, { status: 201 });
 
-    // Set HTTP-only auth cookie
+    const isHttps = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
+
+    // Set auth cookie
     response.cookies.set('kb_auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false,
+      secure: isHttps,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 3600,
+    });
+
+    response.cookies.set('kb_session_active', '1', {
+      httpOnly: false,
+      secure: isHttps,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 3600,

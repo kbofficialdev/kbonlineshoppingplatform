@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useModalAlert } from './ModalContext';
+import { authFetch } from '@/lib/clientAuth';
 
 interface CarouselSlide {
   type: 'BANNER' | 'PRODUCT';
@@ -136,7 +137,7 @@ export default function HeroShowcaseCarousel() {
     e.stopPropagation();
 
     try {
-      const res = await fetch('/api/cart/items', {
+      const res = await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useModalAlert } from '@/components/ModalContext';
 import HeroShowcaseCarousel from '@/components/HeroShowcaseCarousel';
+import { authFetch } from '@/lib/clientAuth';
 
 interface Product {
   id: string;
@@ -72,7 +73,7 @@ export default function HomePage() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await authFetch('/api/auth/me');
       const data = await res.json();
       if (data?.authenticated) setUser(data.user);
       else setUser(null);
@@ -153,7 +154,7 @@ export default function HomePage() {
     e.preventDefault();
     e.stopPropagation();
     try {
-      const res = await fetch('/api/cart/items', {
+      const res = await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

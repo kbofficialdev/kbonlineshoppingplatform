@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import TypewriterTicker from './TypewriterTicker';
+import { authFetch, clearClientSession } from '@/lib/clientAuth';
 
 export default function Header() {
   const pathname = usePathname();
@@ -23,8 +24,17 @@ export default function Header() {
 
   const loadData = async () => {
     try {
+      // Fetch user profile
+      const userRes = await authFetch('/api/auth/me');
+      const userData = await userRes.json();
+      if (userData?.authenticated) {
+        setUser(userData.user);
+      } else {
+        setUser(null);
+      }
+
       // Fetch cart
-      const cartRes = await fetch('/api/cart');
+      const cartRes = await authFetch('/api/cart');
       if (cartRes.ok) {
         const cartData = await cartRes.json();
         if (cartData?.items) {
@@ -32,15 +42,6 @@ export default function Header() {
         }
       } else {
         setCartCount(0);
-      }
-
-      // Fetch user profile
-      const userRes = await fetch('/api/auth/me');
-      const userData = await userRes.json();
-      if (userData?.authenticated) {
-        setUser(userData.user);
-      } else {
-        setUser(null);
       }
 
       // Wishlist
@@ -71,6 +72,7 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+      clearClientSession();
       setUser(null);
       window.location.href = '/';
     } catch (e) {}

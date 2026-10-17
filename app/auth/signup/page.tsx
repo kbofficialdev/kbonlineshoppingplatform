@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { setClientSession } from '@/lib/clientAuth';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -33,8 +34,11 @@ export default function SignUpPage() {
       });
 
       const data = await res.json();
-      if (data.success) {
-        router.push('/account/orders');
+      if (data.success && data.user) {
+        if (data.token) {
+          setClientSession(data.token, data.user);
+        }
+        window.location.href = '/account';
       } else {
         setErrorMsg(data.error || 'Failed to create account');
       }

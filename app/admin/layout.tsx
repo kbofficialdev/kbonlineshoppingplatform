@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const checkAdmin = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/auth/me');
+      const res = await authFetch('/api/auth/me');
       const data = await res.json();
 
       if (data?.authenticated && data.user?.role === 'ADMIN') {

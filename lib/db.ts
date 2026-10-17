@@ -85,6 +85,10 @@ export interface UserModel {
   bio?: string;
   otpCode?: string | null;
   otpExpiresAt?: string | null;
+  otpRequestCount?: number;
+  otpLockedUntil?: string | null;
+  failedLoginAttempts?: number;
+  lockedUntil?: string | null;
   resetToken?: string | null;
   resetExpiresAt?: string | null;
   createdAt: string;

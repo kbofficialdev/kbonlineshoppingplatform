@@ -41,7 +41,7 @@ export function getAuthFromRequest(req: NextRequest): TokenPayload | null {
   let token: string | null = null;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7);
+    token = authHeader.substring(7).trim();
   } else {
     // Check cookie
     const cookie = req.cookies.get('kb_auth_token');
@@ -51,6 +51,10 @@ export function getAuthFromRequest(req: NextRequest): TokenPayload | null {
   }
 
   if (!token) return null;
+  try {
+    token = decodeURIComponent(token).replace(/^["']|["']$/g, '').trim();
+  } catch (e) {}
+
   return verifyToken(token);
 }
 
@@ -59,7 +63,9 @@ export function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Mock/Live Email Dispatcher
+export { sendMail, sendOtpEmail, sendPasswordResetEmail, sendAccountLockedEmail } from './email';
+
+// Real / Live Email Dispatcher via Nodemailer
 export async function sendEmail({
   to,
   subject,
@@ -69,15 +75,6 @@ export async function sendEmail({
   subject: string;
   html: string;
 }): Promise<{ success: boolean; messageId?: string }> {
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-
-  console.log(`\n📧 [EMAIL DISPATCH via ${smtpHost || 'Console Dispatcher'}]`);
-  console.log(`   To: ${to}`);
-  console.log(`   Subject: ${subject}`);
-  console.log(`   Content: ${html.replace(/<[^>]*>?/gm, '').substring(0, 120)}...`);
-
-  // If live credentials are provided in .env, nodemailer can send, otherwise safely logs token/link for testing
-  return { success: true, messageId: `msg_${Date.now()}` };
+  const { sendMail } = await import('./email');
+  return sendMail({ to, subject, html });
 }

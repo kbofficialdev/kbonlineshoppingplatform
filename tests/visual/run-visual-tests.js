@@ -47,7 +47,7 @@ async function runVisualTests() {
     await page.screenshot({ path: localPath });
     try {
       fs.copyFileSync(localPath, artifactPath);
-    } catch (e) {}
+    } catch (e) { }
     console.log(`✓ Captured: ${name}`);
   };
 
@@ -296,7 +296,7 @@ async function runVisualTests() {
     await mobilePage.waitForSelector('#product-grid');
     const mobileLocal = path.join(SCREENSHOT_DIR, '19_mobile_home_view.png');
     await mobilePage.screenshot({ path: mobileLocal });
-    try { fs.copyFileSync(mobileLocal, path.join(ARTIFACT_DIR, '19_mobile_home_view.png')); } catch (e) {}
+    try { fs.copyFileSync(mobileLocal, path.join(ARTIFACT_DIR, '19_mobile_home_view.png')); } catch (e) { }
     console.log(`✓ Captured: 19_mobile_home_view.png`);
     testResults.push({ test: "19 Mobile Viewport (375x667) Zero Overflow", status: "PASSED" });
 
@@ -308,7 +308,7 @@ async function runVisualTests() {
     await mobilePage.waitForTimeout(300);
     const mobileDrawerLocal = path.join(SCREENSHOT_DIR, '35_mobile_nav_drawer_open.png');
     await mobilePage.screenshot({ path: mobileDrawerLocal });
-    try { fs.copyFileSync(mobileDrawerLocal, path.join(ARTIFACT_DIR, '35_mobile_nav_drawer_open.png')); } catch (e) {}
+    try { fs.copyFileSync(mobileDrawerLocal, path.join(ARTIFACT_DIR, '35_mobile_nav_drawer_open.png')); } catch (e) { }
     console.log(`✓ Captured: 35_mobile_nav_drawer_open.png`);
     testResults.push({ test: "35 Mobile Navigation Drawer Opened (Zero Overflow)", status: "PASSED" });
     await mobileContext.close();

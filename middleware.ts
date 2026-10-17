@@ -24,8 +24,16 @@ function decodeJwtPayload(token: string): { role?: string; email?: string; exp?:
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const tokenCookie = req.cookies.get('kb_auth_token');
-  const token = tokenCookie?.value;
+  const authHeader = req.headers.get('authorization');
+  let token = req.cookies.get('kb_auth_token')?.value;
+  if (!token && authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  }
+  if (token) {
+    try {
+      token = decodeURIComponent(token).replace(/^["']|["']$/g, '').trim();
+    } catch (e) {}
+  }
   const payload = token ? decodeJwtPayload(token) : null;
 
   // 1. Protect Admin Pages (/admin and /admin/*)

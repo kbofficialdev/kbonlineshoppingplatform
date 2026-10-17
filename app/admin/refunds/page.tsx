@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminRefundsPage() {
   const [refunds, setRefunds] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export default function AdminRefundsPage() {
   const fetchRefunds = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/admin/refunds');
+      const res = await authFetch('/api/admin/refunds');
       const data = await res.json();
       if (data?.refunds) {
         setRefunds(data.refunds);
@@ -30,7 +31,7 @@ export default function AdminRefundsPage() {
     const notes = prompt(`Enter optional review note for ${status}:`) || '';
 
     try {
-      const res = await fetch('/api/admin/refunds', {
+      const res = await authFetch('/api/admin/refunds', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refundId, status, notes }),

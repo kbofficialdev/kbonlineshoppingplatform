@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useModalAlert } from '@/components/ModalContext';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function WishlistPage() {
   const { showModal } = useModalAlert();
   const [wishlist, setWishlist] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    authFetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
         if (!data?.authenticated) {
@@ -46,7 +47,7 @@ export default function WishlistPage() {
 
   const handleMoveToBag = async (product: any) => {
     try {
-      const res = await fetch('/api/cart/items', {
+      const res = await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

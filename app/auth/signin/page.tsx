@@ -3,6 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { setClientSession } from '@/lib/clientAuth';
 
 function SignInContent() {
   const router = useRouter();
@@ -36,8 +37,11 @@ function SignInContent() {
       const data = await res.json();
 
       if (data.success && data.user) {
-        const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account/orders');
-        router.push(dest);
+        if (data.token) {
+          setClientSession(data.token, data.user);
+        }
+        const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account');
+        window.location.href = dest;
       } else {
         setErrorMsg(data.error || 'Failed to sign in. Please verify your credentials.');
       }
@@ -101,8 +105,11 @@ function SignInContent() {
       const data = await res.json();
 
       if (data.success && data.user) {
-        const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account/orders');
-        router.push(dest);
+        if (data.token) {
+          setClientSession(data.token, data.user);
+        }
+        const dest = redirectUrl || (data.user.role === 'ADMIN' ? '/admin' : '/account');
+        window.location.href = dest;
       } else {
         setErrorMsg(data.error || 'Invalid OTP code');
       }

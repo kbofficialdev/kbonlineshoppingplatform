@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
+import { authFetch } from '@/lib/clientAuth';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -32,7 +33,7 @@ export default function ProductDetailPage() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await authFetch('/api/auth/me');
       const data = await res.json();
       if (data?.authenticated) setUser(data.user);
       else setUser(null);
@@ -144,7 +145,7 @@ export default function ProductDetailPage() {
         ? `${product.name} (${cutLength}m Cut)`
         : product.name;
 
-      const res = await fetch('/api/cart/items', {
+      const res = await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest, { params }: { params: { orderId: string } }) {
-  const { orderId } = params;
-  if (!orderId) {
-    return NextResponse.json({ error: 'Order ID or Tracking number is required' }, { status: 400 });
-  }
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
+    }
 
-  const trackingData = db.getOrderTracking(orderId);
-  if (!trackingData) {
-    return NextResponse.json(
-      { error: `No tracking information found for parcel "${orderId}". Please verify your order number.` },
-      { status: 404 }
-    );
-  }
+    const { orderId } = params;
+    const tracking = db.getOrderTracking(orderId);
 
-  return NextResponse.json({
-    success: true,
-    tracking: trackingData,
-  });
+    if (!tracking) {
+      return NextResponse.json({ error: 'Tracking information not found for this Order ID' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      tracking,
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

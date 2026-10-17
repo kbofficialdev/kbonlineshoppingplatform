@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useModalAlert } from '@/components/ModalContext';
+import { authFetch } from '@/lib/clientAuth';
 
 interface ProductItem {
   id: string;
@@ -99,7 +100,7 @@ export default function KBShopmateAI({ embedded = false }: { embedded?: boolean 
 
   const handleChooseProduct = async (product: ProductItem) => {
     try {
-      const res = await fetch('/api/cart/items', {
+      const res = await authFetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
