@@ -100,3 +100,19 @@
   animation: fadeIn 0.22s ease-out forwards;
 }
 
+@keyframes pageFade {
+  0% {
+    opacity: 0.85;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-pageFade {
+  animation: pageFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+

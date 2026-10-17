@@ -18,6 +18,33 @@ export interface BannerModel {
   updatedAt: string;
 }
 
+export interface StoreAlertModel {
+  id: string;
+  title: string;
+  message: string;
+  type: 'INFO' | 'ANNOUNCEMENT' | 'OFFER' | 'URGENT' | 'WARNING';
+  linkUrl?: string | null;
+  linkText?: string | null;
+  isActive: boolean;
+  isPushed: boolean;
+  displayLocation: 'TOP_BAR' | 'TOAST_ALERT' | 'BOTH';
+  badge?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NavItemModel {
+  id: string;
+  label: string;
+  labelTe?: string;
+  href: string;
+  icon: string;
+  tooltip: string;
+  category?: string;
+  order: number;
+  isFeatured?: boolean;
+}
+
 export interface StoreSettingsModel {
   id: string;
   brandName: string;
@@ -405,6 +432,8 @@ class DatabaseStore {
   public products: ProductModel[] = [];
   public productImages: ProductImageModel[] = [];
   public banners: BannerModel[] = [];
+  public alerts: StoreAlertModel[] = [];
+  public navItems: NavItemModel[] = [];
   public cartItems: CartItemModel[] = [];
   public appliedPromos: Map<string, { code: string; percent: number }> = new Map();
   public orders: OrderModel[] = [];
@@ -1323,7 +1352,113 @@ class DatabaseStore {
       }
     ];
 
-    // 5. Initial Audit Log
+    // 5. Dynamic Navigation Items (Direct from Database)
+    this.navItems = [
+      {
+        id: "nav-men",
+        label: "Men",
+        labelTe: "పురుషుల దుస్తులు",
+        href: "/search?category=Men",
+        icon: "👔",
+        tooltip: "Raymond & Premium Unstitched Suitings",
+        category: "Men",
+        order: 1
+      },
+      {
+        id: "nav-women",
+        label: "Women",
+        labelTe: "మహిళల కలెక్షన్",
+        href: "/search?category=Women",
+        icon: "👗",
+        tooltip: "Tops, Leggings & Daily Wear Dresses",
+        category: "Women",
+        order: 2
+      },
+      {
+        id: "nav-sarees",
+        label: "Sarees",
+        labelTe: "చేనేత చీరలు",
+        href: "/search?category=Sarees",
+        icon: "🥻",
+        tooltip: "Authentic Gadwal, Pattu & Designer Sarees",
+        category: "Sarees",
+        order: 3,
+        isFeatured: true
+      },
+      {
+        id: "nav-kids",
+        label: "Kids",
+        labelTe: "పిల్లల కలెక్షన్",
+        href: "/search?category=Kids",
+        icon: "🧒",
+        tooltip: "Traditional & Comfortable Kids Wear",
+        category: "Kids",
+        order: 4
+      },
+      {
+        id: "nav-wedding",
+        label: "Wedding",
+        labelTe: "పెళ్లి కలెక్షన్",
+        href: "/search?category=Wedding",
+        icon: "💍",
+        tooltip: "Bridal Pattu Silk & Matching Blouse Sets",
+        category: "Wedding",
+        order: 5
+      },
+      {
+        id: "nav-trending",
+        label: "Trending",
+        labelTe: "ట్రెండింగ్ ఫ్యాషన్",
+        href: "/search?category=Trending",
+        icon: "🔥",
+        tooltip: "Fastest Selling Village Fashion Arrivals",
+        category: "Trending",
+        order: 6
+      },
+      {
+        id: "nav-about",
+        label: "About",
+        labelTe: "మా 20 ఏళ్ల చరిత్ర",
+        href: "/about",
+        icon: "🏛️",
+        tooltip: "20 Years of Generational Weaver Heritage",
+        order: 7
+      }
+    ];
+
+    // 6. Dynamic Store Alerts & Push Banners (Database Powered)
+    this.alerts = [
+      {
+        id: "alert-1",
+        title: "Direct Village Delivery within 10 km (PIN 503145)",
+        message: "Free direct doorstep delivery within 10 km radius of Kalwaral Store. Serving Sadasivanagar, Dharmaraopet, Modegaon, and surrounding villages.",
+        type: "ANNOUNCEMENT",
+        linkUrl: "/policies/shipping",
+        linkText: "Check Delivery Area",
+        isActive: true,
+        isPushed: false,
+        displayLocation: "TOP_BAR",
+        badge: "🚚 LOCAL VILLAGE DELIVERY",
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: "alert-2",
+        title: "Festive Ancestral Handloom Offer",
+        message: "Use code KB10 at checkout for an instant 10% discount on all authentic Gadwal & Pattu sarees!",
+        type: "OFFER",
+        linkUrl: "/search?category=Sarees",
+        linkText: "Shop Handlooms",
+        isActive: true,
+        isPushed: false,
+        displayLocation: "TOP_BAR",
+        badge: "✨ FESTIVE 10% OFF",
+        createdAt: now,
+        updatedAt: now
+      }
+    ];
+
+    // 7. Initial Audit Log
     this.addAuditLog(
       "SYSTEM",
       "SYSTEM",
@@ -1334,12 +1469,112 @@ class DatabaseStore {
     );
   }
 
+  public getNavItems(): NavItemModel[] {
+    return [...this.navItems].sort((a, b) => a.order - b.order);
+  }
+
+  public getActiveAlerts(): StoreAlertModel[] {
+    return this.alerts.filter(a => a.isActive);
+  }
+
+  public getAllAlerts(): StoreAlertModel[] {
+    return [...this.alerts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public getAlertById(id: string): StoreAlertModel | undefined {
+    return this.alerts.find(a => a.id === id);
+  }
+
+  public createAlert(data: Partial<StoreAlertModel>): StoreAlertModel {
+    const now = new Date().toISOString();
+    const newAlert: StoreAlertModel = {
+      id: `alert-${Date.now()}`,
+      title: data.title || "Announcement",
+      message: data.message || "",
+      type: data.type || "INFO",
+      linkUrl: data.linkUrl || null,
+      linkText: data.linkText || null,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      isPushed: data.isPushed !== undefined ? data.isPushed : false,
+      displayLocation: data.displayLocation || "TOP_BAR",
+      badge: data.badge || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.alerts.unshift(newAlert);
+    this.addAuditLog("ADMIN", "ADMIN", "ALERT_CREATED", "ALERT", newAlert.id, { title: newAlert.title });
+    return newAlert;
+  }
+
+  public updateAlert(id: string, data: Partial<StoreAlertModel>): StoreAlertModel | null {
+    const idx = this.alerts.findIndex(a => a.id === id);
+    if (idx === -1) return null;
+    this.alerts[idx] = {
+      ...this.alerts[idx],
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    this.addAuditLog("ADMIN", "ADMIN", "ALERT_UPDATED", "ALERT", id, data);
+    return this.alerts[idx];
+  }
+
+  public deleteAlert(id: string): boolean {
+    const idx = this.alerts.findIndex(a => a.id === id);
+    if (idx === -1) return false;
+    this.alerts.splice(idx, 1);
+    this.addAuditLog("ADMIN", "ADMIN", "ALERT_DELETED", "ALERT", id, {});
+    return true;
+  }
+
   public getBanners(): BannerModel[] {
     return this.banners.filter(b => b.isActive).sort((a, b) => a.position - b.position);
   }
 
   public getBannerById(id: string): BannerModel | undefined {
     return this.banners.find(b => b.id === id || b.bannerId === id);
+  }
+
+  public createBanner(data: Partial<BannerModel>): BannerModel {
+    const now = new Date().toISOString();
+    const newBanner: BannerModel = {
+      id: `bnr-${Date.now()}`,
+      bannerId: `banner-${Date.now()}`,
+      title: data.title || "New Showcase Banner",
+      subtitle: data.subtitle || "",
+      badge: data.badge || "FEATURED",
+      category: data.category || "HERO",
+      mediaId: data.mediaId || "banner-tradition-meets-trend",
+      imageUrl: data.imageUrl || "/api/media/banner-tradition-meets-trend",
+      linkUrl: data.linkUrl || "/search?category=All",
+      ctaText: data.ctaText || "Shop Now",
+      position: data.position !== undefined ? data.position : this.banners.length + 1,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.banners.push(newBanner);
+    this.addAuditLog("ADMIN", "ADMIN", "BANNER_CREATED", "BANNER", newBanner.id, { title: newBanner.title });
+    return newBanner;
+  }
+
+  public updateBanner(id: string, data: Partial<BannerModel>): BannerModel | null {
+    const idx = this.banners.findIndex(b => b.id === id || b.bannerId === id);
+    if (idx === -1) return null;
+    this.banners[idx] = {
+      ...this.banners[idx],
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    this.addAuditLog("ADMIN", "ADMIN", "BANNER_UPDATED", "BANNER", id, data);
+    return this.banners[idx];
+  }
+
+  public deleteBanner(id: string): boolean {
+    const idx = this.banners.findIndex(b => b.id === id || b.bannerId === id);
+    if (idx === -1) return false;
+    this.banners.splice(idx, 1);
+    this.addAuditLog("ADMIN", "ADMIN", "BANNER_DELETED", "BANNER", id, {});
+    return true;
   }
 
   public getTopNewProducts(limit = 5): ProductModel[] {

@@ -4,8 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import TypewriterTicker from './TypewriterTicker';
+import StoreAlertBanner from './StoreAlertBanner';
+import BrandTooltip from './BrandTooltip';
 import { authFetch, clearClientSession } from '@/lib/clientAuth';
 import { useToast } from './ToastContext';
+
+interface NavItem {
+  id: string;
+  label: string;
+  labelTe?: string;
+  href: string;
+  icon: string;
+  tooltip: string;
+  category?: string;
+  order: number;
+  isFeatured?: boolean;
+}
 
 export default function Header() {
   const pathname = usePathname();
@@ -15,6 +29,8 @@ export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [store, setStore] = useState<any>({
     brandName: "KB",
     officialName: "KB FASHIONS",
@@ -24,9 +40,28 @@ export default function Header() {
     contactPhone: "+91 7989768200",
   });
 
+  // Track window scroll for elevation shadow
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    handleScroll(); // Initial check
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const loadData = async () => {
     try {
-      // Fetch user profile
+      // 1. Fetch dynamic navigation items from database
+      const navRes = await fetch('/api/navigation');
+      if (navRes.ok) {
+        const navData = await navRes.json();
+        if (navData?.navItems && Array.isArray(navData.navItems)) {
+          setNavItems(navData.navItems);
+        }
+      }
+
+      // 2. Fetch user profile
       const userRes = await authFetch('/api/auth/me');
       const userData = await userRes.json();
       if (userData?.authenticated) {
@@ -35,7 +70,7 @@ export default function Header() {
         setUser(null);
       }
 
-      // Fetch cart
+      // 3. Fetch cart
       const cartRes = await authFetch('/api/cart');
       if (cartRes.ok) {
         const cartData = await cartRes.json();
@@ -46,7 +81,7 @@ export default function Header() {
         setCartCount(0);
       }
 
-      // Wishlist
+      // 4. Wishlist
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('kb_wishlist');
         if (stored) {
@@ -55,7 +90,7 @@ export default function Header() {
         }
       }
 
-      // Store settings
+      // 5. Store settings from database
       const storeRes = await fetch('/api/store/settings');
       const storeData = await storeRes.json();
       if (storeData?.settings) {
@@ -66,8 +101,8 @@ export default function Header() {
 
   useEffect(() => {
     loadData();
-    setMobileMenuOpen(false); // Close mobile menu on page transition
-    const interval = setInterval(loadData, 5000);
+    setMobileMenuOpen(false); // Close mobile drawer on page transition
+    const interval = setInterval(loadData, 6000);
     return () => clearInterval(interval);
   }, [pathname]);
 
@@ -100,143 +135,182 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-kb-gray shadow-xs">
+    <header
+      id="main-store-header"
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        isScrolled
+          ? 'bg-white/98 backdrop-blur-md border-b border-slate-200/90 shadow-md'
+          : 'bg-white/95 backdrop-blur-xs border-b border-transparent shadow-none'
+      }`}
+    >
+      {/* Dynamic Push Alerts & Announcements Banner (Database Powered) */}
+      <StoreAlertBanner />
+
       {/* Main Navigation Bar */}
       <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        {/* Brand Logo & Desktop Categories */}
-        <div className="flex items-center gap-6 lg:gap-8 min-w-0">
-          <Link href="/" className="flex items-baseline gap-1 group shrink-0">
-            <span className="text-2xl font-black tracking-tight text-kb-black group-hover:opacity-80 transition-opacity">
-              {store.brandName}.
-            </span>
-            <span className="text-[10px] font-bold text-kb-slate uppercase tracking-widest hidden sm:inline">
-              FASHIONS
-            </span>
-          </Link>
+        {/* Brand Logo & Desktop Nav Categories */}
+        <div className="flex items-center gap-5 lg:gap-7 min-w-0">
+          <BrandTooltip content={`${store.officialName} — Kalwaral Village`} subcontent="ESTD. 2006 • GENERATIONAL WEAVERS">
+            <Link href="/" className="flex items-baseline gap-1 group shrink-0">
+              <span className="text-2xl font-black tracking-tight text-kb-black group-hover:opacity-80 transition-opacity">
+                {store.brandName}.
+              </span>
+              <span className="text-[10px] font-bold text-kb-slate uppercase tracking-widest hidden sm:inline">
+                FASHIONS
+              </span>
+            </Link>
+          </BrandTooltip>
 
-          {/* Desktop Nav Categories */}
-          <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-kb-slate">
-            <Link href="/search?category=Men" className="hover:text-kb-black transition-colors">Men</Link>
-            <Link href="/search?category=Women" className="hover:text-kb-black transition-colors">Women</Link>
-            <Link href="/search?category=Sarees" className="hover:text-kb-black transition-colors">Sarees</Link>
-            <Link href="/search?category=Kids" className="hover:text-kb-black transition-colors">Kids</Link>
-            <Link href="/search?category=Wedding" className="hover:text-kb-black transition-colors">Wedding</Link>
-            <Link href="/search?category=Trending" className="hover:text-kb-black transition-colors">Trending</Link>
-            <Link href="/about" className="hover:text-kb-black transition-colors">About</Link>
+          {/* Desktop Nav Categories with Icons and Branded Tooltips (Directly from Database) */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-xs font-semibold text-kb-slate">
+            {navItems.map((item) => (
+              <BrandTooltip key={item.id} content={item.tooltip} subcontent={item.labelTe}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${
+                    pathname === item.href || (item.category && pathname.includes(`category=${item.category}`))
+                      ? 'text-kb-black bg-neutral-100/80 font-bold'
+                      : 'hover:text-kb-black hover:bg-neutral-50'
+                  }`}
+                >
+                  <span className="text-sm shrink-0" aria-hidden="true">{item.icon}</span>
+                  <span>{item.label}</span>
+                  {item.isFeatured && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  )}
+                </Link>
+              </BrandTooltip>
+            ))}
           </nav>
         </div>
 
         {/* Global Search Input Field (Desktop / Tablet) */}
         <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center flex-1 max-w-xs relative mx-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search cottons, sarees, unstitched..."
-            className="w-full px-3.5 py-1.5 pl-8 rounded-kb-pill border border-kb-gray bg-white text-xs text-kb-black placeholder-kb-slate/60 focus:outline-none focus:ring-1 focus:ring-kb-blue"
-          />
-          <span className="absolute left-2.5 text-xs text-kb-slate pointer-events-none">🔍</span>
+          <BrandTooltip content="Search Fabrics & Garments" subcontent="Sarees, Cottons, Raymond Cut Pieces" className="w-full">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search cottons, sarees, unstitched..."
+              className="w-full px-3.5 py-1.5 pl-8 rounded-kb-pill border border-kb-gray bg-white text-xs text-kb-black placeholder-kb-slate/60 focus:outline-none focus:ring-1 focus:ring-kb-blue"
+            />
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-kb-slate pointer-events-none">🔍</span>
+          </BrandTooltip>
         </form>
 
         {/* Right Actions Container */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* KB Shopmate AI Button */}
-          <Link
-            href="/ai"
-            id="kb-shopmate-ai-nav-btn"
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-kb-blue to-kb-violet text-white text-xs font-semibold hover:brightness-110 active:scale-98 transition-all shadow-sm"
-          >
-            <span aria-hidden="true">✦</span>
-            <span className="hidden sm:inline">Shop with KB AI</span>
-            <span className="sm:hidden text-[11px]">AI Shop</span>
-          </Link>
+          <BrandTooltip content="KB Shopmate AI Voice Assistant" subcontent="Shop in Telugu & English">
+            <Link
+              href="/ai"
+              id="kb-shopmate-ai-nav-btn"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-kb-blue to-kb-violet text-white text-xs font-semibold hover:brightness-110 active:scale-98 transition-all shadow-sm"
+            >
+              <span aria-hidden="true">✦</span>
+              <span className="hidden sm:inline">Shop with AI</span>
+              <span className="sm:hidden text-[11px]">AI Shop</span>
+            </Link>
+          </BrandTooltip>
 
           {/* Wishlist Link (Desktop) */}
-          <Link
-            href="/wishlist"
-            className="hidden sm:flex relative w-9 h-9 rounded-full border border-kb-gray items-center justify-center text-xs hover:border-kb-black transition-colors"
-            title="Wishlist"
-          >
-            ♡
-            {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-kb-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {wishlistCount}
-              </span>
-            )}
-          </Link>
+          <BrandTooltip content="Saved Wishlist" subcontent={`${wishlistCount} Garments`}>
+            <Link
+              href="/wishlist"
+              className="hidden sm:flex relative w-9 h-9 rounded-full border border-kb-gray items-center justify-center text-xs hover:border-kb-black transition-colors"
+              aria-label="Wishlist"
+            >
+              <span aria-hidden="true">♡</span>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-kb-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+          </BrandTooltip>
 
-          {/* Cart Link */}
-          <Link
-            href="/cart"
-            id="header-cart-link"
-            className="relative px-3 sm:px-3.5 py-1.5 rounded-kb-pill bg-kb-black text-white text-xs font-semibold hover:bg-neutral-800 transition-all flex items-center gap-1.5 shrink-0"
-            title="Shopping Bag"
-          >
-            <span>Bag</span>
-            <span className="bg-kb-blue text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-              {cartCount}
-            </span>
-          </Link>
+          {/* Cart Link with Badge */}
+          <BrandTooltip content="Shopping Bag" subcontent={`${cartCount} Items`}>
+            <Link
+              href="/cart"
+              id="header-cart-link"
+              className="relative px-3 sm:px-3.5 py-1.5 rounded-kb-pill bg-kb-black text-white text-xs font-semibold hover:bg-neutral-800 transition-all flex items-center gap-1.5 shrink-0"
+              aria-label="Shopping Bag"
+            >
+              <span>🛍️</span>
+              <span className="hidden sm:inline">Bag</span>
+              <span className="bg-kb-blue text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                {cartCount}
+              </span>
+            </Link>
+          </BrandTooltip>
 
           {/* Dedicated Customer Profile Icon & Account Links (Desktop) */}
           {user ? (
-            <div className="hidden sm:flex items-center gap-2.5 border-l border-kb-gray pl-3 ml-1 text-xs">
-              <Link
-                href="/account"
-                id="header-profile-link"
-                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-kb-gray hover:border-kb-blue transition-all bg-white hover:shadow-xs group"
-                title="Customer Account Management"
-              >
-                <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-900 border border-neutral-200 flex items-center justify-center text-[10px] font-bold text-white shrink-0 group-hover:scale-105 transition-transform">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{user.name?.slice(0, 2).toUpperCase() || 'KB'}</span>
-                  )}
-                </div>
-                <div className="flex flex-col text-left leading-none">
-                  <span className="text-[11px] font-bold text-kb-black group-hover:text-kb-blue transition-colors truncate max-w-[85px]">
-                    {user.name?.split(' ')[0] || 'Account'}
-                  </span>
-                  <span className="text-[9px] text-neutral-400 font-medium">Profile</span>
-                </div>
-              </Link>
+            <div className="hidden sm:flex items-center gap-2 border-l border-kb-gray pl-2.5 ml-1 text-xs">
+              <BrandTooltip content="Customer Account Dashboard" subcontent={user.email}>
+                <Link
+                  href="/account"
+                  id="header-profile-link"
+                  className="flex items-center gap-1.5 p-1 pl-1.5 pr-2.5 rounded-full border border-kb-gray hover:border-kb-blue transition-all bg-white hover:shadow-xs group"
+                >
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-900 border border-neutral-200 flex items-center justify-center text-[10px] font-bold text-white shrink-0 group-hover:scale-105 transition-transform">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{user.name?.slice(0, 2).toUpperCase() || 'KB'}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col text-left leading-none">
+                    <span className="text-[11px] font-bold text-kb-black group-hover:text-kb-blue transition-colors truncate max-w-[80px]">
+                      {user.name?.split(' ')[0] || 'Account'}
+                    </span>
+                    <span className="text-[9px] text-neutral-400 font-medium">Profile</span>
+                  </div>
+                </Link>
+              </BrandTooltip>
 
-              <Link
-                href="/account/orders"
-                className="font-semibold text-kb-black hover:text-kb-blue px-2 py-1 rounded-md hover:bg-neutral-50 transition-colors"
-              >
-                Orders
-              </Link>
+              <BrandTooltip content="My Order History & Consignments">
+                <Link
+                  href="/account/orders"
+                  className="font-semibold text-kb-black hover:text-kb-blue px-2 py-1 rounded-md hover:bg-neutral-50 transition-colors"
+                >
+                  Orders
+                </Link>
+              </BrandTooltip>
 
               {user.role === 'ADMIN' && (
-                <Link
-                  href="/admin"
-                  className="bg-kb-black text-white px-2.5 py-1 rounded-kb-pill text-[10px] font-bold uppercase tracking-wider hover:bg-neutral-800 transition-colors"
-                >
-                  Admin
-                </Link>
+                <BrandTooltip content="Store Administration & Catalog Control">
+                  <Link
+                    href="/admin"
+                    className="bg-kb-black text-white px-2.5 py-1 rounded-kb-pill text-[10px] font-bold uppercase tracking-wider hover:bg-neutral-800 transition-colors"
+                  >
+                    Admin
+                  </Link>
+                </BrandTooltip>
               )}
 
-              <button
-                onClick={handleLogout}
-                className="text-kb-slate hover:text-kb-error text-[11px] px-1 py-1"
-                title="Logout"
-              >
-                Sign out
-              </button>
+              <BrandTooltip content="Sign Out Securely">
+                <button
+                  onClick={handleLogout}
+                  className="text-kb-slate hover:text-kb-error text-[11px] px-1 py-1"
+                >
+                  Sign out
+                </button>
+              </BrandTooltip>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-2 border-l border-kb-gray pl-3 ml-1 text-xs font-semibold">
-              <Link
-                href="/auth/signin?redirect=/account"
-                id="header-profile-link"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-kb-gray hover:border-kb-blue text-kb-black hover:text-kb-blue transition-all text-xs font-semibold"
-                title="Sign In / Customer Profile"
-              >
-                <span className="text-sm">👤</span>
-                <span>Sign In</span>
-              </Link>
+            <div className="hidden sm:flex items-center gap-2 border-l border-kb-gray pl-2.5 ml-1 text-xs font-semibold">
+              <BrandTooltip content="Sign In to Your Account" subcontent="Access Saved Bag & Tracking">
+                <Link
+                  href="/auth/signin?redirect=/account"
+                  id="header-profile-link"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-kb-gray hover:border-kb-blue text-kb-black hover:text-kb-blue transition-all text-xs font-semibold"
+                >
+                  <span className="text-sm">👤</span>
+                  <span>Sign In</span>
+                </Link>
+              </BrandTooltip>
               <Link
                 href="/auth/signup"
                 className="border border-kb-gray px-2.5 py-1 rounded-kb-pill hover:border-kb-black text-xs"
@@ -250,7 +324,7 @@ export default function Header() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden w-9 h-9 rounded-full border border-kb-gray flex items-center justify-center text-sm font-bold hover:bg-neutral-50 transition-colors shrink-0"
-            aria-label="Toggle mobile menu"
+            aria-label="Toggle mobile drawer"
             id="mobile-menu-toggle-btn"
           >
             {mobileMenuOpen ? '✕' : '☰'}
@@ -261,144 +335,193 @@ export default function Header() {
       {/* Letter-by-Letter Animated Ticker Banner (Below Navbar) */}
       <TypewriterTicker />
 
-      {/* Mobile In-Page Collapsible Navigation Drawer */}
+      {/* ========================================================================= */}
+      {/* MOBILE CONSISTENT SIDEBAR DRAWER WITH BACKDROP & SMOOTH SLIDE ANIMATION   */}
+      {/* ========================================================================= */}
       {mobileMenuOpen && (
-        <div id="mobile-nav-drawer" className="lg:hidden bg-white border-b border-kb-gray px-4 py-4 space-y-4 shadow-xl animate-in slide-in-from-top-2 duration-200">
-          {/* Mobile Search Input */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search cottons, sarees, unstitched..."
-              className="w-full px-3.5 py-2 pl-9 rounded-kb-pill border border-kb-gray bg-white text-xs text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
-            />
-            <span className="absolute left-3 text-xs text-kb-slate">🔍</span>
-          </form>
+        <div className="lg:hidden fixed inset-0 z-50 overflow-hidden">
+          {/* Dark Backdrop Overlay */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-300"
+            onClick={() => setMobileMenuOpen(false)}
+          />
 
-          {/* Mobile Category Links Grid */}
-          <div className="grid grid-cols-2 gap-2 text-xs font-medium">
-            <Link
-              href="/search?category=Men"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
-            >
-              <span>Men's Fabrics</span>
-              <span className="text-neutral-400">→</span>
-            </Link>
-            <Link
-              href="/search?category=Women"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
-            >
-              <span>Women's Wear</span>
-              <span className="text-neutral-400">→</span>
-            </Link>
-            <Link
-              href="/search?category=Sarees"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
-            >
-              <span>Gadwal Sarees</span>
-              <span className="text-neutral-400">→</span>
-            </Link>
-            <Link
-              href="/search?category=Wedding"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
-            >
-              <span>Wedding Specials</span>
-              <span className="text-neutral-400">→</span>
-            </Link>
-            <Link
-              href="/wishlist"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
-            >
-              <span>Saved Wishlist ({wishlistCount})</span>
-              <span className="text-neutral-400">♡</span>
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
-            >
-              <span>Our 20-Year Story</span>
-              <span className="text-neutral-400">📖</span>
-            </Link>
-          </div>
+          {/* Slide-In Sidebar Drawer from Right */}
+          <div
+            id="mobile-nav-drawer"
+            className="absolute top-0 right-0 bottom-0 w-[300px] sm:w-[340px] max-w-[85vw] bg-white shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 ease-out"
+          >
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-neutral-50/80">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-black tracking-tight text-neutral-900">{store.brandName}.</span>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">FASHIONS</span>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold hover:bg-neutral-200 transition-colors"
+                aria-label="Close menu"
+              >
+                ✕
+              </button>
+            </div>
 
-          {/* Mobile Auth / Account Section */}
-          <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs">
-            {user ? (
-              <div className="flex flex-col gap-2.5 w-full">
-                <div className="flex items-center justify-between">
+            {/* Scrollable Content Container */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {/* Mobile Search Form */}
+              <form onSubmit={handleSearchSubmit} className="flex items-center relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search sarees, fabrics, cuts..."
+                  className="w-full px-3.5 py-2 pl-9 rounded-kb-pill border border-kb-gray bg-white text-xs text-kb-black focus:outline-none focus:ring-1 focus:ring-kb-blue"
+                />
+                <span className="absolute left-3 text-xs text-kb-slate pointer-events-none">🔍</span>
+              </form>
+
+              {/* KB Shopmate AI Feature Card */}
+              <Link
+                href="/ai"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block p-3 rounded-2xl bg-gradient-to-r from-kb-blue to-kb-violet text-white shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">✦ VOICE SHOPPING</span>
+                  <span className="text-xs">→</span>
+                </div>
+                <div className="text-xs font-bold">Talk to KB Shopmate AI</div>
+                <div className="text-[10px] text-white/80 mt-0.5">Shop in Telugu &amp; English with AI assistant</div>
+              </Link>
+
+              {/* Navigation Categories with Icons & Telugu Labels */}
+              <div>
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 mb-2 px-1">
+                  Shop by Department
+                </div>
+                <div className="space-y-1.5">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between p-2.5 rounded-xl transition-all ${
+                        pathname === item.href
+                          ? 'bg-neutral-900 text-white font-bold'
+                          : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">{item.icon}</span>
+                        <div>
+                          <div className="text-xs font-bold leading-tight">{item.label}</div>
+                          {item.labelTe && (
+                            <div className="text-[10px] opacity-70 leading-tight">{item.labelTe}</div>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs opacity-50">→</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Links (Wishlist & Contact) */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <Link
+                  href="/wishlist"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
+                >
+                  <span className="font-semibold">♡ Wishlist ({wishlistCount})</span>
+                </Link>
+                <Link
+                  href="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 bg-neutral-50 rounded-xl hover:bg-neutral-100 flex items-center justify-between"
+                >
+                  <span className="font-semibold">📞 Contact Us</span>
+                </Link>
+              </div>
+
+              {/* Village Store Identity Card */}
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] space-y-1 text-neutral-600">
+                <div className="font-bold text-neutral-900 flex items-center gap-1.5">
+                  <span>📍</span>
+                  <span>{store.officialName}</span>
+                </div>
+                <p>3-55/1, Kalwaral (Vil), Sadasivanagar (M), Kamareddy, Telangana 503145</p>
+                <p className="text-[10px] text-emerald-700 font-bold">✓ Doorstep Delivery within 10 km Radius</p>
+              </div>
+            </div>
+
+            {/* Drawer Footer: Customer Account / Auth */}
+            <div className="p-4 border-t border-slate-200 bg-neutral-50">
+              {user ? (
+                <div className="space-y-3">
                   <Link
                     href="/account"
                     id="mobile-profile-link"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200"
                   >
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 border border-neutral-200 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-neutral-900 text-white font-bold flex items-center justify-center text-xs shrink-0">
                       {user.avatar ? (
                         <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                       ) : (
                         <span>{user.name?.slice(0, 2).toUpperCase() || 'KB'}</span>
                       )}
                     </div>
-                    <div>
-                      <div className="font-bold text-black flex items-center gap-1.5">
-                        <span>{user.name || user.email}</span>
-                        {user.role === 'ADMIN' && (
-                          <span className="bg-black text-white px-1.5 py-0.2 rounded text-[9px] font-bold">ADMIN</span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-kb-blue font-semibold">Manage Account & Profile →</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-neutral-900 truncate">{user.name || user.email}</div>
+                      <div className="text-[10px] text-kb-blue font-semibold">View Account &amp; Profile →</div>
                     </div>
                   </Link>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href="/account/orders"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-center py-2 bg-neutral-200/80 hover:bg-neutral-200 rounded-lg text-xs font-bold text-neutral-800"
+                    >
+                      📦 My Orders
+                    </Link>
+                    <Link
+                      href="/account?tab=tracking"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-center py-2 bg-blue-100 hover:bg-blue-200 text-kb-blue rounded-lg text-xs font-bold"
+                    >
+                      🚚 Track Parcel
+                    </Link>
+                  </div>
+
                   <button
                     onClick={handleLogout}
-                    className="text-neutral-400 hover:text-red-600 text-xs px-2 py-1"
+                    className="w-full text-center py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700"
                   >
-                    Logout
+                    Sign Out of Account
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2 pt-1">
+              ) : (
+                <div className="flex items-center gap-2">
                   <Link
-                    href="/account/orders"
+                    href="/auth/signin?redirect=/account"
+                    id="mobile-profile-link"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-center py-2 bg-neutral-100 rounded-lg text-xs font-semibold text-black"
+                    className="flex-1 text-center py-2.5 rounded-kb-pill bg-black text-white text-xs font-bold shadow-sm"
                   >
-                    📦 My Orders
+                    Sign In
                   </Link>
                   <Link
-                    href="/account?tab=tracking"
+                    href="/auth/signup"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-center py-2 bg-blue-50 text-kb-blue rounded-lg text-xs font-semibold"
+                    className="flex-1 text-center py-2.5 rounded-kb-pill border border-neutral-300 text-xs font-bold bg-white"
                   >
-                    🚚 Track Parcel
+                    Register
                   </Link>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 w-full">
-                <Link
-                  href="/auth/signin?redirect=/account"
-                  id="mobile-profile-link"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 text-center py-2.5 rounded-kb-pill bg-black text-white font-bold"
-                >
-                  Sign In / Profile
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 text-center py-2.5 rounded-kb-pill border border-neutral-300 font-bold"
-                >
-                  Create Account
-                </Link>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

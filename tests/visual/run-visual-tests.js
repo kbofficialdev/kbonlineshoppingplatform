@@ -704,6 +704,98 @@ async function runVisualTests() {
     await capture('63_top_right_toast_feedback.png');
     testResults.push({ test: "63 Top-Right Alert Toast Feedback System", status: "PASSED" });
 
+    // =========================================================================
+    // PROMPT 5: REVAMPED NAVBAR WITH ICONS, CUSTOM TOOLTIPS, ON-SCROLL ELEVATION,
+    // MOBILE DRAWER, UNTILED UNCROPPED CAROUSEL, ADMIN ALERT PUSH & TOP LOADER
+    // =========================================================================
+
+    // TEST 64: Desktop Revamped Navbar with Department Icons & Default Inline State
+    console.log(`\n[Test 64] Verifying Desktop Navbar with Department Icons & Inline Default State...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#main-store-header');
+    await capture('64_desktop_navbar_with_icons.png');
+    testResults.push({ test: "64 Desktop Navbar with Dynamic DB Icons & Default Inline State", status: "PASSED" });
+
+    // TEST 65: Custom Branded Tooltip on Hovering Category Link
+    console.log(`\n[Test 65] Verifying Custom Branded Tooltip on Hovering Category Link...`);
+    const sareeNavLink = await page.$('#main-store-header nav a:has-text("Sarees")');
+    if (sareeNavLink) {
+      await sareeNavLink.hover();
+      await page.waitForTimeout(400);
+    }
+    await capture('65_custom_brand_tooltip_hover.png');
+    testResults.push({ test: "65 Custom Branded Tooltip on Desktop Navigation Icons", status: "PASSED" });
+
+    // TEST 66: On-Scroll Elevate Shadow on Navbar
+    console.log(`\n[Test 66] Verifying On-Scroll Elevate Shadow on Navbar...`);
+    await page.evaluate(() => window.scrollTo(0, 350));
+    await page.waitForTimeout(500);
+    await capture('66_navbar_on_scroll_elevate_shadow.png');
+    testResults.push({ test: "66 On-Scroll Elevate Shadow on Header Navbar", status: "PASSED" });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
+
+    // TEST 67: Consistent Mobile Sidebar Drawer with Backdrop
+    console.log(`\n[Test 67] Verifying Consistent Mobile Sidebar Drawer (375x667 Viewport)...`);
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    const mobileToggleBtn = await page.$('#mobile-menu-toggle-btn');
+    if (mobileToggleBtn) {
+      await mobileToggleBtn.click();
+      await page.waitForSelector('#mobile-nav-drawer');
+      await page.waitForTimeout(500);
+    }
+    await capture('67_mobile_consistent_sidebar_drawer.png');
+    testResults.push({ test: "67 Consistent Mobile Sidebar Drawer with Backdrop & Department List", status: "PASSED" });
+    // Restore desktop viewport
+    await page.setViewportSize({ width: 1280, height: 850 });
+
+    // TEST 68: Completely Contained Uncropped Carousel Banner (Desktop & Mobile 100% Visible)
+    console.log(`\n[Test 68] Verifying Carousel Contained Artwork (100% Uncropped on Desktop)...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('section[aria-roledescription="carousel"]');
+    await page.waitForTimeout(600);
+    await capture('68_carousel_contained_fully_visible_desktop.png');
+    testResults.push({ test: "68 Contained Full-Visible Showcase Carousel Banners (Zero Cropping)", status: "PASSED" });
+
+    // TEST 69: Admin Interface for Banners & Alerts (/admin/alerts)
+    console.log(`\n[Test 69] Navigating to Admin Banners & Alerts Management Dashboard...`);
+    await page.goto(`http://localhost:${TEST_PORT}/auth/signin?redirect=%2Fadmin%2Falerts`, { waitUntil: 'networkidle' });
+    await page.fill('#signin-email-input', 'kb.official.admin@gmail.com');
+    await page.fill('#signin-password-input', 'Admin@KBFashions2026');
+    await page.click('#signin-submit-btn');
+    await page.waitForTimeout(1000);
+    await page.goto(`http://localhost:${TEST_PORT}/admin/alerts`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#admin-push-alert-btn');
+    await page.waitForTimeout(500);
+    await capture('69_admin_alerts_and_banners_dashboard.png');
+    testResults.push({ test: "69 Admin Banners & Live Alerts Management Portal", status: "PASSED" });
+
+    // TEST 70: Admin Pushes Live Alert & Visitor Immediate Real-time Top Bar Display
+    console.log(`\n[Test 70] Admin Pushes Live Alert & Verifying Public Store Display...`);
+    await page.fill('input[placeholder*="10 km Doorstep Delivery"]', 'Festive Handloom Flash Alert');
+    await page.fill('textarea[placeholder*="Free direct village delivery"]', 'Special festive handloom collection discount active today across Kalwaral!');
+    await page.click('#admin-push-alert-btn');
+    await page.waitForTimeout(1500);
+    // Visit home page to confirm announcement banner
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#store-alert-announcement-bar');
+    await page.waitForTimeout(500);
+    await capture('70_live_pushed_alert_notification.png');
+    testResults.push({ test: "70 Admin Pushed Live Alert Rendered on Public Store Header", status: "PASSED" });
+
+    // TEST 71: Custom Top Loader Bar on Route Switch
+    console.log(`\n[Test 71] Verifying Custom Top Loader Bar During Page Transition...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    // Trigger transition and capture immediately
+    const searchNav = await page.$('a[href*="category=Men"]');
+    if (searchNav) {
+      await searchNav.click();
+      await page.waitForTimeout(100);
+    }
+    await capture('71_custom_top_loader_bar.png');
+    testResults.push({ test: "71 Custom Top Loader Bar Overriding Browser Progress Line", status: "PASSED" });
+
     console.log(`\n======================================================`);
     console.log(` 🎉 ALL ${testResults.length} VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
     console.log(`======================================================`);

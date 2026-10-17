@@ -46,29 +46,21 @@ export default function HeroShowcaseCarousel() {
 
         const compiledSlides: CarouselSlide[] = [];
 
-        // 1. First Banner: Tradition Meets Trend
-        compiledSlides.push({
-          type: 'BANNER',
-          id: 'slide-tradition',
-          title: 'Tradition Meets Trend',
-          subtitle: '20 Years of Generational Handlooms, Gadwal Craft & Authentic Unstitched Fabrics directly from Kalwaral Village.',
-          badge: '✨ HERITAGE COLLECTION 2026',
-          imageSrc: '/api/media/banner-tradition-meets-trend',
-          linkUrl: '/search?category=All',
-          ctaText: 'Explore Collection',
-        });
-
-        // 2. Second Banner: KB Shopmate AI
-        compiledSlides.push({
-          type: 'BANNER',
-          id: 'slide-shopmate-ai',
-          title: 'Shop in Telugu & English with Voice AI',
-          subtitle: 'Experience KB Shopmate AI — Your friendly digital village assistant for finding the perfect saree or unstitched cut.',
-          badge: '✦ INTRODUCING KB SHOPMATE AI',
-          imageSrc: '/api/media/banner-shopmate-ai',
-          linkUrl: '/ai',
-          ctaText: 'Talk to KB AI',
-        });
+        // 1. Dynamic Banners directly from Database (Zero Hardcoding)
+        if (bannersData?.banners && Array.isArray(bannersData.banners)) {
+          bannersData.banners.forEach((b: any) => {
+            compiledSlides.push({
+              type: 'BANNER',
+              id: b.id || b.bannerId,
+              title: b.title,
+              subtitle: b.subtitle,
+              badge: b.badge,
+              imageSrc: b.imageUrl,
+              linkUrl: b.linkUrl,
+              ctaText: b.ctaText,
+            });
+          });
+        }
 
         // 3. Top 5 New Products with Special Effects
         if (topProdData?.products && Array.isArray(topProdData.products)) {
@@ -227,40 +219,48 @@ export default function HeroShowcaseCarousel() {
       <div className="relative min-h-[380px] sm:min-h-[460px] lg:min-h-[500px] flex items-center">
         {currentSlide.type === 'BANNER' ? (
           /* ============================================================== */
-          /* FULL-CARD BANNER SLIDE (Complete Display Spanning Full Width)  */
+          /* FULL-CARD BANNER SLIDE (Completely Visible Uncropped Display)  */
           /* ============================================================== */
-          <div className="relative w-full h-[380px] sm:h-[460px] lg:h-[500px] overflow-hidden bg-neutral-950 flex items-end">
-            {/* Complete Banner Artwork Spanning Full Card Edge-to-Edge */}
+          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.35/1] max-h-[520px] min-h-[240px] sm:min-h-[360px] overflow-hidden bg-neutral-950 flex items-center justify-center">
+            {/* Ambient Blurred Artwork for Edge Softening */}
+            <img
+              src={currentSlide.imageSrc}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-105 pointer-events-none"
+            />
+
+            {/* Completely Contained Banner Image: 100% Visible & Uncropped on Desktop & Mobile */}
             <img
               src={currentSlide.imageSrc}
               alt={currentSlide.title}
-              className="absolute inset-0 w-full h-full object-cover object-center"
+              className="relative z-10 w-full h-full object-contain object-center"
             />
 
             {/* Subtle Gradient Overlay for High-Contrast Action Buttons */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 z-15 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
             {/* Interactive Floating Overlay CTAs and Badge */}
-            <div className="relative z-20 w-full p-4 sm:p-8 flex flex-wrap items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="inline-block px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold tracking-wider bg-black/70 text-kb-gold border border-amber-400/40 backdrop-blur-md">
+            <div className="absolute bottom-0 left-0 right-0 z-20 w-full p-3 sm:p-6 lg:p-8 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+              <div className="space-y-1 max-w-xl">
+                <span className="inline-block px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-extrabold tracking-wider bg-black/80 text-kb-gold border border-amber-400/40 backdrop-blur-md">
                   {currentSlide.badge}
                 </span>
-                <h3 className="text-base sm:text-xl lg:text-2xl font-black text-white drop-shadow-lg">
+                <h3 className="text-sm sm:text-lg lg:text-2xl font-black text-white drop-shadow-lg truncate">
                   {currentSlide.title}
                 </h3>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <Link
                   href={currentSlide.linkUrl}
-                  className="px-5 sm:px-7 py-2.5 sm:py-3 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-xl flex items-center gap-1.5"
+                  className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-xl flex items-center gap-1.5"
                 >
                   <span>{currentSlide.ctaText}</span>
                   <span aria-hidden="true">→</span>
                 </Link>
                 <Link
                   href="/search?category=All"
-                  className="px-4 py-2.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-neutral-200 hover:text-white text-xs font-semibold transition-colors hidden md:inline-block"
+                  className="px-3.5 py-2 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-neutral-200 hover:text-white text-xs font-semibold transition-colors hidden md:inline-block"
                 >
                   Browse Catalog
                 </Link>
