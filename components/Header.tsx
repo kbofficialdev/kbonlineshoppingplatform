@@ -165,23 +165,49 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Account Links (Desktop) */}
+          {/* Dedicated Customer Profile Icon & Account Links (Desktop) */}
           {user ? (
-            <div className="hidden sm:flex items-center gap-2 border-l border-kb-gray pl-3 ml-1 text-xs">
-              <Link href="/account/orders" className="font-semibold text-kb-black hover:text-kb-blue">
+            <div className="hidden sm:flex items-center gap-2.5 border-l border-kb-gray pl-3 ml-1 text-xs">
+              <Link
+                href="/account"
+                id="header-profile-link"
+                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-kb-gray hover:border-kb-blue transition-all bg-white hover:shadow-xs group"
+                title="Customer Account Management"
+              >
+                <div className="w-7 h-7 rounded-full overflow-hidden bg-neutral-900 border border-neutral-200 flex items-center justify-center text-[10px] font-bold text-white shrink-0 group-hover:scale-105 transition-transform">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{user.name?.slice(0, 2).toUpperCase() || 'KB'}</span>
+                  )}
+                </div>
+                <div className="flex flex-col text-left leading-none">
+                  <span className="text-[11px] font-bold text-kb-black group-hover:text-kb-blue transition-colors truncate max-w-[85px]">
+                    {user.name?.split(' ')[0] || 'Account'}
+                  </span>
+                  <span className="text-[9px] text-neutral-400 font-medium">Profile</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/account/orders"
+                className="font-semibold text-kb-black hover:text-kb-blue px-2 py-1 rounded-md hover:bg-neutral-50 transition-colors"
+              >
                 Orders
               </Link>
+
               {user.role === 'ADMIN' && (
                 <Link
                   href="/admin"
-                  className="bg-kb-black text-white px-2.5 py-1 rounded-kb-pill text-[10px] font-bold uppercase tracking-wider"
+                  className="bg-kb-black text-white px-2.5 py-1 rounded-kb-pill text-[10px] font-bold uppercase tracking-wider hover:bg-neutral-800 transition-colors"
                 >
                   Admin
                 </Link>
               )}
+
               <button
                 onClick={handleLogout}
-                className="text-kb-slate hover:text-kb-error text-[11px]"
+                className="text-kb-slate hover:text-kb-error text-[11px] px-1 py-1"
                 title="Logout"
               >
                 Sign out
@@ -189,12 +215,18 @@ export default function Header() {
             </div>
           ) : (
             <div className="hidden sm:flex items-center gap-2 border-l border-kb-gray pl-3 ml-1 text-xs font-semibold">
-              <Link href="/auth/signin" className="text-kb-black hover:text-kb-blue">
-                Sign In
+              <Link
+                href="/auth/signin?redirect=/account"
+                id="header-profile-link"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-kb-gray hover:border-kb-blue text-kb-black hover:text-kb-blue transition-all text-xs font-semibold"
+                title="Sign In / Customer Profile"
+              >
+                <span className="text-sm">👤</span>
+                <span>Sign In</span>
               </Link>
               <Link
                 href="/auth/signup"
-                className="border border-kb-gray px-2.5 py-1 rounded-kb-pill hover:border-kb-black"
+                className="border border-kb-gray px-2.5 py-1 rounded-kb-pill hover:border-kb-black text-xs"
               >
                 Sign Up
               </Link>
@@ -286,44 +318,64 @@ export default function Header() {
           {/* Mobile Auth / Account Section */}
           <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs">
             {user ? (
-              <div className="flex items-center gap-3 w-full justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span className="font-semibold">{user.name || user.email}</span>
-                  {user.role === 'ADMIN' && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="bg-black text-white px-2 py-0.5 rounded text-[10px] font-bold"
-                    >
-                      Admin
-                    </Link>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2.5 w-full">
+                <div className="flex items-center justify-between">
                   <Link
-                    href="/account/orders"
+                    href="/account"
+                    id="mobile-profile-link"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="font-bold text-kb-blue underline"
+                    className="flex items-center gap-2"
                   >
-                    Orders
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 border border-neutral-200 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{user.name?.slice(0, 2).toUpperCase() || 'KB'}</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-black flex items-center gap-1.5">
+                        <span>{user.name || user.email}</span>
+                        {user.role === 'ADMIN' && (
+                          <span className="bg-black text-white px-1.5 py-0.2 rounded text-[9px] font-bold">ADMIN</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-kb-blue font-semibold">Manage Account & Profile →</div>
+                    </div>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-neutral-400 hover:text-red-600"
+                    className="text-neutral-400 hover:text-red-600 text-xs px-2 py-1"
                   >
                     Logout
                   </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Link
+                    href="/account/orders"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center py-2 bg-neutral-100 rounded-lg text-xs font-semibold text-black"
+                  >
+                    📦 My Orders
+                  </Link>
+                  <Link
+                    href="/account?tab=tracking"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center py-2 bg-blue-50 text-kb-blue rounded-lg text-xs font-semibold"
+                  >
+                    🚚 Track Parcel
+                  </Link>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 w-full">
                 <Link
-                  href="/auth/signin"
+                  href="/auth/signin?redirect=/account"
+                  id="mobile-profile-link"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex-1 text-center py-2.5 rounded-kb-pill bg-black text-white font-bold"
                 >
-                  Sign In
+                  Sign In / Profile
                 </Link>
                 <Link
                   href="/auth/signup"

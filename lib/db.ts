@@ -39,6 +39,32 @@ export interface StoreSettingsModel {
   updatedAt: string;
 }
 
+export interface AddressModel {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string;
+  tag: 'Home' | 'Work' | 'Village' | 'Other';
+  streetAddress: string;
+  villageOrCity: string;
+  mandalOrArea?: string;
+  district: string;
+  state: string;
+  pinCode: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface PaymentMethodModel {
+  id: string;
+  userId: string;
+  type: 'UPI' | 'CARD' | 'NETBANKING' | 'COD';
+  label: string;
+  identifier: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
 export interface UserModel {
   id: string;
   name: string;
@@ -47,6 +73,16 @@ export interface UserModel {
   passwordHash: string;
   role: 'CUSTOMER' | 'ADMIN';
   isActive: boolean;
+  avatar?: string | null;
+  villageOrCity?: string;
+  mandalOrArea?: string;
+  district?: string;
+  state?: string;
+  pinCode?: string;
+  preferredLanguage?: 'en' | 'te';
+  smsUpdates?: boolean;
+  whatsappUpdates?: boolean;
+  bio?: string;
   otpCode?: string | null;
   otpExpiresAt?: string | null;
   resetToken?: string | null;
@@ -360,6 +396,8 @@ class DatabaseStore {
   };
 
   public users: UserModel[] = [];
+  public addresses: AddressModel[] = [];
+  public paymentMethods: PaymentMethodModel[] = [];
   public products: ProductModel[] = [];
   public productImages: ProductImageModel[] = [];
   public banners: BannerModel[] = [];
@@ -390,6 +428,16 @@ class DatabaseStore {
         passwordHash: adminHash,
         role: "ADMIN",
         isActive: true,
+        avatar: "/api/media/avatar-usr-admin-1",
+        villageOrCity: "Kalwaral",
+        mandalOrArea: "Sadasivanagar",
+        district: "Kamareddy",
+        state: "Telangana",
+        pinCode: "503145",
+        preferredLanguage: "en",
+        smsUpdates: true,
+        whatsappUpdates: true,
+        bio: "Managing KB FASHIONS ancestral village handlooms & fine textiles since 2006.",
         createdAt: now,
         updatedAt: now,
       },
@@ -401,8 +449,105 @@ class DatabaseStore {
         passwordHash: customerHash,
         role: "CUSTOMER",
         isActive: true,
+        avatar: "/api/media/avatar-usr-cust-1",
+        villageOrCity: "Kalwaral",
+        mandalOrArea: "Sadasivanagar",
+        district: "Kamareddy",
+        state: "Telangana",
+        pinCode: "503145",
+        preferredLanguage: "en",
+        smsUpdates: true,
+        whatsappUpdates: true,
+        bio: "Patron of authentic Gadwal sarees and Raymond fine shirting cuts.",
         createdAt: now,
         updatedAt: now,
+      }
+    ];
+
+    // Seed default avatar image assets in PostgreSQL memory
+    this.productImages.push({
+      id: "avatar-usr-admin-1",
+      productId: "avatar-usr-admin-1",
+      name: "Admin Profile Avatar",
+      mimeType: "image/svg+xml",
+      data: `data:image/svg+xml;utf8,${encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="#0B0F19" stroke="#D6AC55" stroke-width="3"/>
+          <text x="50" y="58" font-family="Inter, sans-serif" font-size="28" font-weight="900" fill="#D6AC55" text-anchor="middle">KB</text>
+        </svg>
+      `)}`,
+      isPrimary: false,
+      createdAt: now,
+    });
+
+    this.productImages.push({
+      id: "avatar-usr-cust-1",
+      productId: "avatar-usr-cust-1",
+      name: "Customer Profile Avatar",
+      mimeType: "image/svg+xml",
+      data: `data:image/svg+xml;utf8,${encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="#3478F6" stroke="#FFFFFF" stroke-width="3"/>
+          <text x="50" y="58" font-family="Inter, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" text-anchor="middle">RS</text>
+        </svg>
+      `)}`,
+      isPrimary: false,
+      createdAt: now,
+    });
+
+    // Seed Customer Addresses
+    this.addresses = [
+      {
+        id: "addr-1",
+        userId: "usr-cust-1",
+        name: "Rahul Sharma",
+        phone: "+919876543210",
+        tag: "Home",
+        streetAddress: "H.No 2-44, Near Pochamma Temple",
+        villageOrCity: "Kalwaral",
+        mandalOrArea: "Sadasivanagar",
+        district: "Kamareddy",
+        state: "Telangana",
+        pinCode: "503145",
+        isDefault: true,
+        createdAt: now,
+      },
+      {
+        id: "addr-2",
+        userId: "usr-cust-1",
+        name: "Rahul Sharma (Shop)",
+        phone: "+919876543210",
+        tag: "Work",
+        streetAddress: "Main Bazaar Road, Opposite Panchayat Office",
+        villageOrCity: "Sadasivanagar",
+        mandalOrArea: "Sadasivanagar",
+        district: "Kamareddy",
+        state: "Telangana",
+        pinCode: "503145",
+        isDefault: false,
+        createdAt: now,
+      }
+    ];
+
+    // Seed Customer Payment Methods
+    this.paymentMethods = [
+      {
+        id: "pm-1",
+        userId: "usr-cust-1",
+        type: "UPI",
+        label: "Google Pay UPI",
+        identifier: "rahul.sharma@okaxis",
+        isDefault: true,
+        createdAt: now,
+      },
+      {
+        id: "pm-2",
+        userId: "usr-cust-1",
+        type: "CARD",
+        label: "State Bank of India Debit Card",
+        identifier: "•••• •••• •••• 4128",
+        isDefault: false,
+        createdAt: now,
       }
     ];
 
@@ -1253,6 +1398,168 @@ class DatabaseStore {
       prev = log.currentHash;
     }
     return true;
+  }
+
+  // ==========================================
+  // CUSTOMER ACCOUNT MANAGEMENT REPOSITORY
+  // ==========================================
+
+  public getUserAddresses(userId: string): AddressModel[] {
+    return this.addresses.filter(a => a.userId === userId);
+  }
+
+  public addAddress(userId: string, data: Omit<AddressModel, 'id' | 'userId' | 'createdAt'>): AddressModel {
+    const now = new Date().toISOString();
+    if (data.isDefault) {
+      this.addresses.filter(a => a.userId === userId).forEach(a => a.isDefault = false);
+    }
+    const newAddress: AddressModel = {
+      id: `addr-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      userId,
+      ...data,
+      isDefault: data.isDefault || this.addresses.filter(a => a.userId === userId).length === 0,
+      createdAt: now,
+    };
+    this.addresses.push(newAddress);
+    return newAddress;
+  }
+
+  public updateAddress(id: string, userId: string, data: Partial<AddressModel>): AddressModel | null {
+    const addr = this.addresses.find(a => a.id === id && a.userId === userId);
+    if (!addr) return null;
+    if (data.isDefault) {
+      this.addresses.filter(a => a.userId === userId).forEach(a => a.isDefault = false);
+    }
+    Object.assign(addr, data);
+    return addr;
+  }
+
+  public deleteAddress(id: string, userId: string): boolean {
+    const idx = this.addresses.findIndex(a => a.id === id && a.userId === userId);
+    if (idx === -1) return false;
+    this.addresses.splice(idx, 1);
+    // If the deleted address was default, set the first remaining as default
+    const userAddrs = this.addresses.filter(a => a.userId === userId);
+    if (userAddrs.length > 0 && !userAddrs.some(a => a.isDefault)) {
+      userAddrs[0].isDefault = true;
+    }
+    return true;
+  }
+
+  public getUserPaymentMethods(userId: string): PaymentMethodModel[] {
+    return this.paymentMethods.filter(pm => pm.userId === userId);
+  }
+
+  public addPaymentMethod(userId: string, data: Omit<PaymentMethodModel, 'id' | 'userId' | 'createdAt'>): PaymentMethodModel {
+    const now = new Date().toISOString();
+    if (data.isDefault) {
+      this.paymentMethods.filter(pm => pm.userId === userId).forEach(pm => pm.isDefault = false);
+    }
+    const newPm: PaymentMethodModel = {
+      id: `pm-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      userId,
+      ...data,
+      isDefault: data.isDefault || this.paymentMethods.filter(pm => pm.userId === userId).length === 0,
+      createdAt: now,
+    };
+    this.paymentMethods.push(newPm);
+    return newPm;
+  }
+
+  public deletePaymentMethod(id: string, userId: string): boolean {
+    const idx = this.paymentMethods.findIndex(pm => pm.id === id && pm.userId === userId);
+    if (idx === -1) return false;
+    this.paymentMethods.splice(idx, 1);
+    const userPms = this.paymentMethods.filter(pm => pm.userId === userId);
+    if (userPms.length > 0 && !userPms.some(pm => pm.isDefault)) {
+      userPms[0].isDefault = true;
+    }
+    return true;
+  }
+
+  public updateUserProfile(userId: string, updates: Partial<UserModel>): UserModel | null {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return null;
+    const allowed = ['name', 'phone', 'villageOrCity', 'mandalOrArea', 'district', 'state', 'pinCode', 'preferredLanguage', 'smsUpdates', 'whatsappUpdates', 'bio'];
+    for (const key of allowed) {
+      if (key in updates) {
+        (user as any)[key] = (updates as any)[key];
+      }
+    }
+    user.updatedAt = new Date().toISOString();
+    return user;
+  }
+
+  public updateUserAvatar(userId: string, avatarDataUrl: string): { user: UserModel; avatarUrl: string } | null {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return null;
+    const mediaId = `avatar-${userId}`;
+    const now = new Date().toISOString();
+
+    const existingImg = this.productImages.find(img => img.id === mediaId);
+    if (existingImg) {
+      existingImg.data = avatarDataUrl;
+      existingImg.createdAt = now;
+    } else {
+      this.productImages.push({
+        id: mediaId,
+        productId: mediaId,
+        name: `${user.name} Avatar`,
+        mimeType: avatarDataUrl.startsWith('data:image/svg') ? 'image/svg+xml' : 'image/png',
+        data: avatarDataUrl,
+        isPrimary: false,
+        createdAt: now,
+      });
+    }
+
+    user.avatar = `/api/media/${mediaId}?t=${Date.now()}`;
+    user.updatedAt = now;
+    return { user, avatarUrl: user.avatar };
+  }
+
+  public changeUserPassword(userId: string, oldPass: string, newPass: string): { success: boolean; error?: string } {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return { success: false, error: 'User not found' };
+    const isValid = bcrypt.compareSync(oldPass, user.passwordHash);
+    if (!isValid) {
+      return { success: false, error: 'Current password is incorrect' };
+    }
+    user.passwordHash = bcrypt.hashSync(newPass, 10);
+    user.updatedAt = new Date().toISOString();
+    return { success: true };
+  }
+
+  public getOrderTracking(orderId: string): any {
+    const order = this.orders.find(o => o.orderId === orderId || o.id === orderId || o.trackingNumber === orderId);
+    if (!order) return null;
+
+    // Structured stage steps
+    const stages = [
+      { key: 'ORDER_PLACED', label: 'Order Placed', desc: 'Received at Kalwaral Village Store' },
+      { key: 'CONFIRMED', label: 'Order Confirmed', desc: 'Handloom weave & meter cut verified' },
+      { key: 'DISPATCHED', label: 'Dispatched', desc: `Handed to ${order.courierPartner || 'Telangana Express Postal Logistics'}` },
+      { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Delivery partner en route to destination' },
+      { key: 'DELIVERED', label: 'Delivered', desc: 'Package delivered with verified OTP / Signature' }
+    ];
+
+    const currentIdx = stages.findIndex(s => s.key === order.orderStatus);
+
+    return {
+      orderId: order.orderId,
+      invoiceNumber: order.invoiceNumber,
+      orderStatus: order.orderStatus,
+      courierPartner: order.courierPartner || 'Telangana Express Postal Logistics',
+      trackingNumber: order.trackingNumber || `KB-EXP-${order.orderId.replace(/[^0-9]/g, '')}`,
+      destination: `${order.streetAddress}, ${order.villageOrCity}, ${order.district}, ${order.pinCode}`,
+      customerName: order.customerName,
+      createdAt: order.createdAt,
+      timeline: order.timeline,
+      stages: stages.map((s, idx) => ({
+        ...s,
+        completed: currentIdx >= idx,
+        isCurrent: currentIdx === idx,
+      })),
+    };
   }
 }
 

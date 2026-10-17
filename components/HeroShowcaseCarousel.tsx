@@ -226,50 +226,42 @@ export default function HeroShowcaseCarousel() {
       <div className="relative min-h-[380px] sm:min-h-[460px] lg:min-h-[500px] flex items-center">
         {currentSlide.type === 'BANNER' ? (
           /* ============================================================== */
-          /* BANNER SLIDE (Tradition Meets Trend / KB Shopmate AI)         */
+          /* FULL-WIDTH BANNER SLIDE (Complete Display Without Truncation)  */
           /* ============================================================== */
-          <div className="w-full h-full grid grid-cols-1 md:grid-cols-12 items-center p-6 sm:p-10 lg:p-14 gap-6 relative z-10">
-            {/* Left Content */}
-            <div className="md:col-span-7 space-y-4 sm:space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-kb-gold/20 border border-kb-gold/40 text-kb-gold text-[11px] font-bold tracking-wider">
-                <span>{currentSlide.badge}</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white drop-shadow-md">
-                {currentSlide.title}
-              </h1>
-              <p className="text-xs sm:text-base text-neutral-300 max-w-xl leading-relaxed">
-                {currentSlide.subtitle}
-              </p>
-              <div className="pt-2 flex flex-wrap gap-3 sm:gap-4 items-center">
-                <Link
-                  href={currentSlide.linkUrl}
-                  className="px-6 py-3 rounded-kb-pill bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-lg hover:shadow-kb-blue/30 inline-flex items-center gap-2"
-                >
-                  <span>{currentSlide.ctaText}</span>
-                  <span aria-hidden="true">→</span>
-                </Link>
-                <Link
-                  href="/search?category=All"
-                  className="px-5 py-3 rounded-kb-pill border border-white/20 text-neutral-200 hover:text-white hover:border-white text-xs sm:text-sm font-semibold transition-colors"
-                >
-                  Browse Catalog
-                </Link>
-              </div>
+          <div className="relative w-full h-full min-h-[280px] sm:min-h-[380px] lg:min-h-[440px] flex items-center justify-center overflow-hidden bg-[#07090F]">
+            {/* Ambient Blurred Background Glow */}
+            <div
+              className="absolute inset-0 bg-cover bg-center filter blur-2xl opacity-35 scale-110 pointer-events-none"
+              style={{ backgroundImage: `url(${currentSlide.imageSrc})` }}
+            />
+
+            {/* Complete, Uncut Official Banner Artwork Spanning Full Width */}
+            <div className="relative z-10 w-full h-full flex items-center justify-center p-2 sm:p-4">
+              <img
+                src={currentSlide.imageSrc}
+                alt={currentSlide.title}
+                className="w-full h-auto max-h-[360px] sm:max-h-[440px] lg:max-h-[480px] object-contain object-center drop-shadow-2xl rounded-xl"
+              />
             </div>
 
-            {/* Right Banner Artwork (Database Record) */}
-            <div className="md:col-span-5 flex items-center justify-center relative">
-              <div className="relative w-full h-56 sm:h-72 lg:h-80 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-neutral-900 group-hover:scale-[1.02] transition-transform duration-500">
-                <img
-                  src={currentSlide.imageSrc}
-                  alt={currentSlide.title}
-                  className="w-full h-full object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-xs px-2.5 py-1 rounded-md text-[10px] text-neutral-300 font-mono">
-                  Official KB Fashions Asset
-                </div>
-              </div>
+            {/* Subtle Interactive Floating Overlay CTAs (Preserving Full Artwork Visibility) */}
+            <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-8 z-20 flex flex-wrap items-center gap-2.5 sm:gap-3 bg-neutral-950/80 backdrop-blur-md px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-2xl border border-white/20 shadow-2xl">
+              <span className="text-[10px] sm:text-[11px] font-bold text-kb-gold hidden sm:inline">
+                {currentSlide.badge}
+              </span>
+              <Link
+                href={currentSlide.linkUrl}
+                className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-kb-blue text-white text-xs sm:text-sm font-bold hover:brightness-110 active:scale-98 transition-all shadow-md flex items-center gap-1.5"
+              >
+                <span>{currentSlide.ctaText}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="/search?category=All"
+                className="px-3.5 py-2 rounded-full border border-white/20 text-neutral-300 hover:text-white text-xs font-semibold transition-colors hidden md:inline-block"
+              >
+                Browse Catalog
+              </Link>
             </div>
           </div>
         ) : (

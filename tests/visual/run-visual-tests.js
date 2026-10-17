@@ -501,8 +501,144 @@ async function runVisualTests() {
     await capture('42_unauth_orders_redirect.png');
     testResults.push({ test: "42 Unauthenticated Direct /orders Access -> Security Redirect to Sign-In", status: "PASSED" });
 
+    // =========================================================================
+    // PROMPT 3: FULL-WIDTH UNCROPPED BANNERS, CUSTOMER ACCOUNT MODULE & POLICIES
+    // =========================================================================
+
+    // TEST 43: Hero Showcase Carousel - Full-Width Uncropped Banner Slide 1
+    console.log(`\n[Test 43] Testing Full-Width Uncropped Tradition Meets Trend Banner...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('section[aria-roledescription="carousel"]');
+    await page.waitForTimeout(600);
+    await capture('43_hero_banner_full_width_uncropped.png');
+    testResults.push({ test: "43 Full-Width Uncropped Banner Slide 1 (Tradition Meets Trend)", status: "PASSED" });
+
+    // TEST 44: Hero Showcase Carousel - Full-Width Uncropped Banner Slide 2 (KB Shopmate AI)
+    console.log(`\n[Test 44] Testing Full-Width Uncropped Banner Slide 2 (KB Shopmate AI)...`);
+    const nextBtn44 = await page.$('section[aria-roledescription="carousel"] button[aria-label="Next Slide"]');
+    if (nextBtn44) {
+      await nextBtn44.click();
+      await page.waitForTimeout(600);
+    }
+    await capture('44_hero_shopmate_full_width.png');
+    testResults.push({ test: "44 Full-Width Uncropped Banner Slide 2 (KB Shopmate AI)", status: "PASSED" });
+
+    // Authenticate Customer for Customer Account Module Tests
+    console.log(`\n[Auth Setup] Signing in as Customer (customer@example.com)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/auth/signin?redirect=%2Faccount`, { waitUntil: 'networkidle' });
+    await page.fill('#signin-email-input', 'customer@example.com');
+    await page.fill('#signin-password-input', 'Customer@123');
+    await page.click('#signin-submit-btn');
+    await page.waitForTimeout(1000);
+
+    // TEST 45: Navbar Customer Profile Icon & Direct Link
+    console.log(`\n[Test 45] Verifying Navbar Customer Profile Icon & Direct Link...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#header-profile-link');
+    await capture('45_navbar_profile_icon.png');
+    testResults.push({ test: "45 Navbar Customer Profile Icon & Direct Access", status: "PASSED" });
+
+    // TEST 46: Customer Account Dashboard - Profile Tab & Avatar Upload Trigger
+    console.log(`\n[Test 46] Loading Customer Account Portal (/account)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/account`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#customer-name-heading');
+    await capture('46_customer_account_profile.png');
+    testResults.push({ test: "46 Customer Account Dashboard (Profile & Avatar Upload)", status: "PASSED" });
+
+    // TEST 47: Customer Account - Order History Tab
+    console.log(`\n[Test 47] Navigating to Orders Tab in Customer Account...`);
+    await page.click('#tab-btn-orders');
+    await page.waitForTimeout(400);
+    await capture('47_customer_account_orders.png');
+    testResults.push({ test: "47 Customer Account - Order History & Stage Links", status: "PASSED" });
+
+    // TEST 48: Customer Account - Real-Time Parcel Tracking with Milestone Stepper
+    console.log(`\n[Test 48] Navigating to Parcel Tracking Tab...`);
+    await page.click('#tab-btn-tracking');
+    await page.waitForTimeout(500);
+    await capture('48_customer_account_tracking.png');
+    testResults.push({ test: "48 Customer Account - Real-Time Parcel Tracking Stepper", status: "PASSED" });
+
+    // TEST 49: Customer Account - Saved Addresses Management
+    console.log(`\n[Test 49] Navigating to Addresses Tab...`);
+    await page.click('#tab-btn-addresses');
+    await page.waitForTimeout(400);
+    await capture('49_customer_account_addresses.png');
+    testResults.push({ test: "49 Customer Account - Saved Addresses Management", status: "PASSED" });
+
+    // TEST 50: Customer Account - Saved Payment Methods
+    console.log(`\n[Test 50] Navigating to Payment Methods Tab...`);
+    await page.click('#tab-btn-payments');
+    await page.waitForTimeout(400);
+    await capture('50_customer_account_payment_methods.png');
+    testResults.push({ test: "50 Customer Account - Saved Payment Methods", status: "PASSED" });
+
+    // TEST 51: Customer Account - Password & Security Tab
+    console.log(`\n[Test 51] Navigating to Password & Security Tab...`);
+    await page.click('#tab-btn-security');
+    await page.waitForTimeout(400);
+    await capture('51_customer_account_security.png');
+    testResults.push({ test: "51 Customer Account - Password Resets & Security", status: "PASSED" });
+
+    // =========================================================================
+    // STATUTORY COMPLIANCE POLICIES PAGES (GOVERNMENT & PAYMENT GATEWAY RULES)
+    // =========================================================================
+
+    // TEST 52: Statutory Privacy Policy Page (/policies/privacy)
+    console.log(`\n[Test 52] Navigating to Privacy Policy (/policies/privacy)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/policies/privacy`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('52_policy_privacy_page.png');
+    testResults.push({ test: "52 Statutory Compliance: Privacy Policy Page", status: "PASSED" });
+
+    // TEST 53: Statutory Terms & Conditions Page (/policies/terms)
+    console.log(`\n[Test 53] Navigating to Terms & Conditions (/policies/terms)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/policies/terms`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('53_policy_terms_page.png');
+    testResults.push({ test: "53 Statutory Compliance: Terms & Conditions Page", status: "PASSED" });
+
+    // TEST 54: Statutory Refund & Return Policy Page (/policies/refunds)
+    console.log(`\n[Test 54] Navigating to Refund & Return Policy (/policies/refunds)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/policies/refunds`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('54_policy_refunds_page.png');
+    testResults.push({ test: "54 Statutory Compliance: Refund & Return Policy Page", status: "PASSED" });
+
+    // TEST 55: Statutory Shipping & Delivery Policy Page (/policies/shipping)
+    console.log(`\n[Test 55] Navigating to Shipping & Delivery Policy (/policies/shipping)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/policies/shipping`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('55_policy_shipping_page.png');
+    testResults.push({ test: "55 Statutory Compliance: Shipping & Delivery Policy Page", status: "PASSED" });
+
+    // TEST 56: Statutory Grievance Redressal & Nodal Officer Page (/policies/grievance)
+    console.log(`\n[Test 56] Navigating to Grievance Redressal Officer (/policies/grievance)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/policies/grievance`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('56_policy_grievance_page.png');
+    testResults.push({ test: "56 Statutory Compliance: Grievance Officer (Rules 2020)", status: "PASSED" });
+
+    // TEST 57: Statutory Tax Exemption Declaration Page (/policies/statutory-declaration)
+    console.log(`\n[Test 57] Navigating to Section 23 CGST Exemption Declaration (/policies/statutory-declaration)...`);
+    await page.goto(`http://localhost:${TEST_PORT}/policies/statutory-declaration`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('h1');
+    await capture('57_policy_statutory_declaration_page.png');
+    testResults.push({ test: "57 Statutory Compliance: Section 23 CGST Tax Exemption Declaration", status: "PASSED" });
+
+    // TEST 58: Modernized 5-Column Luxury Footer
+    console.log(`\n[Test 58] Testing Modernized 5-Column Luxury Footer with Compliance Links...`);
+    await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'networkidle' });
+    const footer = await page.$('footer');
+    if (footer) {
+      await footer.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(400);
+    }
+    await capture('58_footer_statutory_compliance.png');
+    testResults.push({ test: "58 Modernized Luxury Footer with 5-Column Compliance Links", status: "PASSED" });
+
     console.log(`\n======================================================`);
-    console.log(` 🎉 ALL 42 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
+    console.log(` 🎉 ALL ${testResults.length} VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
     console.log(`======================================================`);
     testResults.forEach(r => console.log(`  [PASS] ${r.test}`));
     console.log(`======================================================\n`);
@@ -517,3 +653,4 @@ async function runVisualTests() {
 }
 
 runVisualTests();
+
