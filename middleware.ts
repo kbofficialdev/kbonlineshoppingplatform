@@ -65,6 +65,26 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // 4. Protect Checkout Pages (/checkout and /checkout/*)
+  if (pathname === '/checkout' || pathname.startsWith('/checkout/')) {
+    if (!token || !payload) {
+      const signinUrl = new URL('/auth/signin', req.url);
+      signinUrl.searchParams.set('redirect', pathname);
+      signinUrl.searchParams.set('reason', 'auth_required');
+      return NextResponse.redirect(signinUrl);
+    }
+  }
+
+  // 5. Protect Order Placement API (POST /api/orders)
+  if (pathname === '/api/orders' && req.method === 'POST') {
+    if (!token || !payload) {
+      return NextResponse.json(
+        { error: 'Authentication Required: You must be signed in to place an order.', requiresAuth: true },
+        { status: 401 }
+      );
+    }
+  }
+
   return NextResponse.next();
 }
 
@@ -72,6 +92,10 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/account/:path*',
+    '/checkout',
+    '/checkout/:path*',
     '/api/admin/:path*',
+    '/api/orders',
   ],
 };
+

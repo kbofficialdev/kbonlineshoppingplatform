@@ -3,6 +3,7 @@ import './globals.css';
 import Script from 'next/script';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { ModalProvider } from '@/components/ModalContext';
 
 export const metadata: Metadata = {
   title: 'KB FASHIONS — Better Clothes. Better Prices.',
@@ -26,11 +27,13 @@ export default function RootLayout({
         <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
       </head>
       <body className="bg-kb-white text-kb-black font-sans antialiased selection:bg-kb-blue selection:text-white min-h-screen flex flex-col justify-between">
-        <Header />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        <ModalProvider>
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </ModalProvider>
       </body>
     </html>
   );

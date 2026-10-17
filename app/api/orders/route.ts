@@ -10,6 +10,13 @@ let billCounter = 842;
 export async function POST(req: NextRequest) {
   try {
     const auth = getAuthFromRequest(req);
+    if (!auth) {
+      return NextResponse.json({ 
+        error: 'Authentication Required: You must be signed in with a valid account to place an order.',
+        requiresAuth: true
+      }, { status: 401 });
+    }
+
     const body = await req.json();
     const parsed = checkoutSchema.safeParse(body);
 

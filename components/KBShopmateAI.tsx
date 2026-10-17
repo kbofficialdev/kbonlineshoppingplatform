@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useModalAlert } from '@/components/ModalContext';
 
 interface ProductItem {
   id: string;
@@ -14,6 +15,7 @@ interface ProductItem {
 }
 
 export default function KBShopmateAI({ embedded = false }: { embedded?: boolean }) {
+  const { showModal } = useModalAlert();
   const [state, setState] = useState<'IDLE' | 'LISTENING' | 'PROCESSING' | 'RESULTS' | 'NO_RESULTS'>('IDLE');
   const [query, setQuery] = useState<string>('');
   const [activeSpeechText, setActiveSpeechText] = useState<string>('నాకు ₹1000 లోపు మంచి చీర చూపించు (Show me a good saree under ₹1,000)');
@@ -97,7 +99,7 @@ export default function KBShopmateAI({ embedded = false }: { embedded?: boolean 
 
   const handleChooseProduct = async (product: ProductItem) => {
     try {
-      await fetch('/api/cart/items', {
+      const res = await fetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,9 +110,53 @@ export default function KBShopmateAI({ embedded = false }: { embedded?: boolean 
           qty: 1
         })
       });
-      setChosenMessage(`✓ "${product.name}" added to your bag!`);
-      setTimeout(() => setChosenMessage(null), 3500);
-    } catch (e) {}
+      const data = await res.json();
+
+      if (res.status === 401 || data.requiresAuth) {
+        showModal({
+          type: 'auth',
+          title: 'Sign In Required for KB AI Shopping',
+          message: 'An active account session is required to add items suggested by KB Shopmate AI to your shopping bag or place orders.',
+          primaryBtn: {
+            text: 'Sign In to Account →',
+            href: '/auth/signin?redirect=%2Fai&reason=auth_required',
+          },
+          secondaryBtn: {
+            text: 'Create New Account',
+            href: '/auth/signup?redirect=%2Fai',
+          },
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        showModal({
+          type: 'error',
+          title: 'Unable to Add Item',
+          message: data.error || 'Could not add item to bag. Please try again.',
+        });
+        return;
+      }
+
+      showModal({
+        type: 'success',
+        title: 'Item Added to Shopping Bag',
+        message: `✓ "${product.name}" has been added to your shopping bag via KB Shopmate AI!`,
+        primaryBtn: {
+          text: 'View Shopping Bag & Checkout →',
+          href: '/cart',
+        },
+        secondaryBtn: {
+          text: 'Continue AI Shopping',
+        },
+      });
+    } catch (e: any) {
+      showModal({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not connect to the store servers. Please check your internet connection.',
+      });
+    }
   };
 
   return (
@@ -331,3 +377,4 @@ export default function KBShopmateAI({ embedded = false }: { embedded?: boolean 
     </div>
   );
 }
+

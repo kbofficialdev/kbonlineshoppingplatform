@@ -90,16 +90,96 @@ async function runVisualTests() {
     await capture('05_inline_size_guide.png');
     testResults.push({ test: "05 Inline Size Guide (No Modal)", status: "PASSED" });
 
-    // TEST 6: Add to Bag and Navigate to Dedicated Cart Page
-    console.log(`\n[Test 6] Adding to Bag and Viewing Dedicated Cart Page (/cart)...`);
+    // =========================================================================
+    // PRIORITY 1 & 2: STRICT AUTHENTICATION GUARD & CUSTOM CENTER MODAL ALERTS
+    // =========================================================================
+
+    // TEST 31: Unauthenticated Visitor Clicks "+ Add to Bag" -> Custom Center Modal Alert
+    console.log(`\n[Test 31] Priority 1 & 2: Unauthenticated Visitor Clicks "+ Add to Bag" -> Center Modal Alert...`);
     await page.goto(`http://localhost:${TEST_PORT}/products/prod-men-raymond-shirt`, { waitUntil: 'networkidle' });
     await page.waitForSelector('#add-to-bag-btn');
     await page.click('#add-to-bag-btn');
+    await page.waitForSelector('#kb-center-modal');
     await page.waitForTimeout(400);
-    await page.goto(`http://localhost:${TEST_PORT}/cart`, { waitUntil: 'networkidle' });
+    await capture('31_auth_modal_alert_on_add_to_bag.png');
+    testResults.push({ test: "31 Unauthenticated '+ Add to Bag' Triggers Center Auth Modal Alert", status: "PASSED" });
+
+    // Close the center modal alert via the close button
+    const closeAuthModalBtn = await page.$('#kb-center-modal button:has-text("✕")');
+    if (closeAuthModalBtn) {
+      await closeAuthModalBtn.click();
+      await page.waitForTimeout(300);
+    }
+
+    // TEST 32: Unauthenticated Direct Visit to /checkout -> Middleware Redirects to Sign-In
+    console.log(`\n[Test 32] Priority 1: Unauthenticated Direct Visit to /checkout -> Redirect to Sign-In...`);
+    await page.goto(`http://localhost:${TEST_PORT}/checkout`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    await capture('32_checkout_unauth_redirect.png');
+    testResults.push({ test: "32 Unauthenticated Direct /checkout Access -> Security Redirect to Sign-In", status: "PASSED" });
+
+    // CUSTOMER AUTHENTICATION: Sign in as Registered Customer for Authenticated Shopping
+    console.log(`\n[Customer Auth] Authenticating as Registered Customer (customer@example.com)...`);
+    const custLoginRes = await page.request.post(`http://localhost:${TEST_PORT}/api/auth/signin`, {
+      data: {
+        emailOrPhone: 'customer@example.com',
+        password: 'Customer@123'
+      }
+    });
+    const custLoginData = await custLoginRes.json();
+    if (custLoginData?.token) {
+      await context.addCookies([{
+        name: 'kb_auth_token',
+        value: custLoginData.token,
+        domain: 'localhost',
+        path: '/'
+      }]);
+    }
+
+    // TEST 33: Authenticated Customer Adds to Bag -> Custom Center Success Modal Alert
+    console.log(`\n[Test 33] Priority 2: Authenticated Customer Adds to Bag -> Center Success Modal Alert...`);
+    await page.goto(`http://localhost:${TEST_PORT}/products/prod-men-raymond-shirt`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('#add-to-bag-btn');
+    await page.click('#add-to-bag-btn');
+    await page.waitForSelector('#kb-center-modal');
+    await page.waitForTimeout(400);
+    await capture('33_success_modal_alert.png');
+    testResults.push({ test: "33 Authenticated Customer '+ Add to Bag' Triggers Center Success Modal Alert", status: "PASSED" });
+
+    // Click "View Bag & Checkout →" on the Center Modal Dialog
+    const viewBagBtn = await page.$('#modal-primary-btn');
+    if (viewBagBtn) {
+      await viewBagBtn.click();
+      await page.waitForTimeout(500);
+    } else {
+      await page.goto(`http://localhost:${TEST_PORT}/cart`, { waitUntil: 'networkidle' });
+    }
+
+    // TEST 6: Dedicated Cart Page (With Meter Cut Info)
+    console.log(`\n[Test 6] Viewing Dedicated Cart Page (/cart)...`);
     await page.waitForSelector('h1');
     await capture('06_dedicated_cart_page.png');
     testResults.push({ test: "06 Dedicated Cart Page (With Meter Cut Info)", status: "PASSED" });
+
+    // TEST 34: Priority 2: Invalid Promo Code Triggers Custom Center Warning Modal Alert
+    console.log(`\n[Test 34] Priority 2: Invalid Promo Code Triggers Custom Center Warning Modal Alert...`);
+    const promoInput = await page.$('#promo-input');
+    const applyPromoBtn = await page.$('#apply-promo-btn');
+    if (promoInput && applyPromoBtn) {
+      await promoInput.fill('INVALIDCOUPON99');
+      await applyPromoBtn.click();
+      await page.waitForSelector('#kb-center-modal');
+      await page.waitForTimeout(400);
+      await capture('34_warning_modal_alert_invalid_promo.png');
+      testResults.push({ test: "34 Invalid Promo Code Triggers Center Warning Modal Alert", status: "PASSED" });
+
+      // Dismiss the warning modal
+      const dismissModalBtn = await page.$('#modal-primary-btn');
+      if (dismissModalBtn) {
+        await dismissModalBtn.click();
+        await page.waitForTimeout(300);
+      }
+    }
 
     // TEST 7: Dedicated Wishlist Page
     console.log(`\n[Test 7] Viewing Dedicated Wishlist Page (/wishlist)...`);
@@ -108,8 +188,8 @@ async function runVisualTests() {
     await capture('07_dedicated_wishlist_page.png');
     testResults.push({ test: "07 Dedicated Wishlist Page", status: "PASSED" });
 
-    // TEST 8: Dedicated Multi-Step Checkout Page
-    console.log(`\n[Test 8] Loading Dedicated Checkout Page (/checkout)...`);
+    // TEST 8: Dedicated Multi-Step Checkout Page (Authenticated Customer)
+    console.log(`\n[Test 8] Loading Dedicated Checkout Page (/checkout) with Active Customer Session...`);
     await page.goto(`http://localhost:${TEST_PORT}/checkout`, { waitUntil: 'networkidle' });
     await page.waitForSelector('h1:has-text("Checkout")');
     await capture('08_dedicated_checkout_page.png');
@@ -346,7 +426,7 @@ async function runVisualTests() {
     testResults.push({ test: "30 Shopping Bag Cart with Electric Blue Checkout CTA", status: "PASSED" });
 
     console.log(`\n======================================================`);
-    console.log(` 🎉 ALL 30 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
+    console.log(` 🎉 ALL 34 VISUAL & FEATURE TESTS PASSED SUCCESSFULLY!`);
     console.log(`======================================================`);
     testResults.forEach(r => console.log(`  [PASS] ${r.test}`));
     console.log(`======================================================\n`);

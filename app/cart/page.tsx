@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useModalAlert } from '@/components/ModalContext';
 
 interface CartItem {
   id: string;
@@ -16,6 +18,9 @@ interface CartItem {
 }
 
 export default function CartPage() {
+  const router = useRouter();
+  const { showModal } = useModalAlert();
+  const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<any>({
     items: [],
     subtotal: 0,
@@ -34,7 +39,17 @@ export default function CartPage() {
 
   useEffect(() => {
     fetchCart();
+    fetchUser();
   }, []);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data?.authenticated) setUser(data.user);
+      else setUser(null);
+    } catch (e) {}
+  };
 
   const fetchCart = async () => {
     try {
@@ -67,6 +82,11 @@ export default function CartPage() {
       });
       const data = await res.json();
       setCart(data);
+      showModal({
+        type: 'info',
+        title: 'Item Removed',
+        message: 'The selected item was removed from your shopping bag.',
+      });
     } catch (e) {}
   };
 
@@ -75,6 +95,11 @@ export default function CartPage() {
       const res = await fetch('/api/cart/clear', { method: 'DELETE' });
       const data = await res.json();
       setCart(data);
+      showModal({
+        type: 'info',
+        title: 'Shopping Bag Cleared',
+        message: 'All garments were removed from your shopping bag.',
+      });
     } catch (e) {}
   };
 
@@ -92,12 +117,48 @@ export default function CartPage() {
       if (data.success) {
         setCart(data.cart);
         setPromoMessage(data.message);
+        showModal({
+          type: 'success',
+          title: 'Village Promo Applied',
+          message: `✓ Offer code "${promoCode.trim().toUpperCase()}" applied! You saved ₹${data.cart.discountAmount}.`,
+        });
       } else {
         setPromoError(data.error || 'Invalid promo code');
+        showModal({
+          type: 'warning',
+          title: 'Invalid Promo Code',
+          message: data.error || 'The entered promo code is invalid. Please try "KB10".',
+        });
       }
     } catch (e) {
       setPromoError('Failed to apply promo code');
+      showModal({
+        type: 'error',
+        title: 'Error',
+        message: 'Could not apply promo code. Please check your network connection.',
+      });
     }
+  };
+
+  const handleProceedCheckout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      showModal({
+        type: 'auth',
+        title: 'Sign In Required for Checkout',
+        message: 'You must have an active KB Fashions account session to enter delivery details, select payment, and place an order.',
+        primaryBtn: {
+          text: 'Sign In to Proceed →',
+          href: '/auth/signin?redirect=%2Fcheckout&reason=auth_required',
+        },
+        secondaryBtn: {
+          text: 'Create New Account',
+          href: '/auth/signup?redirect=%2Fcheckout',
+        },
+      });
+      return;
+    }
+    router.push('/checkout');
   };
 
   if (isLoading) {
@@ -263,6 +324,7 @@ export default function CartPage() {
               <span className="text-xs font-bold text-neutral-700 block mb-1.5">Apply Village Offer / Promo:</span>
               <div className="flex gap-2">
                 <input
+                  id="promo-input"
                   type="text"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
@@ -270,6 +332,7 @@ export default function CartPage() {
                   className="flex-1 uppercase font-mono text-xs px-3 py-2.5 rounded-kb-pill border border-kbBorder bg-white focus:outline-none focus:ring-1 focus:ring-black"
                 />
                 <button
+                  id="apply-promo-btn"
                   onClick={handleApplyPromo}
                   className="bg-black text-white text-xs font-bold px-4 py-2.5 rounded-kb-pill hover:bg-neutral-800"
                 >
@@ -307,13 +370,14 @@ export default function CartPage() {
             </div>
 
             {/* Checkout Action Button */}
-            <Link
-              href="/checkout"
+            <button
+              type="button"
               id="proceed-checkout-btn"
-              className="block w-full bg-kb-blue text-white hover:bg-blue-600 text-center font-semibold text-sm py-4 rounded-kb-pill transition-all shadow-sm"
+              onClick={handleProceedCheckout}
+              className="block w-full bg-kb-blue text-white hover:bg-blue-600 text-center font-semibold text-sm py-4 rounded-kb-pill transition-all shadow-sm cursor-pointer"
             >
-              Proceed to Delivery & Payment →
-            </Link>
+              Proceed to Delivery &amp; Payment →
+            </button>
 
             <div className="text-[11px] text-neutral-400 text-center flex items-center justify-center gap-1">
               <span>🔒</span>

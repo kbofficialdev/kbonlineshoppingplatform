@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useModalAlert } from '@/components/ModalContext';
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { showModal } = useModalAlert();
   const [step, setStep] = useState<number>(1);
   const [cart, setCart] = useState<any>({ items: [], subtotal: 0, total: 0, shippingFee: 0, discountAmount: 0 });
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -13,15 +15,15 @@ export default function CheckoutPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Customer Delivery State
-  const [name, setName] = useState<string>('Rahul Sharma');
-  const [phone, setPhone] = useState<string>('9876543210');
-  const [email, setEmail] = useState<string>('customer@example.com');
-  const [streetAddress, setStreetAddress] = useState<string>('42, Industrial Layout, Indiranagar');
-  const [villageOrCity, setVillageOrCity] = useState<string>('Bengaluru');
-  const [mandalOrArea, setMandalOrArea] = useState<string>('Indiranagar');
-  const [district, setDistrict] = useState<string>('Bengaluru Urban');
-  const [state, setState] = useState<string>('Karnataka');
-  const [pinCode, setPinCode] = useState<string>('560038');
+  const [name, setName] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [streetAddress, setStreetAddress] = useState<string>('42, Main Street, Village Center');
+  const [villageOrCity, setVillageOrCity] = useState<string>('Kalwaral');
+  const [mandalOrArea, setMandalOrArea] = useState<string>('Sadasivanagar');
+  const [district, setDistrict] = useState<string>('Kamareddy');
+  const [state, setState] = useState<string>('Telangana');
+  const [pinCode, setPinCode] = useState<string>('503145');
 
   // Payment Selection
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'UPI' | 'CARD'>('COD');
@@ -37,13 +39,27 @@ export default function CheckoutPage() {
       const cartData = await cartRes.json();
       setCart(cartData);
 
-      // Pre-fill user data if logged in
+      // Verify user authentication
       const userRes = await fetch('/api/auth/me');
       const userData = await userRes.json();
       if (userData?.authenticated && userData.user) {
         setName(userData.user.name || '');
         setEmail(userData.user.email || '');
         setPhone(userData.user.phone?.replace('+91', '') || '');
+      } else {
+        showModal({
+          type: 'auth',
+          title: 'Sign In Required for Checkout',
+          message: 'You must have an active KB Fashions account session to enter delivery details and place an order.',
+          primaryBtn: {
+            text: 'Sign In to Proceed →',
+            href: '/auth/signin?redirect=%2Fcheckout&reason=auth_required',
+          },
+          secondaryBtn: {
+            text: 'Create New Account',
+            href: '/auth/signup?redirect=%2Fcheckout',
+          },
+        });
       }
     } catch (e) {
     } finally {
@@ -68,23 +84,43 @@ export default function CheckoutPage() {
 
   const validateStep1 = () => {
     if (!name.trim() || name.length < 2) {
-      setErrorMsg("Please enter your full name (at least 2 characters)");
+      showModal({
+        type: 'warning',
+        title: 'Full Name Required',
+        message: 'Please enter recipient name (at least 2 characters) for the delivery consignment.',
+      });
       return false;
     }
     if (!/^[6-9]\d{9}$/.test(phone.trim().replace(/^\+91/, ''))) {
-      setErrorMsg("Please enter a valid 10-digit Indian phone number");
+      showModal({
+        type: 'warning',
+        title: 'Valid Phone Required',
+        message: 'Please provide a valid 10-digit mobile number for courier tracking notifications.',
+      });
       return false;
     }
     if (!email.trim() || !email.includes('@')) {
-      setErrorMsg("Please enter a valid email address for order notifications");
+      showModal({
+        type: 'warning',
+        title: 'Email Address Required',
+        message: 'Please enter a valid email address for statutory Bill of Supply delivery.',
+      });
       return false;
     }
     if (!streetAddress.trim() || streetAddress.length < 5) {
-      setErrorMsg("Please enter complete street or house address");
+      showModal({
+        type: 'warning',
+        title: 'Delivery Address Required',
+        message: 'Please enter complete house/street address for accurate doorstep delivery.',
+      });
       return false;
     }
     if (!pinCode.trim() || !/^\d{6}$/.test(pinCode.trim())) {
-      setErrorMsg("Please enter a valid 6-digit postal PIN code");
+      showModal({
+        type: 'warning',
+        title: 'Valid PIN Code Required',
+        message: 'Please enter a valid 6-digit postal PIN code for delivery routing.',
+      });
       return false;
     }
     setErrorMsg(null);
@@ -122,16 +158,57 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-      if (data.success && data.order) {
-        // Redirect directly to the dedicated order timeline page!
-        router.push(`/orders/${data.order.orderId}`);
-      } else {
-        setErrorMsg(data.error || 'Failed to place order. Please try again.');
+
+      if (res.status === 401 || data.requiresAuth) {
         setIsSubmitting(false);
+        showModal({
+          type: 'auth',
+          title: 'Authentication Session Expired',
+          message: 'Your account session has expired. Please sign in again to place your order.',
+          primaryBtn: {
+            text: 'Sign In to Proceed →',
+            href: '/auth/signin?redirect=%2Fcheckout&reason=auth_required',
+          },
+          secondaryBtn: {
+            text: 'Create New Account',
+            href: '/auth/signup?redirect=%2Fcheckout',
+          },
+        });
+        return;
+      }
+
+      if (data.success && data.order) {
+        setIsSubmitting(false);
+        showModal({
+          type: 'success',
+          title: 'Order Placed Successfully!',
+          message: `✓ Order #${data.order.orderId} has been confirmed with our Kalwaral store! Track consignment progress stage by stage.`,
+          primaryBtn: {
+            text: 'Track Order Progress →',
+            href: `/orders/${data.order.orderId}`,
+          },
+          secondaryBtn: {
+            text: 'View Bill of Supply',
+            href: `/invoices/${data.order.orderId}`,
+          },
+        });
+      } else {
+        setIsSubmitting(false);
+        setErrorMsg(data.error || 'Failed to place order. Please try again.');
+        showModal({
+          type: 'error',
+          title: 'Unable to Place Order',
+          message: data.error || 'Failed to register your order. Please review your details and try again.',
+        });
       }
     } catch (e: any) {
-      setErrorMsg(e.message || 'Error communicating with server');
       setIsSubmitting(false);
+      setErrorMsg(e.message || 'Error communicating with server');
+      showModal({
+        type: 'error',
+        title: 'Communication Error',
+        message: 'Could not communicate with the store servers. Please check your network connection.',
+      });
     }
   };
 

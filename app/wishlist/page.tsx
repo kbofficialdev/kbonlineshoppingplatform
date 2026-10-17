@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useModalAlert } from '@/components/ModalContext';
 
 export default function WishlistPage() {
+  const { showModal } = useModalAlert();
   const [wishlist, setWishlist] = useState<any[]>([]);
-  const [addedMessage, setAddedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadWishlist();
@@ -28,11 +29,16 @@ export default function WishlistPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('kb_wishlist', JSON.stringify(updated));
     }
+    showModal({
+      type: 'info',
+      title: 'Item Removed',
+      message: 'Garment removed from your wishlist.',
+    });
   };
 
   const handleMoveToBag = async (product: any) => {
     try {
-      await fetch('/api/cart/items', {
+      const res = await fetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,20 +48,58 @@ export default function WishlistPage() {
           size: product.sizes?.[0] || 'M',
         })
       });
+      const data = await res.json();
+
+      if (res.status === 401 || data.requiresAuth) {
+        showModal({
+          type: 'auth',
+          title: 'Sign In Required to Shop',
+          message: 'An active account session is required to move saved wishlist items into your shopping bag.',
+          primaryBtn: {
+            text: 'Sign In to Account →',
+            href: `/auth/signin?redirect=%2Fwishlist&reason=auth_required`,
+          },
+          secondaryBtn: {
+            text: 'Create New Account',
+            href: `/auth/signup?redirect=%2Fwishlist`,
+          },
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        showModal({
+          type: 'error',
+          title: 'Unable to Add to Bag',
+          message: data.error || 'Failed to move item to bag. Please try again.',
+        });
+        return;
+      }
+
       handleRemove(product.productId || product.id);
-      setAddedMessage(`✓ Moved "${product.name}" to shopping bag!`);
-      setTimeout(() => setAddedMessage(null), 3000);
-    } catch (e) {}
+      showModal({
+        type: 'success',
+        title: 'Moved to Shopping Bag',
+        message: `✓ "${product.name}" was moved from wishlist to your shopping bag!`,
+        primaryBtn: {
+          text: 'View Shopping Bag & Checkout →',
+          href: '/cart',
+        },
+        secondaryBtn: {
+          text: 'Keep Viewing Wishlist',
+        },
+      });
+    } catch (e) {
+      showModal({
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not connect to the store servers. Please check your internet connection.',
+      });
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {addedMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-black text-white px-5 py-3 rounded-kb-pill text-xs font-bold shadow-2xl flex items-center gap-3">
-          <span>{addedMessage}</span>
-          <Link href="/cart" className="underline text-emerald-400">View Bag →</Link>
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex justify-between items-baseline border-b border-kbBorder pb-4 mb-8">

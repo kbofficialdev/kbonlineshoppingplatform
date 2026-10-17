@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useModalAlert } from '@/components/ModalContext';
 
 interface Product {
   id: string;
@@ -31,9 +32,11 @@ interface Product {
 }
 
 export default function HomePage() {
+  const { showModal } = useModalAlert();
   const [products, setProducts] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [store, setStore] = useState<any>({
     brandName: "KB",
     officialName: "KB FASHIONS",
@@ -45,7 +48,6 @@ export default function HomePage() {
     contactPhone: "+91 7989768200",
     contactEmail: "kb.official.admin@gmail.com",
   });
-  const [addedMessage, setAddedMessage] = useState<string | null>(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
@@ -55,6 +57,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchProducts();
     fetchStoreSettings();
+    fetchUser();
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('kb_wishlist');
       if (stored) {
@@ -65,6 +68,15 @@ export default function HomePage() {
       }
     }
   }, []);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data?.authenticated) setUser(data.user);
+      else setUser(null);
+    } catch (e) {}
+  };
 
   const fetchStoreSettings = async () => {
     try {
@@ -85,6 +97,25 @@ export default function HomePage() {
   const toggleWishlist = (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Check if user is authenticated before allowing wishlist services
+    if (!user) {
+      showModal({
+        type: 'auth',
+        title: 'Sign In Required for Wishlist',
+        message: 'Please sign in to save your favorite Kalwaral handloom items to your personal wishlist.',
+        primaryBtn: {
+          text: 'Sign In to Account →',
+          href: `/auth/signin?redirect=%2F&reason=auth_required`,
+        },
+        secondaryBtn: {
+          text: 'Create New Account',
+          href: `/auth/signup?redirect=%2F`,
+        },
+      });
+      return;
+    }
+
     let updated: any[] = [];
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('kb_wishlist');
@@ -92,8 +123,25 @@ export default function HomePage() {
       const exists = currentList.some(p => (p.productId || p.id) === product.productId);
       if (exists) {
         updated = currentList.filter(p => (p.productId || p.id) !== product.productId);
+        showModal({
+          type: 'info',
+          title: 'Removed from Wishlist',
+          message: `"${product.name}" was removed from your wishlist.`,
+        });
       } else {
         updated = [...currentList, product];
+        showModal({
+          type: 'success',
+          title: 'Saved to Wishlist',
+          message: `♥ "${product.name}" has been bookmarked to your wishlist.`,
+          primaryBtn: {
+            text: 'View Wishlist →',
+            href: '/wishlist',
+          },
+          secondaryBtn: {
+            text: 'Continue Shopping',
+          },
+        });
       }
       localStorage.setItem('kb_wishlist', JSON.stringify(updated));
       setWishlist(updated.map(p => p.productId || p.id));
@@ -104,7 +152,7 @@ export default function HomePage() {
     e.preventDefault();
     e.stopPropagation();
     try {
-      await fetch('/api/cart/items', {
+      const res = await fetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,9 +162,54 @@ export default function HomePage() {
           size: product.sizes[0] || 'M',
         })
       });
-      setAddedMessage(`✓ Added "${product.name}" to bag!`);
-      setTimeout(() => setAddedMessage(null), 3000);
-    } catch (e) {}
+      const data = await res.json();
+
+      if (res.status === 401 || data.requiresAuth) {
+        showModal({
+          type: 'auth',
+          title: 'Sign In Required to Shop',
+          message: 'An active account session is required to add items to your shopping bag, save your selections, and place an order.',
+          primaryBtn: {
+            text: 'Sign In to Account →',
+            href: `/auth/signin?redirect=%2F&reason=auth_required`,
+          },
+          secondaryBtn: {
+            text: 'Create New Account',
+            href: `/auth/signup?redirect=%2F`,
+          },
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        showModal({
+          type: 'error',
+          title: 'Unable to Add Item',
+          message: data.error || 'Could not add item to bag. Please try again.',
+        });
+        return;
+      }
+
+      // Success modal alert at center of page
+      showModal({
+        type: 'success',
+        title: 'Item Added to Shopping Bag',
+        message: `✓ "${product.name}" has been added to your shopping bag!`,
+        primaryBtn: {
+          text: 'View Shopping Bag & Checkout →',
+          href: '/cart',
+        },
+        secondaryBtn: {
+          text: 'Continue Shopping',
+        },
+      });
+    } catch (e: any) {
+      showModal({
+        type: 'error',
+        title: 'Connection Error',
+        message: 'Could not connect to the store servers. Please check your connection.',
+      });
+    }
   };
 
   // Initialize Canvas Chart.js for quality ratings
@@ -207,14 +300,6 @@ export default function HomePage() {
 
   return (
     <div className="bg-white text-kb-black">
-      {/* Toast Alert */}
-      {addedMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-kb-black text-white px-5 py-3 rounded-kb-pill text-xs font-bold shadow-2xl flex items-center gap-3 animate-bounce border border-neutral-700">
-          <span>{addedMessage}</span>
-          <Link href="/cart" className="underline text-kb-blue font-bold">View Bag →</Link>
-        </div>
-      )}
-
       {/* ========================================================================= */}
       {/* 2. MAIN FASHION CAMPAIGN HERO (Obsidian Black Foundation 25%, Gold 3%) */}
       {/* ========================================================================= */}
@@ -652,7 +737,14 @@ export default function HomePage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (newsletterEmail) setNewsletterSubscribed(true);
+                if (newsletterEmail) {
+                  setNewsletterSubscribed(true);
+                  showModal({
+                    type: 'success',
+                    title: 'Subscribed to Handloom Weaves',
+                    message: `✓ Thank you! ${newsletterEmail} is now subscribed to KB Fashions seasonal announcements and festive weaver discounts.`,
+                  });
+                }
               }}
               className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2"
             >

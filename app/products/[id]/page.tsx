@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useModalAlert } from '@/components/ModalContext';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
+  const { showModal } = useModalAlert();
 
   const [product, setProduct] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const [selectedSize, setSelectedSize] = useState<string>('M');
   const [selectedColor, setSelectedColor] = useState<string>('Natural');
   const [cutLength, setCutLength] = useState<number>(1.6);
@@ -17,15 +20,24 @@ export default function ProductDetailPage() {
   const [includeFallPico, setIncludeFallPico] = useState<boolean>(false);
   const [includeMatchingBlouse, setIncludeMatchingBlouse] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [addedToast, setAddedToast] = useState<boolean>(false);
   const [showSizeGuide, setShowSizeGuide] = useState<boolean>(false);
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) {
       fetchProduct();
+      fetchUser();
     }
   }, [id]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data?.authenticated) setUser(data.user);
+      else setUser(null);
+    } catch (e) {}
+  };
 
   const fetchProduct = async () => {
     try {
@@ -70,14 +82,49 @@ export default function ProductDetailPage() {
 
   const toggleWishlist = () => {
     if (!product || typeof window === 'undefined') return;
+
+    if (!user) {
+      showModal({
+        type: 'auth',
+        title: 'Sign In Required for Wishlist',
+        message: 'Please sign in to bookmark and save authentic handloom items to your personal wishlist.',
+        primaryBtn: {
+          text: 'Sign In to Account →',
+          href: `/auth/signin?redirect=${encodeURIComponent('/products/' + product.productId)}&reason=auth_required`,
+        },
+        secondaryBtn: {
+          text: 'Create New Account',
+          href: `/auth/signup?redirect=${encodeURIComponent('/products/' + product.productId)}`,
+        },
+      });
+      return;
+    }
+
     const stored = localStorage.getItem('kb_wishlist');
     let list: any[] = stored ? JSON.parse(stored) : [];
     if (isWishlisted) {
       list = list.filter(p => (p.productId || p.id) !== product.productId);
       setIsWishlisted(false);
+      showModal({
+        type: 'info',
+        title: 'Removed from Wishlist',
+        message: `"${product.name}" was removed from your wishlist.`,
+      });
     } else {
       list.push(product);
       setIsWishlisted(true);
+      showModal({
+        type: 'success',
+        title: 'Saved to Wishlist',
+        message: `♥ "${product.name}" has been bookmarked to your wishlist.`,
+        primaryBtn: {
+          text: 'View Wishlist →',
+          href: '/wishlist',
+        },
+        secondaryBtn: {
+          text: 'Continue Browsing',
+        },
+      });
     }
     localStorage.setItem('kb_wishlist', JSON.stringify(list));
   };
@@ -97,7 +144,7 @@ export default function ProductDetailPage() {
         ? `${product.name} (${cutLength}m Cut)`
         : product.name;
 
-      await fetch('/api/cart/items', {
+      const res = await fetch('/api/cart/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,14 +165,57 @@ export default function ProductDetailPage() {
           }
         })
       });
+      const data = await res.json();
+
+      if (res.status === 401 || data.requiresAuth) {
+        showModal({
+          type: 'auth',
+          title: 'Sign In Required to Shop',
+          message: 'An active account session is required to add items to your shopping bag or proceed to checkout.',
+          primaryBtn: {
+            text: 'Sign In to Account →',
+            href: `/auth/signin?redirect=${encodeURIComponent('/products/' + product.productId)}&reason=auth_required`,
+          },
+          secondaryBtn: {
+            text: 'Create New Account',
+            href: `/auth/signup?redirect=${encodeURIComponent('/products/' + product.productId)}`,
+          },
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        showModal({
+          type: 'error',
+          title: 'Unable to Add to Bag',
+          message: data.error || 'Could not add item to bag. Please try again.',
+        });
+        return;
+      }
 
       if (proceedToCart) {
         router.push('/cart');
       } else {
-        setAddedToast(true);
-        setTimeout(() => setAddedToast(false), 3500);
+        showModal({
+          type: 'success',
+          title: 'Garment Added to Shopping Bag',
+          message: `✓ "${itemName}" has been added to your shopping bag!`,
+          primaryBtn: {
+            text: 'View Bag & Checkout →',
+            href: '/cart',
+          },
+          secondaryBtn: {
+            text: 'Continue Browsing',
+          },
+        });
       }
-    } catch (e) { }
+    } catch (e: any) {
+      showModal({
+        type: 'error',
+        title: 'Connection Error',
+        message: 'Could not connect to the store servers. Please check your connection.',
+      });
+    }
   };
 
   if (isLoading) {
@@ -153,13 +243,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {/* Toast Notification */}
-      {addedToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-black text-white px-5 py-3 rounded-kb-pill text-xs font-bold shadow-2xl flex items-center gap-3">
-          <span>✓ Added {qty}x to your bag!</span>
-          <Link href="/cart" className="underline text-emerald-400 font-bold">Go to Bag →</Link>
-        </div>
-      )}
 
       {/* Breadcrumb Navigation */}
       <nav className="text-xs text-neutral-400 mb-6 flex items-center gap-2">
