@@ -6,6 +6,7 @@ import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
 import { useToast } from '@/components/ToastContext';
+import { useLoadingOverlay } from '@/components/LoadingOverlayContext';
 import { SmoothLoader, SmoothLoadingOverlay } from '@/components/SmoothLoader';
 import { authFetch } from '@/lib/clientAuth';
 
@@ -28,6 +29,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { showModal } = useModalAlert();
   const { showToast } = useToast();
+  const { showLoader, hideLoader } = useLoadingOverlay();
   const [step, setStep] = useState<number>(1);
   const [cart, setCart] = useState<any>({ items: [], subtotal: 0, total: 0, shippingFee: 0, discountAmount: 0 });
   const [user, setUser] = useState<any>(null);
@@ -246,6 +248,7 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true);
+    showLoader('Connecting to Cashfree Secure Checkout Gateway...');
     try {
       const effectiveSessionId = user?.id || 'default-guest';
       const res = await authFetch('/api/payments/cashfree/create-order', {
@@ -270,6 +273,7 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         setIsSubmitting(false);
+        hideLoader();
         showToast({
           type: 'error',
           title: 'Cashfree Error',
@@ -297,6 +301,7 @@ export default function CheckoutPage() {
       }
     } catch (err: any) {
       setIsSubmitting(false);
+      hideLoader();
       showToast({
         type: 'error',
         title: 'Gateway Error',
@@ -318,6 +323,7 @@ export default function CheckoutPage() {
 
     setErrorMsg(null);
     setIsSubmitting(true);
+    showLoader('Confirming order with Kalwaral Store Hub & locking consignment...');
     try {
       const effectiveSessionId = user?.id || 'default-guest';
       const res = await authFetch('/api/orders', {
@@ -346,6 +352,7 @@ export default function CheckoutPage() {
 
       if (res.status === 401 || data.requiresAuth) {
         setIsSubmitting(false);
+        hideLoader();
         showToast({
           type: 'warning',
           title: 'Sign In Required',
@@ -369,6 +376,7 @@ export default function CheckoutPage() {
 
       if (data.success && data.order) {
         setIsSubmitting(false);
+        hideLoader();
         showToast({
           type: 'success',
           title: 'Order Confirmed!',
@@ -389,6 +397,7 @@ export default function CheckoutPage() {
         });
       } else {
         setIsSubmitting(false);
+        hideLoader();
         setErrorMsg(data.error || 'Failed to place order. Please try again.');
         showToast({
           type: 'error',
@@ -403,6 +412,7 @@ export default function CheckoutPage() {
       }
     } catch (e: any) {
       setIsSubmitting(false);
+      hideLoader();
       setErrorMsg(e.message || 'Error communicating with server');
       showToast({
         type: 'error',

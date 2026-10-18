@@ -65,7 +65,7 @@ async function main() {
     user: username,
     password,
     ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 20000,
   });
 
   try {

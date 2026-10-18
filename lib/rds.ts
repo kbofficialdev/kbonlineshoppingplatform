@@ -7,7 +7,18 @@ const RDS_PORT = parseInt(process.env.RDS_PORT || '5432', 10);
 const RDS_DATABASE = process.env.RDS_DATABASE || 'postgres';
 const RDS_USERNAME = process.env.RDS_USERNAME || 'Sudoapt1729';
 
-AWS.config.update({ region: RDS_REGION });
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  AWS.config.update({
+    region: RDS_REGION,
+    credentials: new AWS.Credentials({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID.trim(),
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY.trim(),
+      sessionToken: process.env.AWS_SESSION_TOKEN ? process.env.AWS_SESSION_TOKEN.trim() : undefined,
+    }),
+  });
+} else {
+  AWS.config.update({ region: RDS_REGION });
+}
 
 interface CachedToken {
   token: string;
@@ -71,7 +82,7 @@ export function createRDSClient(): Client {
     user: RDS_USERNAME,
     password,
     ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 20000,
   });
 }
 
@@ -91,7 +102,7 @@ export function getRDSPool(): Pool {
       ssl: { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 20000,
     });
   }
   return sharedPool;
@@ -110,7 +121,7 @@ export async function testRDSConnection(): Promise<{ success: boolean; version?:
     user: RDS_USERNAME,
     password: token,
     ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 20000,
   });
 
   try {

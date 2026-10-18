@@ -109,8 +109,15 @@ export async function POST(req: NextRequest) {
       const protocol = req.nextUrl.protocol || 'http:';
       const verifyUrl = `${protocol}//${host}/api/auth/verify-email?token=${verificationToken}`;
 
-      await sendOtpEmail(user.email, user.name, otp);
-      await sendEmailVerificationLink(user.email, user.name, verifyUrl);
+      // Dispatch 6-digit OTP email & 5-minute activation link asynchronously in background
+      Promise.allSettled([
+        sendOtpEmail(user.email, user.name, otp),
+        sendEmailVerificationLink(user.email, user.name, verifyUrl),
+      ]).then(() => {
+        console.log(`[SIGNIN NOTIFICATIONS DISPATCHED] Customer: ${user.email}`);
+      }).catch((e) => {
+        console.error(`[SIGNIN NOTIFICATIONS ERROR] ${user.email}:`, e);
+      });
 
       return NextResponse.json({
         success: true,

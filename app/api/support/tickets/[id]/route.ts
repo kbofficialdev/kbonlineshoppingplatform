@@ -7,19 +7,23 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = await verifyAuth(req);
-    if (!auth) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const ticket = db.getSupportTicketById(params.id);
     if (!ticket) {
       return NextResponse.json({ error: 'Support ticket not found' }, { status: 404 });
     }
 
-    // Permission check: admin or owner
-    if (auth.role !== 'ADMIN' && ticket.userId !== auth.userId) {
-      return NextResponse.json({ error: 'Access denied to this ticket' }, { status: 403 });
+    const auth = verifyAuth(req);
+
+    if (auth) {
+      // Permission check: admin or owner
+      if (auth.role !== 'ADMIN' && ticket.userId !== auth.userId) {
+        return NextResponse.json({ error: 'Access denied to this ticket' }, { status: 403 });
+      }
+    } else {
+      const email = req.nextUrl.searchParams.get('email')?.toLowerCase().trim();
+      if (!email || email !== ticket.customerEmail.toLowerCase().trim()) {
+        return NextResponse.json({ error: 'Authentication or matching email required to view ticket' }, { status: 401 });
+      }
     }
 
     return NextResponse.json({

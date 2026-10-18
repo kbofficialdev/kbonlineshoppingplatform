@@ -659,8 +659,13 @@ class DatabaseStore {
         }
       }
 
+      const safeStoreSettings = {
+        ...this.storeSettings,
+        cashfreeSecretKey: undefined,
+      };
+
       const dataToSave = {
-        storeSettings: this.storeSettings,
+        storeSettings: safeStoreSettings,
         users: this.users,
         addresses: this.addresses,
         paymentMethods: this.paymentMethods,

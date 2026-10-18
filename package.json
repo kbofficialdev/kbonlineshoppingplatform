@@ -15,6 +15,7 @@
     "start:services": "node orchestrator.js",
     "test:visual": "node tests/visual/run-visual-tests.js",
     "test:rds": "node scripts/test-rds.js",
+    "migrate:rds": "node scripts/migrate-to-rds.js",
     "import:banners": "node scripts/import-external-banner.js"
   },
   "devDependencies": {

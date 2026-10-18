@@ -7,6 +7,7 @@ import TopProgressBar from '@/components/TopProgressBar';
 import MobileBottomDock from '@/components/MobileBottomDock';
 import { ModalProvider } from '@/components/ModalContext';
 import { ToastProvider } from '@/components/ToastContext';
+import { LoadingOverlayProvider } from '@/components/LoadingOverlayContext';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://kbfashions.in'),
@@ -40,14 +41,16 @@ export default function RootLayout({
       <body className="bg-[#f8f9fa] text-neutral-900 font-sans antialiased selection:bg-neutral-900 selection:text-white min-h-screen flex flex-col justify-between">
         <TopProgressBar />
         <ToastProvider>
-          <ModalProvider>
-            <Header />
-            <main className="flex-1 pt-24 sm:pt-[96px] pb-20 sm:pb-0">
-              {children}
-            </main>
-            <MobileBottomDock />
-            <Footer />
-          </ModalProvider>
+          <LoadingOverlayProvider>
+            <ModalProvider>
+              <Header />
+              <main className="flex-1 pt-24 sm:pt-[96px] pb-20 sm:pb-0">
+                {children}
+              </main>
+              <MobileBottomDock />
+              <Footer />
+            </ModalProvider>
+          </LoadingOverlayProvider>
         </ToastProvider>
       </body>
     </html>

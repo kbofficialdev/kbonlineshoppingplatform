@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setClientSession } from '@/lib/clientAuth';
 import { SmoothLoader } from '@/components/SmoothLoader';
 import { useToast } from '@/components/ToastContext';
+import { useLoadingOverlay } from '@/components/LoadingOverlayContext';
 import AuthBanner from '@/components/AuthBanner';
 
 function SignInContent() {
@@ -17,6 +18,7 @@ function SignInContent() {
   const urlError = searchParams.get('error');
 
   const { showToast } = useToast();
+  const { showLoader, hideLoader } = useLoadingOverlay();
 
   const [mode, setMode] = useState<'PASSWORD' | 'OTP'>('PASSWORD');
   const [emailOrPhone, setEmailOrPhone] = useState<string>('');
@@ -35,6 +37,7 @@ function SignInContent() {
     e.preventDefault();
     setErrorMsg(null);
     setIsLoading(true);
+    showLoader('Verifying credentials & loading profile...');
 
     try {
       const res = await fetch('/api/auth/signin', {
@@ -86,6 +89,7 @@ function SignInContent() {
       });
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 
@@ -98,6 +102,7 @@ function SignInContent() {
     }
     setErrorMsg(null);
     setIsLoading(true);
+    showLoader('Dispatching 6-digit verification code...');
 
     try {
       const res = await fetch('/api/auth/send-otp', {
@@ -127,6 +132,7 @@ function SignInContent() {
       setErrorMsg(e.message || 'Error communicating with server');
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 
@@ -139,6 +145,7 @@ function SignInContent() {
     }
     setErrorMsg(null);
     setIsLoading(true);
+    showLoader('Verifying code & establishing session...');
 
     try {
       const res = await fetch('/api/auth/verify-otp', {
@@ -178,6 +185,7 @@ function SignInContent() {
       });
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 

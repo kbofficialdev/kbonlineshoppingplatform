@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setClientSession } from '@/lib/clientAuth';
 import { SmoothLoader } from '@/components/SmoothLoader';
 import { useToast } from '@/components/ToastContext';
+import { useLoadingOverlay } from '@/components/LoadingOverlayContext';
 import AuthBanner from '@/components/AuthBanner';
 
 function SignUpContent() {
@@ -13,6 +14,7 @@ function SignUpContent() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
   const { showToast } = useToast();
+  const { showLoader, hideLoader } = useLoadingOverlay();
 
   const [step, setStep] = useState<'REGISTER' | 'OTP'>('REGISTER');
   const [name, setName] = useState<string>('');
@@ -29,9 +31,14 @@ function SignUpContent() {
     e.preventDefault();
     setErrorMsg(null);
     setIsLoading(true);
+    showLoader('Creating your account & preparing security code...');
 
     try {
-      const formattedPhone = phone.trim().startsWith('+91') ? phone.trim() : `+91${phone.trim()}`;
+      const cleanPhone = phone.trim().replace(/\D/g, '');
+      const formattedPhone = phone.trim().startsWith('+91')
+        ? phone.trim()
+        : (cleanPhone.length === 10 ? `+91${cleanPhone}` : phone.trim());
+
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,6 +90,7 @@ function SignUpContent() {
       });
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 
@@ -94,6 +102,7 @@ function SignUpContent() {
     }
     setErrorMsg(null);
     setIsLoading(true);
+    showLoader('Activating your account & establishing session...');
 
     try {
       const formattedPhone = phone.trim().startsWith('+91') ? phone.trim() : `+91${phone.trim()}`;
@@ -128,11 +137,13 @@ function SignUpContent() {
       setErrorMsg(e.message || 'Error communicating with server');
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 
   const handleResendOtp = async () => {
     setIsLoading(true);
+    showLoader('Generating & dispatching fresh security code...');
     try {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
@@ -154,6 +165,7 @@ function SignUpContent() {
       setErrorMsg(e.message || 'Error communicating with server');
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 

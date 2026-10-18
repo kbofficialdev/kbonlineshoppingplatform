@@ -61,9 +61,13 @@ export async function POST(req: NextRequest) {
     user.otpExpiresAt = expiresAt;
     db.saveUser(user);
 
-    // Send real email via Google SMTP (Nodemailer)
+    // Send real email via Google SMTP (Nodemailer) in background
     const { sendOtpEmail } = await import('@/lib/email');
-    const mailRes = await sendOtpEmail(user.email, user.name, otp);
+    sendOtpEmail(user.email, user.name, otp).then(mailRes => {
+      console.log(`[OTP DISPATCHED] to ${user.email}:`, mailRes.success);
+    }).catch(err => {
+      console.error(`[OTP DISPATCH ERROR] to ${user.email}:`, err);
+    });
 
     db.addAuditLog(
       user.email,
@@ -71,13 +75,13 @@ export async function POST(req: NextRequest) {
       'OTP_GENERATED_AND_DISPATCHED',
       'USER',
       user.id,
-      { success: mailRes.success, messageId: mailRes.messageId }
+      { otpDispatched: true }
     );
 
     return NextResponse.json({
       success: true,
       message: `OTP sent successfully to ${user.email}. Please check your inbox.`,
-      mailDispatched: mailRes.success,
+      mailDispatched: true,
       devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
     });
   } catch (err: any) {

@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { authFetch } from '@/lib/clientAuth';
 import { useModalAlert } from '@/components/ModalContext';
 import { useToast } from '@/components/ToastContext';
+import { useLoadingOverlay } from '@/components/LoadingOverlayContext';
 import { SmoothLoader } from '@/components/SmoothLoader';
 import { detectAbuseLanguage } from '@/lib/abuseFilter';
 
 export default function SupportPage() {
   const { showModal } = useModalAlert();
   const { showToast } = useToast();
+  const { showLoader, hideLoader } = useLoadingOverlay();
 
   const [user, setUser] = useState<any>(null);
   const [tickets, setTickets] = useState<any[]>([]);
@@ -20,6 +22,12 @@ export default function SupportPage() {
 
   // Modal: Create Ticket
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [guestName, setGuestName] = useState<string>('');
+  const [guestEmail, setGuestEmail] = useState<string>('');
+  const [guestPhone, setGuestPhone] = useState<string>('');
+  const [trackTicketNum, setTrackTicketNum] = useState<string>('');
+  const [guestMode, setGuestMode] = useState<'CREATE' | 'TRACK'>('CREATE');
+
   const [newCategory, setNewCategory] = useState<string>('ORDER_ISSUE');
   const [newPriority, setNewPriority] = useState<string>('MEDIUM');
   const [newOrderId, setNewOrderId] = useState<string>('');
@@ -123,12 +131,40 @@ export default function SupportPage() {
       return;
     }
 
+    if (!user) {
+      if (!guestName.trim()) {
+        showToast({
+          type: 'warning',
+          title: 'Name Required',
+          message: 'Please enter your name so our support team can address you.',
+        });
+        return;
+      }
+      if (!guestEmail.trim()) {
+        showToast({
+          type: 'warning',
+          title: 'Email Required',
+          message: 'Please enter your email so we can send ticket updates & responses.',
+        });
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
-      const res = await authFetch('/api/support/tickets', {
+      showLoader('Submitting ticket to Kalwaral Support Desk...');
+      const res = await fetch('/api/support/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(typeof window !== 'undefined' && localStorage.getItem('kb_session_token')
+            ? { Authorization: `Bearer ${localStorage.getItem('kb_session_token')}` }
+            : {}),
+        },
         body: JSON.stringify({
+          customerName: !user ? guestName.trim() : undefined,
+          customerEmail: !user ? guestEmail.trim() : undefined,
+          customerPhone: !user ? guestPhone.trim() : undefined,
           subject: newSubject.trim(),
           category: newCategory,
           priority: newPriority,
@@ -148,7 +184,12 @@ export default function SupportPage() {
         setNewSubject('');
         setNewMessage('');
         setNewOrderId('');
-        loadSupportData();
+        if (data.ticket) {
+          setSelectedTicket(data.ticket);
+        }
+        if (user) {
+          loadSupportData();
+        }
       } else {
         showModal({
           type: 'error',
@@ -164,6 +205,7 @@ export default function SupportPage() {
       });
     } finally {
       setIsSubmitting(false);
+      hideLoader();
     }
   };
 
@@ -183,10 +225,19 @@ export default function SupportPage() {
 
     try {
       setIsSendingReply(true);
-      const res = await authFetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
+      showLoader('Posting reply to ticket thread...');
+      const res = await fetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: replyMessage.trim() }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(typeof window !== 'undefined' && localStorage.getItem('kb_session_token')
+            ? { Authorization: `Bearer ${localStorage.getItem('kb_session_token')}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          message: replyMessage.trim(),
+          customerEmail: user ? undefined : (guestEmail.trim() || selectedTicket.customerEmail),
+        }),
       });
 
       const data = await res.json();
@@ -198,12 +249,14 @@ export default function SupportPage() {
         });
         setReplyMessage('');
         // Refresh active ticket
-        const updatedRes = await authFetch(`/api/support/tickets/${selectedTicket.id}`);
+        const updatedRes = await fetch(`/api/support/tickets/${selectedTicket.id}?email=${encodeURIComponent(selectedTicket.customerEmail)}`);
         const updatedData = await updatedRes.json();
         if (updatedData.success) {
           setSelectedTicket(updatedData.ticket);
         }
-        loadSupportData();
+        if (user) {
+          loadSupportData();
+        }
       } else {
         showModal({
           type: 'error',
@@ -219,6 +272,51 @@ export default function SupportPage() {
       });
     } finally {
       setIsSendingReply(false);
+      hideLoader();
+    }
+  };
+
+  const handleTrackTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trackTicketNum.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'Reference Required',
+        message: 'Please enter your Ticket Reference (e.g. TKT-2026-...) or registered Email.',
+      });
+      return;
+    }
+    showLoader('Searching ticket records...');
+    try {
+      const q = trackTicketNum.trim();
+      const isEmail = q.includes('@');
+      const url = isEmail
+        ? `/api/support/tickets?email=${encodeURIComponent(q)}`
+        : `/api/support/tickets?ticketNumber=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (res.ok && data.success && data.tickets && data.tickets.length > 0) {
+        setSelectedTicket(data.tickets[0]);
+        showToast({
+          type: 'success',
+          title: 'Ticket Found',
+          message: `Opened Ticket #${data.tickets[0].ticketNumber}`,
+        });
+      } else {
+        showModal({
+          type: 'error',
+          title: 'Ticket Not Found',
+          message: `No active support record found matching "${q}". Please check your ticket number or submit a new inquiry below.`,
+        });
+      }
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Search Error',
+        message: 'Could not connect to ticket service.',
+      });
+    } finally {
+      hideLoader();
     }
   };
 
@@ -288,23 +386,210 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* If user not logged in */}
+        {/* Guest Support Desk (Unauthenticated Access) */}
         {!user && !isLoading && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-4 shadow-sm">
-            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl">
-              🔒
-            </div>
-            <h2 className="text-lg font-bold text-neutral-900">Sign In to Access Your Support Tickets</h2>
-            <p className="text-xs text-neutral-500 max-w-md mx-auto">
-              Please sign in with your customer account to view past inquiries, track active resolutions, or raise a new ticket with our village store.
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/auth/signin?redirect=/support"
-                className="inline-block bg-black text-white text-xs font-bold px-8 py-3.5 rounded-full hover:bg-neutral-800 transition-colors shadow-md"
-              >
-                Sign In to Support Desk →
-              </Link>
+          <div className="space-y-6">
+            {/* Guest Action Header & Mode Toggle */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                <div>
+                  <span className="text-[10px] font-black tracking-widest text-blue-600 uppercase bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+                    Accessible To All Patrons
+                  </span>
+                  <h2 className="text-xl font-black text-neutral-900 mt-2">
+                    KB Fashions Grievance & Artisan Support Desk
+                  </h2>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    No account required. Submit inquiries, product questions, or statutory grievances directly.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    id="guest-tab-create-btn"
+                    onClick={() => setGuestMode('CREATE')}
+                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                      guestMode === 'CREATE'
+                        ? 'bg-neutral-900 text-white shadow-sm'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    }`}
+                  >
+                    ➕ Raise a Ticket
+                  </button>
+                  <button
+                    type="button"
+                    id="guest-tab-track-btn"
+                    onClick={() => setGuestMode('TRACK')}
+                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                      guestMode === 'TRACK'
+                        ? 'bg-neutral-900 text-white shadow-sm'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    }`}
+                  >
+                    🔍 Track Ticket
+                  </button>
+                  <Link
+                    href="/auth/signin?redirect=/support"
+                    className="px-4 py-2 text-xs font-bold rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 transition-all ml-1"
+                  >
+                    Sign In →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Mode 1: Raise Ticket Form */}
+              {guestMode === 'CREATE' && (
+                <form onSubmit={handleCreateTicket} className="pt-6 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Your Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="e.g. Ramesh Kumar"
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Email Address *</label>
+                      <input
+                        type="email"
+                        required
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        placeholder="e.g. ramesh@example.com"
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Phone Number (Optional)</label>
+                      <input
+                        type="tel"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Category *</label>
+                      <select
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900 bg-white"
+                      >
+                        <option value="ORDER_ISSUE">Order / Delivery Inquiries</option>
+                        <option value="WEAVING_ADVICE">Artisan / Fabric Consultation</option>
+                        <option value="DELIVERY_STATUS">10 km Local Delivery</option>
+                        <option value="PRODUCT_QUERY">Product Details & Sizes</option>
+                        <option value="BILLING_PAYMENT">Payment & Refund</option>
+                        <option value="GRIEVANCE_RULE_5_9">Consumer Rule 5(9) Grievance</option>
+                        <option value="OTHER">General Feedback / Inquiries</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Priority</label>
+                      <select
+                        value={newPriority}
+                        onChange={(e) => setNewPriority(e.target.value)}
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900 bg-white"
+                      >
+                        <option value="LOW">Low (48h SLA)</option>
+                        <option value="MEDIUM">Standard (24h SLA)</option>
+                        <option value="HIGH">High (12h SLA)</option>
+                        <option value="URGENT">Urgent (6h SLA)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Order ID (Optional)</label>
+                      <input
+                        type="text"
+                        value={newOrderId}
+                        onChange={(e) => setNewOrderId(e.target.value)}
+                        placeholder="e.g. KB-172900"
+                        className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">Subject / Summary *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newSubject}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                      placeholder="Brief summary of your inquiry..."
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">Detailed Message *</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={newMessage}
+                      onChange={(e) => handleMessageChange(e.target.value)}
+                      placeholder="Describe your inquiry in detail. Our Kalwaral village support desk responds directly..."
+                      className="w-full text-xs p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900 resize-none"
+                    ></textarea>
+                    {abuseWarning && (
+                      <p className="text-xs text-red-600 font-semibold mt-1">{abuseWarning}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-[11px] text-neutral-400">
+                      ⚡ Guaranteed response within 6–24 hours as per Rule 5(9)
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-black text-white text-xs font-bold px-8 py-3 rounded-full hover:bg-neutral-800 transition-all shadow-md disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit Support Ticket →'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Mode 2: Track Ticket by Number or Email */}
+              {guestMode === 'TRACK' && (
+                <form onSubmit={handleTrackTicket} className="pt-6 space-y-4 max-w-lg">
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">
+                      Ticket Reference Number or Registered Email
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={trackTicketNum}
+                        onChange={(e) => setTrackTicketNum(e.target.value)}
+                        placeholder="e.g. TKT-2026-12345 or your-email@domain.com"
+                        className="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-neutral-900"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-black text-white text-xs font-bold px-6 py-2.5 rounded-xl hover:bg-neutral-800 transition-all shadow-sm"
+                      >
+                        Search
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 mt-1.5">
+                      Enter the ticket number received upon submission, or the email address used to raise the inquiry.
+                    </p>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

@@ -280,3 +280,41 @@ model Banner {
   @@map("banners")
 }
 
+model SupportTicket {
+  id              String          @id @default(cuid())
+  ticketNumber    String          @unique @map("ticket_number")
+  userId          String?         @map("user_id")
+  customerName    String          @map("customer_name")
+  customerEmail   String          @map("customer_email")
+  customerPhone   String          @map("customer_phone")
+  category        String          @default("ORDER_ISSUE") // ORDER_ISSUE, WEAVING_ADVICE, DELIVERY_STATUS, PRODUCT_QUERY, BILLING_PAYMENT, GRIEVANCE_RULE_5_9, OTHER
+  priority        String          @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  orderId         String?         @map("order_id")
+  subject         String
+  status          String          @default("OPEN") // OPEN, IN_PROGRESS, WAITING_FOR_CUSTOMER, REOPENED, RESOLVED, CLOSED
+  slaHours        Int             @default(24) @map("sla_hours")
+  assignedTo      String?         @map("assigned_to")
+  firstResponseAt DateTime?       @map("first_response_at")
+  resolvedAt      DateTime?       @map("resolved_at")
+  closedAt        DateTime?       @map("closed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  messages        TicketMessage[]
+
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id          String        @id @default(cuid())
+  ticketId    String        @map("ticket_id")
+  senderRole  String        @map("sender_role") // CUSTOMER, ADMIN, SUPPORT_AGENT
+  senderName  String        @map("sender_name")
+  message     String
+  attachments Json?         @default("[]")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_messages")
+}
+
+
