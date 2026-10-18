@@ -137,6 +137,10 @@ export default function Header() {
     }
   };
 
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <header
       id="main-store-header"

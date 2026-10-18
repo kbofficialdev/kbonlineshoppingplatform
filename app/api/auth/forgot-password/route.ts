@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
     user.resetExpiresAt = resetExpiresAt;
     db.saveUser(user);
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://kbfashions.in'}/auth/reset-password?token=${resetToken}`;
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'kbfashions.in';
+    const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
+    const resetUrl = `${protocol}://${host}/auth/reset-password?token=${resetToken}`;
 
     const { sendPasswordResetEmail } = await import('@/lib/email');
     await sendPasswordResetEmail(user.email, user.name, resetUrl);

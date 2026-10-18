@@ -54,18 +54,15 @@ export function SmoothLoadingOverlay({
   submessage,
 }: SmoothLoadingOverlayProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-xs transition-opacity animate-fadeIn">
-      <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 max-w-xs w-full mx-4 text-center space-y-3">
-        <div className="flex justify-center">
-          <SmoothLoader size="lg" color="black" />
-        </div>
-        <div>
-          <div className="text-sm font-bold text-neutral-900">{message}</div>
-          {submessage && (
-            <div className="text-xs text-neutral-500 mt-1">{submessage}</div>
-          )}
-        </div>
-      </div>
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-0 z-[99999] bg-black/45 backdrop-blur-[2px] flex items-center justify-center select-none animate-in fade-in duration-150"
+    >
+      <div
+        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-[6px] sm:border-[7px] border-white/25 border-t-white animate-spin"
+        style={{ animationDuration: '0.85s' }}
+      />
     </div>
   );
 }

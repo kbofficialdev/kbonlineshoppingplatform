@@ -39,9 +39,10 @@ export async function POST(req: NextRequest) {
     const invoiceNumber = `BILL-2026-${Date.now().toString().slice(-6)}`;
     const now = new Date().toISOString();
 
-    const host = req.headers.get('host') || 'kbfashions.in';
+    // Dynamically derive host and protocol from incoming request (handles custom domains, staging, preview, and local)
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'kbfashions.in';
     const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+    const appUrl = `${protocol}://${host}`;
     const returnUrl = `${appUrl}/checkout/cashfree-return?order_id=${orderId}`;
 
     // Clean phone number for Cashfree

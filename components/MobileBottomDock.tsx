@@ -61,6 +61,10 @@ export default function MobileBottomDock() {
   const isCart = pathname.startsWith('/cart');
   const isAccount = pathname.startsWith('/account') || pathname.startsWith('/auth');
 
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <nav
       id="mobile-bottom-dock"

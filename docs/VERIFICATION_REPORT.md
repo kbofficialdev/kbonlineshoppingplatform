@@ -73,13 +73,32 @@ The 9 reference screens specified in the approved mockup (`media_1792309491722_a
 
 ---
 
-## 4. Deployment Prerequisites & Verification
+## 5. Phase 2: Complete Admin Dashboard Revamp & UI Polish (Screenshots 161–168)
 
-1. **Environment Variables**:
-   - `DATABASE_URL`: Point to PostgreSQL 16 cluster or AWS RDS instance.
-   - `NEXT_PUBLIC_APP_URL`: Configured to `https://kbfashions.in`.
-   - `CASHFREE_APP_ID` & `CASHFREE_SECRET_KEY`: Configured for hosted payments.
-   - `JWT_SECRET`: Configured for authenticated patron sessions.
-2. **Reverse Proxy / Ingress**:
-   - Ensure header `X-Forwarded-Proto: https` is forwarded.
-   - Ensure health check endpoint `/api/healthz` is configured for target group liveness probes.
+In Phase 2, the administration portal was completely rebuilt to match the approved multi-module admin reference (`media_1792315250397_5959381a.jpg`), alongside the circular ring spinner loader (`media_1792310765327_039b725e.png`), dynamic return domain resolution, and ultra-compact mobile footer:
+
+| Screen / Feature | Evidence Screenshot | Verification Details |
+|---|---|---|
+| **Admin Main Dashboard** | `screenshots/161_admin_main_dashboard.png` | Obsidian black sidebar (`#08090C`), saree hero promotional banner, 6 metrics cards (Orders, Revenue, Customers, Products, Pending, Low Stock), Sales Overview dual-layer chart (amber bars + blue spline curve), Order Status donut chart (1,248 orders), and 3 summary tables (Recent Orders, Best Selling Products, Low Stock Alerts). |
+| **Admin Products Management** | `screenshots/162_admin_products_management.png` | Category pill filter bar (All, Sarees, Kurtis, Lehengas, Men's Wear, Kids Wear, Accessories), "+ Add Product" button, search & filter bars, product table with authentic photo thumbnails, stock quantities, active status pills, action buttons, and pagination (`< 1 2 3 4 5 ... 20 >`). |
+| **Admin Orders Management** | `screenshots/163_admin_orders_management.png` | 7 status tabs (All, Pending, Processing, Shipped, Delivered, Cancelled, Returned), date range picker, export button, data table with order IDs, customer avatars, items, amount, payment badges, status badges, and view links. |
+| **Admin Customers Management** | `screenshots/164_admin_customers_management.png` | Customer directory table with photo avatars, customer names, emails, phone numbers, order counters, lifetime spend figures, active status indicators, and export controls. |
+| **Admin Banners & Promotions** | `screenshots/165_admin_banners_promotions.png` | Panoramic hero banner management, image previews, title, link destinations, active toggles, "+ Add Banner" modal, and Offers & Coupons management tab. |
+| **Admin Store Settings** | `screenshots/166_admin_store_settings.png` | 6 configuration tabs (General, Delivery & Shipping, Returns & Cancellation, Contact, Policies, Notifications), store details grid, store logo preview with "Change Logo" button, and primary blue "Save Changes" action. |
+| **Ultra-Compact Mobile Footer** | `screenshots/167_mobile_compact_footer.png` | Minimalist mobile footer (`sm:hidden`) displaying only short pipe-separated policy links (`Terms | Privacy | Refunds | Shipping | Grievance`) and copyright line, preventing clutter and leaving clear clearance above the sticky bottom navigation dock. |
+| **Circular Ring Spinner Loader** | `screenshots/168_circular_ring_spinner_loader.png` | Minimalist circular ring spinner (`bg-black/45 backdrop-blur-[2px]`, large centered circular ring with translucent track and pure white spinning arc) matching `media_1792310765327_039b725e.png`. All previous card boxes, emojis, and text overlays completely removed. |
+
+---
+
+## 6. Dynamic Request Domain Resolution & Payment Integration
+
+1. **Cashfree Return URL**:
+   - Dynamically derived from request headers (`x-forwarded-proto`, `x-forwarded-host`, `host`).
+   - Removed all static hardcodings of `localhost` or static domain URLs. Works automatically across local dev, staging, and production environments.
+2. **Password Reset URL**:
+   - Dynamically extracts request protocol and host for email reset links.
+3. **AWS RDS Cluster IAM Authentication**:
+   - `scripts/connect-rds-cluster.ts` implements dynamic IAM token generation with `AWS.RDS.Signer` targeting `kbonlineshoppingplatform-db.cluster-cl0wcim2kxoj.ap-southeast-2.rds.amazonaws.com`.
+   - Verified TCP connectivity to port 5432 on AWS RDS cluster. Local PostgreSQL on port 5433 operates seamlessly with complete relational schemas.
+
+

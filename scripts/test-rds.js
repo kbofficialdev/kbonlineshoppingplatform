@@ -20,7 +20,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const region = process.env.RDS_REGION || 'ap-southeast-2';
-const hostname = process.env.RDS_HOSTNAME || 'kbonlineshoppingplatform-db-instance-1.cl0wcim2kxoj.ap-southeast-2.rds.amazonaws.com';
+const hostname = process.env.RDS_HOSTNAME || 'kbonlineshoppingplatform-db.cluster-cl0wcim2kxoj.ap-southeast-2.rds.amazonaws.com';
 const port = parseInt(process.env.RDS_PORT || '5432', 10);
 const database = process.env.RDS_DATABASE || 'postgres';
 const username = process.env.RDS_USERNAME || 'Sudoapt1729';

@@ -11,16 +11,14 @@ export default function CircularContentLoader({
 }: CircularContentLoaderProps) {
   return (
     <div
-      className={`w-full py-8 sm:py-10 flex flex-col items-center justify-center gap-3 select-none ${className}`}
+      className={`w-full py-12 flex flex-col items-center justify-center gap-3 select-none ${className}`}
     >
-      <div className="relative flex items-center justify-center">
-        {/* Outer radial glow */}
-        <div className="w-10 h-10 rounded-full border-2 border-slate-200 border-t-blue-600 animate-spin" />
-        {/* Center dot */}
-        <div className="absolute w-2.5 h-2.5 bg-neutral-900 rounded-full" />
-      </div>
+      <div
+        className="w-12 h-12 rounded-full border-[3.5px] border-neutral-200 border-t-neutral-900 animate-spin"
+        style={{ animationDuration: '0.8s' }}
+      />
       {message && (
-        <span className="text-xs font-bold text-neutral-500 tracking-wide">
+        <span className="text-xs font-semibold text-neutral-500 tracking-wide">
           {message}
         </span>
       )}

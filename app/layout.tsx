@@ -8,9 +8,10 @@ import MobileBottomDock from '@/components/MobileBottomDock';
 import { ModalProvider } from '@/components/ModalContext';
 import { ToastProvider } from '@/components/ToastContext';
 import { LoadingOverlayProvider } from '@/components/LoadingOverlayContext';
+import StoreMainWrapper from '@/components/StoreMainWrapper';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://kbfashions.in'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL),
   title: 'KB FASHIONS — Better Clothes. Better Prices.',
   description: 'KB FASHIONS (Kalwaral, Kamareddy, Telangana) — 20 Years of authentic village retail heritage, handlooms, unstitched suitings & shirtings, Gadwal sarees, and daily essentials.',
   icons: {
@@ -44,9 +45,9 @@ export default function RootLayout({
           <LoadingOverlayProvider>
             <ModalProvider>
               <Header />
-              <main className="flex-1 pt-28 sm:pt-[84px] pb-24 sm:pb-0">
+              <StoreMainWrapper>
                 {children}
-              </main>
+              </StoreMainWrapper>
               <MobileBottomDock />
               <Footer />
             </ModalProvider>
