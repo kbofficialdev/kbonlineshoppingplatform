@@ -20,27 +20,30 @@ export async function PATCH(
     const body = await req.json();
     const { status } = body;
 
-    const allowedStatuses = ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_CUSTOMER', 'RESOLVED', 'CLOSED'];
+    const allowedStatuses = ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_CUSTOMER', 'RESOLVED', 'REOPENED', 'CLOSED'];
     if (!allowedStatuses.includes(status)) {
       return NextResponse.json({ error: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` }, { status: 400 });
     }
 
-    // Customers can only mark their own tickets as RESOLVED or CLOSED
-    if (auth.role !== 'ADMIN' && ticket.userId !== auth.userId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-    if (auth.role !== 'ADMIN' && !['RESOLVED', 'CLOSED'].includes(status)) {
-      return NextResponse.json({ error: 'Customers can only mark tickets as resolved or closed' }, { status: 403 });
+    // STRICT GOVERNANCE: Ticket lifecycle statuses are managed exclusively by Store Admin / Support Desk
+    if (auth.role !== 'ADMIN') {
+      return NextResponse.json({
+        error: 'Forbidden: Ticket status is managed exclusively by KB Fashions Support Administrators. Customers cannot modify ticket lifecycle statuses.'
+      }, { status: 403 });
     }
 
-    const updated = db.updateTicketStatus(ticket.id, status, auth.name || 'Store User');
+    let updated: any = null;
+    await db.transaction(() => {
+      updated = db.updateTicketStatus(ticket.id, status, auth.name || 'Store User');
+    });
 
     return NextResponse.json({
       success: true,
       ticket: updated,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    const isTransitionError = err.message?.includes('Invalid ticket transition');
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: isTransitionError ? 400 : 500 });
   }
 }
 

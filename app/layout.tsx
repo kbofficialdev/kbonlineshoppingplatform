@@ -9,6 +9,7 @@ import { ModalProvider } from '@/components/ModalContext';
 import { ToastProvider } from '@/components/ToastContext';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://kbfashions.in'),
   title: 'KB FASHIONS — Better Clothes. Better Prices.',
   description: 'KB FASHIONS (Kalwaral, Kamareddy, Telangana) — 20 Years of authentic village retail heritage, handlooms, unstitched suitings & shirtings, Gadwal sarees, and daily essentials.',
   icons: {
@@ -37,7 +38,7 @@ export default function RootLayout({
         />
         <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
       </head>
-      <body className="bg-gradient-to-b from-[#F8FAFD] via-[#FFFFFF] to-[#F3F5FA] text-kb-black font-sans antialiased selection:bg-kb-blue selection:text-white min-h-screen flex flex-col justify-between">
+      <body className="bg-[#f8f9fa] text-neutral-900 font-sans antialiased selection:bg-neutral-900 selection:text-white min-h-screen flex flex-col justify-between">
         <TopProgressBar />
         <ToastProvider>
           <ModalProvider>

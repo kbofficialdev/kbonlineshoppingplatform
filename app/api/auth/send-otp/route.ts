@@ -13,9 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { emailOrPhone } = parsed.data;
-    const user = db.users.find(
-      u => u.email.toLowerCase() === emailOrPhone.toLowerCase() || u.phone === emailOrPhone
-    );
+    const user = db.findUser(emailOrPhone);
 
     if (!user) {
       return NextResponse.json({ error: 'No account registered with this email or phone number' }, { status: 404 });
@@ -48,6 +46,7 @@ export async function POST(req: NextRequest) {
     user.otpRequestCount = (user.otpRequestCount || 0) + 1;
     if (user.otpRequestCount > 3) {
       user.otpLockedUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      db.saveUser(user);
       return NextResponse.json({
         error: 'Maximum OTP request limit reached (3 requests). For your protection, OTP requests are paused for 10 minutes.',
         isLocked: true,
@@ -60,6 +59,7 @@ export async function POST(req: NextRequest) {
 
     user.otpCode = otp;
     user.otpExpiresAt = expiresAt;
+    db.saveUser(user);
 
     // Send real email via Google SMTP (Nodemailer)
     const { sendOtpEmail } = await import('@/lib/email');

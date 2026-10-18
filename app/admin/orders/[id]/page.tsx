@@ -23,6 +23,32 @@ export default function AdminOrderDetailPage() {
   const [courierPartner, setCourierPartner] = useState<string>('KB 10km Express Runner');
   const [trackingNumber, setTrackingNumber] = useState<string>('');
 
+  const getAllowedNextStages = (currentStatus: string) => {
+    switch (currentStatus) {
+      case 'ORDER_PLACED':
+        return [
+          { value: 'CONFIRMED', label: 'CONFIRMED (Inspected & Packed at Kalwaral Store)' },
+          { value: 'CANCELLED', label: 'CANCELLED (Cancelled by Admin)' }
+        ];
+      case 'CONFIRMED':
+        return [
+          { value: 'DISPATCHED', label: 'DISPATCHED (In Transit with KB 10km Runner)' },
+          { value: 'CANCELLED', label: 'CANCELLED (Cancelled by Admin before Dispatch)' }
+        ];
+      case 'DISPATCHED':
+        return [
+          { value: 'OUT_FOR_DELIVERY', label: 'OUT_FOR_DELIVERY (Village Runner in Route)' },
+          { value: 'DELIVERED', label: 'DELIVERED (Doorstep Delivery Completed)' }
+        ];
+      case 'OUT_FOR_DELIVERY':
+        return [
+          { value: 'DELIVERED', label: 'DELIVERED (Doorstep Delivery Completed)' }
+        ];
+      default:
+        return [];
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchOrder();
@@ -61,6 +87,8 @@ export default function AdminOrderDetailPage() {
           setStageTitle('Consignment Delivered Successfully');
           setStageDesc('Delivered to recipient. Payment verified.');
           setStageLocation(`Customer Doorstep, ${data.order.villageOrCity}`);
+        } else {
+          setNextStage('');
         }
       }
     } catch (e) {
@@ -175,38 +203,50 @@ export default function AdminOrderDetailPage() {
         <div className="lg:col-span-2 space-y-8">
           {/* Stage Progression Controller Form */}
           <div className="bg-white border border-kbBorder p-6 sm:p-8 rounded-kb-lg shadow-sm space-y-6 text-xs">
-            <h2 className="text-xs font-black uppercase tracking-wider text-neutral-900">
-              Advance Consignment to Next Stage
-            </h2>
+            <div className="flex justify-between items-center border-b border-neutral-100 pb-3">
+              <h2 className="text-xs font-black uppercase tracking-wider text-neutral-900">
+                Advance Consignment to Next Stage
+              </h2>
+              <span className="text-[10px] font-bold bg-neutral-100 text-neutral-700 px-2.5 py-0.5 rounded-full border">
+                Strict Forward-Only Progression
+              </span>
+            </div>
 
-            <form onSubmit={handleAdvanceStage} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Target Stage *</label>
-                  <select
-                    value={nextStage}
-                    onChange={(e) => setNextStage(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight font-bold text-black focus:outline-none focus:ring-1 focus:ring-black text-xs"
-                  >
-                    <option value="CONFIRMED">CONFIRMED (Inspected & Packed)</option>
-                    <option value="DISPATCHED">DISPATCHED (In Transit with Courier)</option>
-                    <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY (With Delivery Agent)</option>
-                    <option value="DELIVERED">DELIVERED (Completed)</option>
-                    <option value="CANCELLED">CANCELLED (Cancelled by Admin)</option>
-                  </select>
-                </div>
+            {order.orderStatus === 'DELIVERED' || order.orderStatus === 'CANCELLED' ? (
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-700 font-medium">
+                ✓ Consignment has reached terminal status (<strong>{order.orderStatus}</strong>). Completed or cancelled orders cannot be reverted or altered.
+              </div>
+            ) : getAllowedNextStages(order.orderStatus).length === 0 ? (
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-700">
+                No forward stages available for current stage <strong>{order.orderStatus}</strong>.
+              </div>
+            ) : (
+              <form onSubmit={handleAdvanceStage} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">Target Stage *</label>
+                    <select
+                      value={nextStage}
+                      onChange={(e) => setNextStage(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight font-bold text-black focus:outline-none focus:ring-1 focus:ring-black text-xs"
+                    >
+                      {getAllowedNextStages(order.orderStatus).map((stg) => (
+                        <option key={stg.value} value={stg.value}>{stg.label}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Current Facility / Location *</label>
-                  <input
-                    type="text"
-                    required
-                    value={stageLocation}
-                    onChange={(e) => setStageLocation(e.target.value)}
-                    placeholder="e.g. Kamareddy Head Post Office"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:outline-none focus:ring-1 focus:ring-black text-xs"
-                  />
-                </div>
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">Current Facility / Location *</label>
+                    <input
+                      type="text"
+                      required
+                      value={stageLocation}
+                      onChange={(e) => setStageLocation(e.target.value)}
+                      placeholder="e.g. Kalwaral Hub / Sadasivanagar Runner Hub"
+                      className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:outline-none focus:ring-1 focus:ring-black text-xs"
+                    />
+                  </div>
 
                 <div className="sm:col-span-2">
                   <label className="font-bold text-neutral-700 block mb-1">Stage Title *</label>
@@ -264,7 +304,8 @@ export default function AdminOrderDetailPage() {
                 </button>
               </div>
             </form>
-          </div>
+          )}
+        </div>
 
           {/* Historical Stage Events Log */}
           <div className="bg-white border border-kbBorder p-6 sm:p-8 rounded-kb-lg shadow-sm space-y-6 text-xs">

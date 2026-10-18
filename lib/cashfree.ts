@@ -50,10 +50,10 @@ export interface CashfreeVerificationResponse {
 }
 
 function getCredentials() {
-  const appId = process.env.CASHFREE_APP_ID || db.storeSettings.cashfreeAppId || '';
-  const secretKey = process.env.CASHFREE_SECRET_KEY || db.storeSettings.cashfreeSecretKey || '';
-  const env = (process.env.CASHFREE_ENV || db.storeSettings.cashfreeEnv || 'sandbox') as 'sandbox' | 'production';
-  const apiVersion = process.env.CASHFREE_API_VERSION || db.storeSettings.cashfreeApiVersion || '2026-01-01';
+  const appId = (process.env.CASHFREE_APP_ID || db.storeSettings.cashfreeAppId || '2321580e485b8ada058705b82c851232').trim();
+  const secretKey = (process.env.CASHFREE_SECRET_KEY || db.storeSettings.cashfreeSecretKey || '').trim();
+  const env = ((process.env.CASHFREE_ENV || db.storeSettings.cashfreeEnv || 'sandbox') as 'sandbox' | 'production').trim();
+  const apiVersion = (process.env.CASHFREE_API_VERSION || db.storeSettings.cashfreeApiVersion || '2026-01-01').trim();
 
   const baseUrl = env === 'production' ? CASHFREE_PRODUCTION_BASE_URL : CASHFREE_SANDBOX_BASE_URL;
 
@@ -228,6 +228,107 @@ export async function verifyCashfreeOrder(orderId: string): Promise<CashfreeVeri
       order_currency: 'INR',
       is_paid: false,
       error: `Network error verifying with Cashfree: ${err.message}`,
+    };
+  }
+}
+
+export interface CashfreeRefundResponse {
+  success: boolean;
+  refund_id: string;
+  cf_refund_id?: string | number;
+  order_id: string;
+  refund_amount: number;
+  refund_currency: string;
+  refund_status: 'SUCCESS' | 'PENDING' | 'CANCELLED' | 'FAILED';
+  refund_note?: string;
+  error?: string;
+  raw?: any;
+}
+
+/**
+ * 3. Initiate Refund via Cashfree Payment Gateway
+ * Official Cashfree Documentation: https://www.cashfree.com/docs/payments/online/refunds
+ */
+export async function createCashfreeRefund(
+  orderId: string,
+  refundAmount: number,
+  refundId: string,
+  refundNote?: string
+): Promise<CashfreeRefundResponse> {
+  const { appId, secretKey, apiVersion, baseUrl } = getCredentials();
+  const isPlaceholder = !appId || appId.includes('PLACEHOLDER') || !secretKey || secretKey.includes('PLACEHOLDER');
+
+  if (isPlaceholder) {
+    console.warn(`[CASHFREE SANDBOX REFUND] Simulated mock refund for order ${orderId}`);
+    return {
+      success: true,
+      refund_id: refundId,
+      cf_refund_id: `CF_REF_${Math.floor(100000 + Math.random() * 900000)}`,
+      order_id: orderId,
+      refund_amount: refundAmount,
+      refund_currency: 'INR',
+      refund_status: 'SUCCESS',
+      refund_note: refundNote || 'Simulated sandbox refund under 7-day assurance policy',
+      raw: { mock: true },
+    };
+  }
+
+  try {
+    const payload = {
+      refund_amount: Number(refundAmount.toFixed(2)),
+      refund_id: refundId,
+      refund_note: refundNote || `Refund for KB Fashions Order ${orderId}`,
+      refund_speed: 'STANDARD',
+    };
+
+    const res = await fetch(`${baseUrl}/orders/${orderId}/refunds`, {
+      method: 'POST',
+      headers: {
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': apiVersion,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('[CASHFREE CREATE REFUND ERROR]', res.status, data);
+      return {
+        success: false,
+        refund_id: refundId,
+        order_id: orderId,
+        refund_amount: refundAmount,
+        refund_currency: 'INR',
+        refund_status: 'FAILED',
+        error: data.message || `Cashfree refund returned HTTP ${res.status}`,
+        raw: data,
+      };
+    }
+
+    return {
+      success: true,
+      refund_id: data.refund_id || refundId,
+      cf_refund_id: data.cf_refund_id,
+      order_id: data.order_id || orderId,
+      refund_amount: data.refund_amount || refundAmount,
+      refund_currency: data.refund_currency || 'INR',
+      refund_status: data.refund_status || 'PENDING',
+      refund_note: data.refund_note,
+      raw: data,
+    };
+  } catch (err: any) {
+    console.error('[CASHFREE REFUND NETWORK ERROR]', err.message);
+    return {
+      success: false,
+      refund_id: refundId,
+      order_id: orderId,
+      refund_amount: refundAmount,
+      refund_currency: 'INR',
+      refund_status: 'FAILED',
+      error: `Network error connecting to Cashfree Refund service: ${err.message}`,
     };
   }
 }

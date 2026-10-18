@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
+    db.loadFromDisk();
     const nonCancelledOrders = db.orders.filter(o => o.orderStatus !== 'CANCELLED');
     const totalRevenue = nonCancelledOrders.reduce((sum, o) => sum + o.totalPaid, 0);
     const totalOrders = db.orders.length;

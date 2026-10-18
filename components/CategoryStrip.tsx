@@ -23,7 +23,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     subtitle: 'Gadwal, Pattu, Nirma & Layered',
     badge: 'Popular',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M4 4c4 0 7 3 7 7v9H4V4z" />
         <path d="M11 11c3 0 6 2 9 5v4h-9v-9z" />
         <path d="M4 8h7" />
@@ -41,7 +41,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     subtitle: 'Raymond Suiting & Meter Cuts',
     badge: 'Unstitched',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <rect x="3" y="6" width="18" height="12" rx="3" />
         <path d="M3 10h18" />
         <path d="M7 6v12" />
@@ -57,7 +57,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     href: '/search?category=Women',
     subtitle: 'Tops, Leggings & Blouse Pieces',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M6 3l3 2 3-2 3 2 3-2v5l-2 3v10H8V11L6 8V3z" />
         <path d="M9 5v4" />
         <path d="M15 5v4" />
@@ -72,7 +72,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     subtitle: 'Kuttu Temple Border for Elders & Puja',
     badge: 'Heritage',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M12 2L4 9v11h16V9L12 2z" />
         <path d="M12 7l4 4-4 4-4-4 4-4z" />
         <path d="M4 17h16" />
@@ -86,7 +86,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     href: '/search?category=Men&type=DHOTI_TOWEL',
     subtitle: 'Traditional Cotton Panchas & Towels',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M5 4h14v16H5z" />
         <path d="M9 4v16" />
         <path d="M5 9h14" />
@@ -101,7 +101,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     href: '/search?category=Men&type=INNER_ESSENTIAL',
     subtitle: 'Combed Cotton (80-100cm) & Kerchiefs',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M7 4h10v3c0 2-2 4-5 4s-5-2-5-4V4z" />
         <path d="M5 7v13h14V7" />
         <path d="M5 7L2 9l2 3 1-1" />
@@ -116,7 +116,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     href: '/search?category=Women&type=BLOUSE_PIECE',
     subtitle: 'Special Designing & Fall-Pico Pieces',
     iconSvg: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <circle cx="12" cy="12" r="9" />
         <path d="M12 3v18" />
         <path d="M3 12h18" />

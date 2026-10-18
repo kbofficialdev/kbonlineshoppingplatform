@@ -302,7 +302,7 @@ export default function HomePage() {
   ).slice(0, 4);
 
   return (
-    <div className="bg-white text-kb-black">
+    <div className="bg-[#f8f9fa] text-kb-black">
       {/* ========================================================================= */}
       {/* 2. GRAND HERO BRAND SHOWCASE (First Page Banner, 100vw Edge-to-Edge)      */}
       {/* ========================================================================= */}
@@ -402,7 +402,7 @@ export default function HomePage() {
             return (
               <article
                 key={product.id}
-                className="group select-none bg-white/95 backdrop-blur-xs border border-slate-200/80 hover:border-kb-blue/60 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(52,120,246,0.14),0_6px_20px_rgba(0,0,0,0.06)] hover:ring-2 hover:ring-kb-blue/20 flex flex-col justify-between relative overflow-hidden"
+                className="group select-none bg-white border border-neutral-200/90 rounded-2xl p-4 hover-elevate-card flex flex-col justify-between relative overflow-hidden"
               >
                 {/* Subtle light colored line animated on hover */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-kb-blue/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

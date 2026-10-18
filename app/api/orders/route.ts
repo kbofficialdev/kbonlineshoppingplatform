@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       timeline: initialTimeline,
     };
 
-    db.orders.unshift(newOrder);
+    db.addOrder(newOrder);
 
     // Record in immutable SHA-256 audit ledger
     db.addAuditLog(

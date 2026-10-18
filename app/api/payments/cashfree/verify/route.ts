@@ -25,36 +25,39 @@ export async function GET(req: NextRequest) {
       const now = new Date().toISOString();
 
       if (order.paymentStatus !== 'CAPTURED') {
-        order.paymentStatus = 'CAPTURED';
-        order.orderStatus = 'CONFIRMED';
-        order.updatedAt = now;
+        // Wrap mutations in db.transaction for ACID rollback safety
+        await db.transaction(async () => {
+          order.paymentStatus = 'CAPTURED';
+          order.orderStatus = 'CONFIRMED';
+          order.updatedAt = now;
 
-        order.timeline.push({
-          id: `tl-${Date.now()}-confirmed`,
-          orderId,
-          stage: 'CONFIRMED',
-          title: 'Cashfree Payment Captured Successfully',
-          description: `Payment of ₹${order.totalPaid} captured via Cashfree Hosted Checkout. Handloom garments queued for inspection.`,
-          location: 'Cashfree PG Gateway',
-          timestamp: now,
+          order.timeline.push({
+            id: `tl-${Date.now()}-confirmed`,
+            orderId,
+            stage: 'CONFIRMED',
+            title: 'Cashfree Payment Captured Successfully',
+            description: `Payment of ₹${order.totalPaid} captured via Cashfree Hosted Checkout. Handloom garments queued for inspection.`,
+            location: 'Cashfree PG Gateway',
+            timestamp: now,
+          });
+
+          // Clear user's shopping bag
+          if (order.userId) {
+            db.clearCart(order.userId);
+          }
+
+          // Audit log
+          db.addAuditLog(
+            order.customerEmail,
+            'CUSTOMER',
+            'PAYMENT_CAPTURED_CASHFREE',
+            'ORDER',
+            orderId,
+            { totalPaid: order.totalPaid, status: 'PAID' }
+          );
         });
 
-        // Clear user's shopping bag
-        if (order.userId) {
-          db.clearCart(order.userId);
-        }
-
-        // Audit log
-        db.addAuditLog(
-          order.customerEmail,
-          'CUSTOMER',
-          'PAYMENT_CAPTURED_CASHFREE',
-          'ORDER',
-          orderId,
-          { totalPaid: order.totalPaid, status: 'PAID' }
-        );
-
-        // Send confirmation email
+        // Send confirmation email asynchronously (outside rollback-sensitive block)
         try {
           const { sendMail } = await import('@/lib/email');
           await sendMail({
@@ -85,11 +88,39 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Handle customer drop-off, active pending session, or failed transaction
+    if (cfVerify.order_status === 'EXPIRED' || cfVerify.order_status === 'FAILED') {
+      if (order.paymentStatus === 'PENDING') {
+        await db.transaction(() => {
+          order.paymentStatus = 'FAILED';
+          order.updatedAt = new Date().toISOString();
+          order.timeline.push({
+            id: `tl-${Date.now()}-failed`,
+            orderId,
+            stage: 'ORDER_PLACED',
+            title: `Cashfree Transaction ${cfVerify.order_status}`,
+            description: `Transaction concluded with status: ${cfVerify.order_status}. The customer may retry or switch to Cash on Delivery.`,
+            location: 'Cashfree PG Gateway',
+            timestamp: new Date().toISOString(),
+          });
+        });
+      }
+    }
+
+    const friendlyMessage =
+      cfVerify.order_status === 'ACTIVE'
+        ? 'Your payment session is still active or was closed before completion. No amount has been deducted. You can retry now or switch payment method.'
+        : cfVerify.order_status === 'EXPIRED'
+        ? 'Your payment session expired. Please restart checkout to generate a fresh payment session.'
+        : cfVerify.order_status === 'FAILED'
+        ? 'Payment attempt was declined or failed at the bank/gateway. Please try again with another method or UPI.'
+        : (cfVerify.error || `Payment status: ${cfVerify.order_status}`);
+
     return NextResponse.json({
       success: false,
       is_paid: false,
       order_status: cfVerify.order_status,
-      message: cfVerify.error || `Payment not completed. Status: ${cfVerify.order_status}`,
+      message: friendlyMessage,
       order,
     });
   } catch (err: any) {
@@ -97,4 +128,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-

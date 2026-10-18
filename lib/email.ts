@@ -208,10 +208,12 @@ export async function sendAccountLockedEmail(to: string, name: string, lockDurat
   return sendMail({ to, subject, html });
 }
 
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://kbfashions.in';
+
 /**
  * Send 5-Minute Secure Email Verification Link
  */
-export async function sendEmailVerificationLink(to: string, name: string, tokenOrUrl: string, baseUrl: string = 'http://localhost:3000'): Promise<SendMailResult> {
+export async function sendEmailVerificationLink(to: string, name: string, tokenOrUrl: string, baseUrl: string = APP_BASE_URL): Promise<SendMailResult> {
   const verifyUrl = tokenOrUrl.startsWith('http') ? tokenOrUrl : `${baseUrl}/api/auth/verify-email?token=${tokenOrUrl}`;
   const subject = `Verify Your KB FASHIONS Account (Link Expires in 5 Minutes)`;
   const html = `
@@ -359,7 +361,7 @@ export async function sendOrderStatusUpdateEmail(
         </div>
 
         <div style="text-align: center; margin-top: 24px;">
-          <a href="http://localhost:3000/orders/${orderId}" style="display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-size: 13px; font-weight: bold;">
+          <a href="${APP_BASE_URL}/orders/${orderId}" style="display: inline-block; background: #000000; color: #ffffff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-size: 13px; font-weight: bold;">
             Track Live Timeline →
           </a>
         </div>

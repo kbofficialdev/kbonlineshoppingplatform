@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Profile picture uploaded and stored in database successfully',
+      avatar: result.avatarUrl,
       avatarUrl: result.avatarUrl,
     });
   } catch (err: any) {

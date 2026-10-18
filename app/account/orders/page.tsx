@@ -71,25 +71,27 @@ export default function AccountOrdersPage() {
               key={order.orderId}
               className="bg-white border border-kbBorder rounded-kb-lg p-6 shadow-sm hover:border-black transition-all space-y-4"
             >
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center pb-4 border-b border-kbBorder gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm text-black">Order #{order.orderId}</span>
-                    <span className="text-xs text-neutral-400 font-mono">• Bill #{order.invoiceNumber}</span>
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center pb-4 border-b border-kbBorder gap-2 min-w-0">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="font-extrabold text-sm text-black break-words break-all">Order #{order.orderId}</span>
+                    <span className="text-xs text-neutral-400 font-mono break-all">• Bill #{order.invoiceNumber}</span>
                   </div>
                   <div className="text-xs text-neutral-500 mt-0.5">
                     Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
                     order.orderStatus === 'DELIVERED'
                       ? 'bg-emerald-100 text-emerald-800'
                       : order.orderStatus === 'DISPATCHED'
                       ? 'bg-blue-100 text-blue-800'
                       : order.orderStatus === 'CONFIRMED'
                       ? 'bg-amber-100 text-amber-800'
+                      : order.orderStatus === 'CANCELLED'
+                      ? 'bg-red-100 text-red-800'
                       : 'bg-neutral-100 text-neutral-800'
                   }`}>
                     {order.orderStatus.replace(/_/g, ' ')}
@@ -103,26 +105,26 @@ export default function AccountOrdersPage() {
               {/* Items summary */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                 {order.items?.map((item: any, idx: number) => (
-                  <div key={idx} className="bg-kbLight p-3 rounded-kb-sm border border-kbBorder flex justify-between items-center">
-                    <div>
-                      <div className="font-bold text-neutral-900">{item.title}</div>
+                  <div key={idx} className="bg-kbLight p-3 rounded-kb-sm border border-kbBorder flex justify-between items-center gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-neutral-900 break-words">{item.title}</div>
                       <div className="text-[10px] text-neutral-500">Size: {item.size} • Qty: {item.qty}</div>
                     </div>
-                    <div className="font-bold text-black">₹{item.totalAmount}</div>
+                    <div className="font-bold text-black shrink-0">₹{item.totalAmount}</div>
                   </div>
                 ))}
               </div>
 
               {/* Actions: View Timeline & View Bill */}
-              <div className="pt-2 flex flex-wrap justify-between items-center gap-3 text-xs">
-                <div className="text-neutral-500">
-                  Recipient: <strong>{order.customerName}</strong> ({order.villageOrCity}, {order.state})
+              <div className="pt-2 flex flex-wrap justify-between items-center gap-3 text-xs min-w-0">
+                <div className="text-neutral-500 min-w-0 break-words flex-1">
+                  Recipient: <strong className="text-black">{order.customerName}</strong> ({order.villageOrCity}, {order.state})
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 shrink-0">
                   <Link
                     href={`/orders/${order.orderId}`}
-                    className="bg-black text-white px-4 py-2 rounded-kb-pill font-bold hover:bg-neutral-800 transition-all"
+                    className="bg-black text-white px-4 py-2 rounded-kb-pill font-bold hover:bg-neutral-800 transition-all shadow-xs"
                   >
                     View Live Timeline →
                   </Link>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { clearClientSession, getStoredToken } from '@/lib/clientAuth';
+import { clearClientSession, getStoredToken, authFetch } from '@/lib/clientAuth';
 import { useToast } from '@/components/ToastContext';
 import { SmoothLoader } from '@/components/SmoothLoader';
 
@@ -151,16 +151,16 @@ function AccountManagementContent() {
         const dataUrl = event.target?.result as string;
         if (!dataUrl) return;
 
-        const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
-        const res = await fetch('/api/account/avatar', {
+        const res = await authFetch('/api/account/avatar', {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ avatarData: dataUrl }),
         });
 
         const data = await res.json();
-        if (data.success && data.avatar) {
-          setProfile((prev: any) => ({ ...prev, avatar: data.avatar }));
+        const newAvatar = data.avatar || data.avatarUrl;
+        if (data.success && newAvatar) {
+          setProfile((prev: any) => ({ ...prev, avatar: newAvatar }));
           showToast({
             type: 'success',
             title: 'Avatar Updated',
@@ -993,53 +993,290 @@ function AccountManagementContent() {
           {/* TAB 3: LIVE TRACKING */}
           {activeTab === 'tracking' && (
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="border-b border-slate-100 pb-4">
-                <h3 className="text-lg font-bold text-black">Live Consignment Tracking</h3>
-                <p className="text-xs text-neutral-500">From Kalwaral handloom center to your doorstep</p>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-black flex items-center gap-2">
+                    <span>🚚</span>
+                    <span>Live Consignment Tracking</span>
+                  </h3>
+                  <p className="text-xs text-neutral-500">
+                    Real-time doorstep dispatch across 10 km Kalwaral radius (PIN 503145)
+                  </p>
+                </div>
+
+                {orders.length > 0 && (
+                  <span className="text-[11px] font-bold text-neutral-600 bg-neutral-100 px-3 py-1 rounded-full border border-neutral-200">
+                    {orders.length} Active Consignment{orders.length > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
 
+              {/* Order Quick Selector Pills */}
+              {orders.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider block">
+                    Select Consignment to Track:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {orders.map((ord: any) => {
+                      const isSelected = (trackingData?.orderId === ord.orderId) || (trackingSearchId === ord.orderId);
+                      return (
+                        <button
+                          key={ord.id || ord.orderId}
+                          type="button"
+                          onClick={() => {
+                            setTrackingSearchId(ord.orderId || ord.id);
+                            fetchTracking(ord.orderId || ord.id);
+                          }}
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                            isSelected
+                              ? 'bg-black text-white border-black shadow-sm'
+                              : 'bg-neutral-50 text-neutral-700 border-slate-200 hover:border-black'
+                          }`}
+                        >
+                          <span>📦</span>
+                          <span>#{ord.orderId || ord.id}</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                            isSelected ? 'bg-neutral-800 text-neutral-200' : 'bg-neutral-200 text-neutral-800'
+                          }`}>
+                            {ord.orderStatus || ord.status || 'ACTIVE'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Search Bar */}
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter Order ID (e.g. ORD-2026-1001)"
+                  placeholder="Enter Order or Consignment ID (e.g. ORD-2026-1001)"
                   value={trackingSearchId}
                   onChange={(e) => setTrackingSearchId(e.target.value)}
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-black"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-black font-mono"
                 />
                 <button
+                  type="button"
                   onClick={() => fetchTracking(trackingSearchId)}
-                  className="px-4 py-2 rounded-xl bg-black text-white text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-sm"
                 >
-                  Track
+                  Track Consignment →
                 </button>
               </div>
 
               {trackingData ? (
-                <div className="space-y-4 pt-2">
-                  <div className="p-4 rounded-2xl bg-neutral-50 border border-slate-200 space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-black">Status: {trackingData.currentStatus}</span>
-                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">
-                        {trackingData.estimatedDelivery}
-                      </span>
+                <div className="space-y-6 pt-2">
+                  {/* Top Header Card */}
+                  <div className="bg-neutral-900 text-white rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-800 pb-3">
+                      <div>
+                        <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+                          Consignment Reference
+                        </div>
+                        <h4 className="text-xl font-black text-white font-mono break-all">
+                          #{trackingData.orderId}
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                          {trackingData.currentStatus || trackingData.orderStatus}
+                        </span>
+                        <Link
+                          href={`/invoices/${trackingData.orderId}`}
+                          target="_blank"
+                          className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/20"
+                        >
+                          📄 Bill #{trackingData.invoiceNumber || 'Invoice'}
+                        </Link>
+                      </div>
                     </div>
-                    <p className="text-xs text-neutral-600">Carrier: {trackingData.carrier} (Tracking: {trackingData.trackingCode})</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Assigned Carrier / Runner</span>
+                        <strong className="text-white font-semibold text-xs break-words">
+                          {trackingData.carrier || trackingData.courierPartner || 'KB Local Village Runner'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Tracking Waybill #</span>
+                        <strong className="text-white font-mono text-xs break-all">
+                          {trackingData.trackingCode || trackingData.trackingNumber || 'Assigned on Dispatch'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Estimated Delivery SLA</span>
+                        <strong className="text-emerald-400 font-bold text-xs">
+                          {trackingData.estimatedDelivery || 'Within 24-48 Hours (10 km)'}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Destination Address Card */}
+                    <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 text-xs flex items-start gap-2.5">
+                      <span className="text-base">📍</span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Fulfillment Destination</span>
+                        <p className="text-neutral-200 text-xs break-words leading-relaxed font-medium">
+                          {trackingData.destination}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-3 pl-2">
-                    {trackingData.steps?.map((step: any, idx: number) => (
-                      <div key={idx} className="flex items-start gap-3 text-xs">
-                        <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${step.completed ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                        <div>
-                          <div className={`font-bold ${step.completed ? 'text-black' : 'text-neutral-400'}`}>{step.title}</div>
-                          <div className="text-[11px] text-neutral-500">{step.description}</div>
-                        </div>
+                  {/* Stage-by-Stage Visual Stepper */}
+                  <div className="bg-neutral-50 rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-black">
+                        Stage-by-Stage Progression
+                      </h4>
+                      <span className="text-[11px] font-bold text-neutral-500">
+                        Doorstep Delivery Protocol
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2">
+                      {(trackingData.stages || trackingData.steps || []).map((step: any, idx: number) => {
+                        const isDone = step.completed;
+                        const isCurrent = step.isCurrent;
+                        const icons = ['📝', '📦', '🚚', '🛵', '✅'];
+                        const stepIcon = icons[idx] || '•';
+
+                        return (
+                          <div
+                            key={step.key || idx}
+                            className={`p-3 rounded-xl border transition-all flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2 ${
+                              isCurrent
+                                ? 'bg-black text-white border-black shadow-md ring-2 ring-neutral-300'
+                                : isDone
+                                ? 'bg-white text-neutral-900 border-emerald-300'
+                                : 'bg-neutral-100 text-neutral-400 border-neutral-200'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                              isCurrent
+                                ? 'bg-white text-black'
+                                : isDone
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-neutral-200 text-neutral-500'
+                            }`}>
+                              {stepIcon}
+                            </div>
+                            <div className="min-w-0 flex-1 sm:flex-none">
+                              <div className={`text-xs font-bold truncate ${isCurrent ? 'text-white' : isDone ? 'text-black' : 'text-neutral-400'}`}>
+                                {step.label || step.title}
+                              </div>
+                              <div className={`text-[10px] hidden sm:block mt-0.5 line-clamp-2 ${isCurrent ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                                {step.desc || step.description}
+                              </div>
+                            </div>
+                            {isCurrent && (
+                              <span className="sm:hidden text-[9px] font-bold bg-white text-black px-2 py-0.5 rounded-full shrink-0">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Vertical Chronological Event Timeline Log */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-black">
+                      Detailed Facility Tracking History
+                    </h4>
+
+                    {trackingData.timeline && trackingData.timeline.length > 0 ? (
+                      <div className="relative border-l-2 border-black ml-3 sm:ml-4 pl-4 sm:pl-6 space-y-6 my-2">
+                        {trackingData.timeline.map((event: any, idx: number) => (
+                          <div key={event.id || idx} className="relative group">
+                            {/* Bullet Node */}
+                            <div className="absolute -left-[23px] sm:-left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-black border-2 border-white shadow-sm" />
+
+                            <div className="bg-neutral-50 p-3.5 rounded-xl border border-slate-200 space-y-1 overflow-hidden">
+                              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
+                                <h5 className="font-bold text-xs text-black break-words">
+                                  {event.title}
+                                </h5>
+                                <span className="text-[10px] font-mono text-neutral-500 shrink-0">
+                                  {new Date(event.timestamp).toLocaleDateString('en-IN', {
+                                    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-neutral-600 break-words leading-relaxed">
+                                {event.description}
+                              </p>
+
+                              {event.location && (
+                                <div className="text-[10px] font-semibold text-neutral-500 flex items-center gap-1 pt-1">
+                                  <span>📍</span>
+                                  <span className="break-words">{event.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <p className="text-xs text-neutral-400 py-3 text-center">
+                        Consignment has been registered at Kalwaral store hub. Full milestone timestamps will appear upon carrier scan.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Return / Refund Status Alert (if requested) */}
+                  {trackingData.refund && (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span>🔄</span>
+                        <span>Return / Refund Status: {trackingData.refund.status}</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800">
+                        Amount: ₹{trackingData.refund.amount} • Reason: {trackingData.refund.reason}
+                        {trackingData.refund.notes ? ` • Note: ${trackingData.refund.notes}` : ''}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Bottom Assistance & Invoice Actions */}
+                  <div className="pt-2 flex flex-wrap justify-between items-center gap-3">
+                    <Link
+                      href={`/invoices/${trackingData.orderId}`}
+                      target="_blank"
+                      className="px-4 py-2 rounded-xl border border-slate-200 hover:border-black text-xs font-bold text-neutral-800 transition-colors shadow-sm flex items-center gap-1.5"
+                    >
+                      <span>📜</span>
+                      <span>Print Official Bill of Supply</span>
+                    </Link>
+
+                    <Link
+                      href="/support"
+                      className="px-4 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-neutral-800 transition-colors flex items-center gap-1.5"
+                    >
+                      <span>💬</span>
+                      <span>Need Help? Raise Support Ticket</span>
+                    </Link>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-neutral-400 text-center py-6">Enter an Order ID to view real-time stage progression.</p>
+                <div className="text-center py-12 text-neutral-400 space-y-3">
+                  <span className="text-4xl block">🔍</span>
+                  <p className="text-xs font-bold text-neutral-600">
+                    Enter an Order ID above or select one of your orders to view real-time consignment progression.
+                  </p>
+                  <p className="text-[11px] text-neutral-400 max-w-md mx-auto">
+                    All deliveries are handled directly by our certified village delivery runners originating from Kalwaral store (PIN 503145).
+                  </p>
+                </div>
               )}
             </div>
           )}

@@ -140,6 +140,41 @@ export default function AdminSupportPage() {
     }
   };
 
+  const getAllowedTicketStatuses = (currentStatus: string) => {
+    switch (currentStatus) {
+      case 'OPEN':
+        return [
+          { value: 'OPEN', label: 'OPEN' },
+          { value: 'IN_PROGRESS', label: 'IN PROGRESS' },
+          { value: 'WAITING_FOR_CUSTOMER', label: 'WAITING FOR CUSTOMER' },
+          { value: 'RESOLVED', label: 'RESOLVED' },
+          { value: 'CLOSED', label: 'CLOSED' },
+        ];
+      case 'IN_PROGRESS':
+      case 'WAITING_FOR_CUSTOMER':
+      case 'REOPENED':
+        return [
+          { value: currentStatus, label: currentStatus.replace(/_/g, ' ') },
+          { value: 'IN_PROGRESS', label: 'IN PROGRESS' },
+          { value: 'WAITING_FOR_CUSTOMER', label: 'WAITING FOR CUSTOMER' },
+          { value: 'RESOLVED', label: 'RESOLVED' },
+          { value: 'CLOSED', label: 'CLOSED' },
+        ].filter((item, idx, self) => self.findIndex(i => i.value === item.value) === idx);
+      case 'RESOLVED':
+        return [
+          { value: 'RESOLVED', label: 'RESOLVED' },
+          { value: 'REOPENED', label: 'REOPENED' },
+          { value: 'CLOSED', label: 'CLOSED' },
+        ];
+      case 'CLOSED':
+        return [
+          { value: 'CLOSED', label: 'CLOSED (Terminal)' }
+        ];
+      default:
+        return [];
+    }
+  };
+
   const applyTemplate = (text: string) => {
     setReplyText(text);
   };
@@ -344,14 +379,13 @@ export default function AdminSupportPage() {
                   <span className="text-xs font-bold text-neutral-700">Status:</span>
                   <select
                     value={selectedTicket.status}
+                    disabled={selectedTicket.status === 'CLOSED'}
                     onChange={(e) => handleUpdateStatus(e.target.value)}
-                    className="px-3 py-1.5 rounded-lg border border-kbBorder bg-neutral-50 text-xs font-bold"
+                    className="px-3 py-1.5 rounded-lg border border-kbBorder bg-neutral-50 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <option value="OPEN">OPEN</option>
-                    <option value="IN_PROGRESS">IN PROGRESS</option>
-                    <option value="WAITING_FOR_CUSTOMER">WAITING FOR CUSTOMER</option>
-                    <option value="RESOLVED">RESOLVED</option>
-                    <option value="CLOSED">CLOSED</option>
+                    {getAllowedTicketStatuses(selectedTicket.status).map((stg) => (
+                      <option key={stg.value} value={stg.value}>{stg.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>

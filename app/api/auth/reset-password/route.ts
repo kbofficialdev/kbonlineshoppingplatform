@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { token, newPassword } = parsed.data;
-    const user = db.users.find(u => u.resetToken === token);
+    const user = db.findUserByResetToken(token);
 
     if (!user) {
       return NextResponse.json({ error: 'Invalid or expired password reset link' }, { status: 400 });
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     user.resetToken = null;
     user.resetExpiresAt = null;
     user.updatedAt = new Date().toISOString();
+    db.saveUser(user);
 
     db.addAuditLog(
       user.email,

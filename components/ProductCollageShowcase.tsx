@@ -183,7 +183,7 @@ export default function ProductCollageShowcase({
         >
           {/* Main Hero Spotlight (Col span 7) */}
           {displayItems[0] && (
-            <div className="lg:col-span-7 bg-white rounded-3xl border border-neutral-200/80 p-5 sm:p-6 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            <div className="lg:col-span-7 bg-white rounded-3xl border border-neutral-200/80 p-5 sm:p-6 hover-elevate-card flex flex-col justify-between group relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               
               <div>
@@ -254,7 +254,7 @@ export default function ProductCollageShowcase({
             {displayItems.slice(1, 4).map((item, idx) => (
               <div
                 key={item.id || idx}
-                className="bg-white rounded-2xl border border-neutral-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-md hover:border-blue-500/30 transition-all flex items-center gap-4 group"
+                className="bg-white rounded-2xl border border-neutral-200/80 p-3.5 sm:p-4 hover-elevate-card flex items-center gap-4 group"
               >
                 <Link
                   href={`/products/${item.productId}`}
@@ -313,7 +313,7 @@ export default function ProductCollageShowcase({
           {displayItems.slice(0, 4).map((item, idx) => (
             <div
               key={item.id || idx}
-              className="bg-white rounded-3xl border border-neutral-200/80 p-4 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+              className="bg-white rounded-3xl border border-neutral-200/80 p-4 hover-elevate-card flex flex-col justify-between group relative overflow-hidden"
             >
               <div>
                 <Link
@@ -382,7 +382,7 @@ export default function ProductCollageShowcase({
           {displayItems.slice(0, 3).map((item, idx) => (
             <div
               key={item.id || idx}
-              className="bg-white rounded-3xl border border-neutral-200/80 p-5 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 flex flex-col justify-between group"
+              className="bg-white rounded-3xl border border-neutral-200/80 p-5 hover-elevate-card flex flex-col justify-between group"
             >
               <div>
                 <div className="flex items-center justify-between mb-3 text-xs">

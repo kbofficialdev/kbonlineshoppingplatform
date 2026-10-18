@@ -25,38 +25,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const { stage, title, description, location, courierPartner, trackingNumber } = parsed.data;
-    const now = new Date().toISOString();
 
-    const newEvent: OrderTimelineEventModel = {
-      id: `tl-${order.orderId}-${order.timeline.length + 1}`,
-      orderId: order.orderId,
-      stage,
-      title,
-      description,
-      location,
-      courierPartner,
-      trackingNumber,
-      timestamp: now,
-    };
-
-    order.timeline.push(newEvent);
-    order.orderStatus = stage;
-    if (courierPartner) order.courierPartner = courierPartner;
-    if (trackingNumber) order.trackingNumber = trackingNumber;
-    order.updatedAt = now;
-
-    if (stage === 'DELIVERED') {
-      order.paymentStatus = 'CAPTURED';
-    }
-
-    db.addAuditLog(
-      auth.email,
-      'ADMIN',
-      'ORDER_STAGE_UPDATED',
-      'ORDER',
-      order.orderId,
-      { stage, title, location, trackingNumber }
-    );
+    // Execute stage progression inside a rollback-capable transaction
+    await db.transaction(() => {
+      db.updateOrderStatus(order.orderId, stage, {
+        title,
+        description,
+        location,
+        courierPartner,
+        trackingNumber,
+        actor: auth.email,
+      });
+    });
 
     // Dispatch delivery stage update email to customer
     try {

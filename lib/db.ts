@@ -1,6 +1,25 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 
+// Safe dynamic server-side module resolution to prevent Webpack client bundling errors
+function getFs(): any {
+  if (typeof window !== 'undefined') return null;
+  try {
+    return eval('require')('fs');
+  } catch (e) {
+    return null;
+  }
+}
+
+function getPath(): any {
+  if (typeof window !== 'undefined') return null;
+  try {
+    return eval('require')('path');
+  } catch (e) {
+    return null;
+  }
+}
+
 export interface BannerModel {
   id: string;
   bannerId: string;
@@ -55,12 +74,13 @@ export interface SupportTicketModel {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   orderId?: string | null;
   subject: string;
-  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_CUSTOMER' | 'RESOLVED' | 'CLOSED';
+  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_CUSTOMER' | 'RESOLVED' | 'REOPENED' | 'CLOSED';
   slaHours: number;
   createdAt: string;
   updatedAt: string;
   firstResponseAt?: string | null;
   resolvedAt?: string | null;
+  closedAt?: string | null;
   messages: TicketMessageModel[];
 }
 
@@ -279,6 +299,17 @@ export interface OrderTimelineEventModel {
   timestamp: string;
 }
 
+export type OrderStatus = 'ORDER_PLACED' | 'CONFIRMED' | 'DISPATCHED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+
+export const ORDER_STATUS_RANKS: Record<OrderStatus, number> = {
+  ORDER_PLACED: 1,
+  CONFIRMED: 2,
+  DISPATCHED: 3,
+  OUT_FOR_DELIVERY: 4,
+  DELIVERED: 5,
+  CANCELLED: 99,
+};
+
 export interface OrderModel {
   id: string;
   orderId: string;
@@ -299,7 +330,7 @@ export interface OrderModel {
   totalPaid: number;
   paymentMethod: string;
   paymentStatus: string;
-  orderStatus: 'ORDER_PLACED' | 'CONFIRMED' | 'DISPATCHED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+  orderStatus: OrderStatus;
   courierPartner?: string | null;
   trackingNumber?: string | null;
   estimatedDeliveryDays: number;
@@ -307,6 +338,8 @@ export interface OrderModel {
   updatedAt: string;
   items: OrderItemModel[];
   timeline: OrderTimelineEventModel[];
+  refundStatus?: 'REQUESTED' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REFUNDED' | 'REJECTED' | string | null;
+  refundDetails?: Record<string, any> | null;
 }
 
 export interface CartItemModel {
@@ -327,10 +360,16 @@ export interface CartItemModel {
 export interface RefundRequestModel {
   id: string;
   orderId: string;
+  refundId?: string | null;
   reason: string;
   amount: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'PROCESSED' | 'REJECTED';
+  refundType?: 'FULL' | 'PARTIAL';
+  cashfreeRefundId?: string | null;
+  bankReference?: string | null;
   notes?: string | null;
+  adminNotes?: string | null;
+  processedBy?: string | null;
   createdAt: string;
   processedAt?: string | null;
 }
@@ -482,8 +521,8 @@ class DatabaseStore {
     deliveryPincode: "503145",
     deliveryVillages: "Kalwaral, Sadasivanagar, Dharmaraopet, Tadwai, Padmavajiwadi, Modegaon, Markal, Brahmanpally, Utnoor, Kuprial",
     tariffDescription: "Standard 10 km Local Delivery Tariff: ₹70 flat shipping across all villages in 503145 within 10 km radius. Free delivery for orders above ₹999.",
-    cashfreeAppId: process.env.CASHFREE_APP_ID || "TEST10926462c1cf4e3650bd8e030226462901",
-    cashfreeSecretKey: process.env.CASHFREE_SECRET_KEY || "cfsk_ma_test_90483ff73ab4d56f4d2f80164c0eb3f1_32c02df6",
+    cashfreeAppId: process.env.CASHFREE_APP_ID || "",
+    cashfreeSecretKey: process.env.CASHFREE_SECRET_KEY || "",
     cashfreeEnv: "sandbox",
     cashfreeApiVersion: "2026-01-01",
     lastPolicyUpdateTitle: "Consumer Protection & Delivery Compliance 2026",
@@ -508,9 +547,295 @@ class DatabaseStore {
   public supportTickets: SupportTicketModel[] = [];
   public auditLogs: AuditLogModel[] = [];
   private lastAuditHash: string = "0000000000000000000000000000000000000000000000000000000000000000";
-
   constructor() {
     this.seedDatabase();
+    this.loadFromDisk();
+  }
+
+  public createSnapshot(): string {
+    return JSON.stringify({
+      storeSettings: this.storeSettings,
+      users: this.users,
+      addresses: this.addresses,
+      paymentMethods: this.paymentMethods,
+      products: this.products,
+      productImages: this.productImages,
+      banners: this.banners,
+      alerts: this.alerts,
+      orders: this.orders,
+      refundRequests: this.refundRequests,
+      supportTickets: this.supportTickets,
+      auditLogs: this.auditLogs,
+      lastAuditHash: this.lastAuditHash,
+      cartItems: this.cartItems,
+    });
+  }
+
+  public restoreSnapshot(snapshotJson: string): void {
+    try {
+      const data = JSON.parse(snapshotJson);
+      if (data.storeSettings) this.storeSettings = data.storeSettings;
+      if (data.users) this.users = data.users;
+      if (data.addresses) this.addresses = data.addresses;
+      if (data.paymentMethods) this.paymentMethods = data.paymentMethods;
+      if (data.products) this.products = data.products;
+      if (data.productImages) this.productImages = data.productImages;
+      if (data.banners) this.banners = data.banners;
+      if (data.alerts) this.alerts = data.alerts;
+      if (data.orders) this.orders = data.orders;
+      if (data.refundRequests) this.refundRequests = data.refundRequests;
+      if (data.supportTickets) this.supportTickets = data.supportTickets;
+      if (data.auditLogs) this.auditLogs = data.auditLogs;
+      if (data.lastAuditHash) this.lastAuditHash = data.lastAuditHash;
+      if (data.cartItems) this.cartItems = data.cartItems;
+      console.log('[DB TRANSACTION ROLLBACK SUCCESSFUL] Restored consistent state from snapshot.');
+    } catch (e) {
+      console.error('[DB RESTORE SNAPSHOT ERROR]:', e);
+    }
+  }
+
+  /**
+   * Execute a unit of work inside a rollback-capable transaction.
+   * If any error or exception occurs, the database automatically rolls back
+   * to the exact pre-transaction state, discarding uncommitted mutations.
+   * On success, automatically persists changes durably to disk.
+   */
+  public async transaction<T>(action: () => Promise<T> | T): Promise<T> {
+    const snapshot = this.createSnapshot();
+    try {
+      const result = await action();
+      this.saveToDisk();
+      return result;
+    } catch (err: any) {
+      console.error('[DB TRANSACTION FAILURE DETECTED] Triggering automatic rollback:', err?.message || err);
+      this.restoreSnapshot(snapshot);
+      throw err;
+    }
+  }
+
+  public saveToDisk(): void {
+    if (typeof window !== 'undefined') return;
+    try {
+      const fsMod = getFs();
+      const pathMod = getPath();
+      if (!fsMod || !pathMod) return;
+
+      const filePath = pathMod.join(process.cwd(), 'data', 'store_db.json');
+      const dataDir = pathMod.dirname(filePath);
+      if (!fsMod.existsSync(dataDir)) {
+        fsMod.mkdirSync(dataDir, { recursive: true });
+      }
+
+      // Safeguard: Read existing disk users if present and merge so concurrent workers never drop users!
+      if (fsMod.existsSync(filePath)) {
+        try {
+          const existingRaw = fsMod.readFileSync(filePath, 'utf-8');
+          const existingParsed = JSON.parse(existingRaw);
+          if (Array.isArray(existingParsed.users) && existingParsed.users.length > 0) {
+            const userMap = new Map<string, UserModel>();
+            for (const u of existingParsed.users) {
+              const emailKey = u.email ? u.email.toLowerCase().trim() : u.id;
+              userMap.set(emailKey, u);
+              userMap.set(u.id, u);
+            }
+            for (const u of this.users) {
+              const emailKey = u.email ? u.email.toLowerCase().trim() : u.id;
+              userMap.set(emailKey, u);
+              userMap.set(u.id, u);
+            }
+            // De-duplicate by id to preserve clean array
+            const uniqueById = new Map<string, UserModel>();
+            for (const u of userMap.values()) uniqueById.set(u.id, u);
+            this.users = Array.from(uniqueById.values());
+          }
+          if (Array.isArray(existingParsed.orders) && existingParsed.orders.length > 0) {
+            const orderMap = new Map<string, OrderModel>();
+            for (const o of existingParsed.orders) orderMap.set(o.orderId || o.id, o);
+            for (const o of this.orders) orderMap.set(o.orderId || o.id, o);
+            this.orders = Array.from(orderMap.values());
+          }
+        } catch (e) {
+          // If disk file is mid-write, proceed with memory
+        }
+      }
+
+      const dataToSave = {
+        storeSettings: this.storeSettings,
+        users: this.users,
+        addresses: this.addresses,
+        paymentMethods: this.paymentMethods,
+        products: this.products,
+        productImages: this.productImages,
+        banners: this.banners,
+        alerts: this.alerts,
+        orders: this.orders,
+        refundRequests: this.refundRequests,
+        supportTickets: this.supportTickets,
+        auditLogs: this.auditLogs,
+        lastAuditHash: this.lastAuditHash,
+      };
+      const tmpPath = `${filePath}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+      fsMod.writeFileSync(tmpPath, JSON.stringify(dataToSave, null, 2), 'utf-8');
+      fsMod.renameSync(tmpPath, filePath);
+    } catch (err) {
+      console.error('[DB DISK PERSISTENCE SAVE ERROR]', err);
+    }
+  }
+
+  public loadFromDisk(): void {
+    if (typeof window !== 'undefined') return;
+    try {
+      const fsMod = getFs();
+      const pathMod = getPath();
+      if (!fsMod || !pathMod) return;
+
+      const filePath = pathMod.join(process.cwd(), 'data', 'store_db.json');
+      if (fsMod.existsSync(filePath)) {
+        const raw = fsMod.readFileSync(filePath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed.storeSettings) {
+          this.storeSettings = { ...this.storeSettings, ...parsed.storeSettings };
+        }
+        if (Array.isArray(parsed.users) && parsed.users.length > 0) {
+          const userMap = new Map<string, UserModel>();
+          // Disk users overlay seed users and are the persistent source of truth
+          for (const u of parsed.users) {
+            const emailKey = u.email ? u.email.toLowerCase().trim() : u.id;
+            userMap.set(emailKey, u);
+            userMap.set(u.id, u);
+          }
+          // Seed users only if email not already present on disk
+          for (const u of this.users) {
+            const emailKey = u.email ? u.email.toLowerCase().trim() : u.id;
+            if (!userMap.has(emailKey) && !userMap.has(u.id)) {
+              userMap.set(emailKey, u);
+              userMap.set(u.id, u);
+            }
+          }
+          const uniqueById = new Map<string, UserModel>();
+          for (const u of userMap.values()) uniqueById.set(u.id, u);
+          this.users = Array.from(uniqueById.values());
+        }
+        if (Array.isArray(parsed.addresses)) {
+          this.addresses = parsed.addresses;
+        }
+        if (Array.isArray(parsed.paymentMethods)) {
+          this.paymentMethods = parsed.paymentMethods;
+        }
+        if (Array.isArray(parsed.orders) && parsed.orders.length > 0) {
+          const orderMap = new Map<string, OrderModel>();
+          for (const o of this.orders) orderMap.set(o.orderId || o.id, o);
+          for (const o of parsed.orders) orderMap.set(o.orderId || o.id, o);
+          this.orders = Array.from(orderMap.values());
+        }
+        if (Array.isArray(parsed.banners) && parsed.banners.length > 0) {
+          this.banners = parsed.banners;
+        }
+        if (Array.isArray(parsed.alerts) && parsed.alerts.length > 0) {
+          this.alerts = parsed.alerts;
+        }
+        if (Array.isArray(parsed.supportTickets)) {
+          this.supportTickets = parsed.supportTickets;
+        }
+        if (Array.isArray(parsed.auditLogs)) {
+          this.auditLogs = parsed.auditLogs;
+        }
+        if (Array.isArray(parsed.refundRequests)) {
+          this.refundRequests = parsed.refundRequests;
+        }
+        if (Array.isArray(parsed.productImages) && parsed.productImages.length > 0) {
+          const diskImgIds = new Set(parsed.productImages.map((img: any) => img.id));
+          const initialNotPresent = this.productImages.filter(img => !diskImgIds.has(img.id));
+          this.productImages = [...parsed.productImages, ...initialNotPresent];
+        }
+        if (parsed.lastAuditHash) {
+          this.lastAuditHash = parsed.lastAuditHash;
+        }
+      } else {
+        this.saveToDisk();
+      }
+    } catch (err) {
+      console.error('[DB DISK PERSISTENCE LOAD ERROR]', err);
+    }
+  }
+
+  public addUser(user: UserModel): void {
+    this.loadFromDisk();
+    const lowerEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const idx = this.users.findIndex(
+      u => u.id === user.id || (lowerEmail && u.email && u.email.toLowerCase().trim() === lowerEmail)
+    );
+    if (idx >= 0) {
+      this.users[idx] = { ...this.users[idx], ...user, updatedAt: new Date().toISOString() };
+    } else {
+      this.users.push(user);
+    }
+    this.saveToDisk();
+    console.log(`[USER PERSISTED TO DISK] User ${user.email} (${user.id}) successfully stored in database. Total users: ${this.users.length}`);
+  }
+
+  public saveUser(user: UserModel): void {
+    this.loadFromDisk();
+    const lowerEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const idx = this.users.findIndex(
+      u => u.id === user.id || (lowerEmail && u.email && u.email.toLowerCase().trim() === lowerEmail)
+    );
+    if (idx >= 0) {
+      this.users[idx] = { ...this.users[idx], ...user, updatedAt: new Date().toISOString() };
+    } else {
+      this.users.push(user);
+    }
+    this.saveToDisk();
+  }
+
+  public findUser(emailOrPhone: string): UserModel | undefined {
+    this.loadFromDisk();
+    if (!emailOrPhone) return undefined;
+    const clean = emailOrPhone.trim().toLowerCase();
+    const digits = emailOrPhone.replace(/\D/g, '');
+
+    return this.users.find(u => {
+      // 1. Email check (case-insensitive & trimmed)
+      if (u.email && u.email.trim().toLowerCase() === clean) return true;
+
+      // 2. Direct phone string match
+      if (u.phone && (u.phone.trim() === emailOrPhone.trim() || u.phone.trim().toLowerCase() === clean)) return true;
+
+      // 3. Indian Phone match by last 10 digits
+      if (digits.length >= 10 && u.phone) {
+        const uDigits = u.phone.replace(/\D/g, '');
+        if (uDigits.length >= 10 && uDigits.slice(-10) === digits.slice(-10)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  }
+
+  public findUserById(id: string): UserModel | undefined {
+    this.loadFromDisk();
+    return this.users.find(u => u.id === id);
+  }
+
+  public findUserByVerificationToken(token: string): UserModel | undefined {
+    this.loadFromDisk();
+    return this.users.find(u => u.emailVerificationToken === token);
+  }
+
+  public findUserByResetToken(token: string): UserModel | undefined {
+    this.loadFromDisk();
+    return this.users.find(u => u.resetToken === token);
+  }
+
+  public addOrder(order: OrderModel): void {
+    const idx = this.orders.findIndex(o => o.id === order.id || o.orderId === order.orderId);
+    if (idx >= 0) {
+      this.orders[idx] = order;
+    } else {
+      this.orders.unshift(order);
+    }
+    this.saveToDisk();
   }
 
   private seedDatabase() {
@@ -567,7 +892,7 @@ class DatabaseStore {
         id: "usr-cust-2",
         name: "Bhavith Kumar",
         email: "k.bhavithkumar.dev@gmail.com",
-        phone: "+917989768200",
+        phone: "+917989768202",
         passwordHash: customerHash,
         role: "CUSTOMER",
         isActive: true,
@@ -1779,6 +2104,7 @@ class DatabaseStore {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+    this.saveToDisk();
     return this.storeSettings;
   }
 
@@ -1817,6 +2143,7 @@ class DatabaseStore {
 
     this.lastAuditHash = currentHash;
     this.auditLogs.unshift(log);
+    this.saveToDisk();
     return log;
   }
 
@@ -1839,10 +2166,12 @@ class DatabaseStore {
   // ==========================================
 
   public getUserAddresses(userId: string): AddressModel[] {
+    this.loadFromDisk();
     return this.addresses.filter(a => a.userId === userId);
   }
 
   public addAddress(userId: string, data: Omit<AddressModel, 'id' | 'userId' | 'createdAt'>): AddressModel {
+    this.loadFromDisk();
     const now = new Date().toISOString();
     if (data.isDefault) {
       this.addresses.filter(a => a.userId === userId).forEach(a => a.isDefault = false);
@@ -1855,20 +2184,24 @@ class DatabaseStore {
       createdAt: now,
     };
     this.addresses.push(newAddress);
+    this.saveToDisk();
     return newAddress;
   }
 
   public updateAddress(id: string, userId: string, data: Partial<AddressModel>): AddressModel | null {
+    this.loadFromDisk();
     const addr = this.addresses.find(a => a.id === id && a.userId === userId);
     if (!addr) return null;
     if (data.isDefault) {
       this.addresses.filter(a => a.userId === userId).forEach(a => a.isDefault = false);
     }
     Object.assign(addr, data);
+    this.saveToDisk();
     return addr;
   }
 
   public deleteAddress(id: string, userId: string): boolean {
+    this.loadFromDisk();
     const idx = this.addresses.findIndex(a => a.id === id && a.userId === userId);
     if (idx === -1) return false;
     this.addresses.splice(idx, 1);
@@ -1877,14 +2210,17 @@ class DatabaseStore {
     if (userAddrs.length > 0 && !userAddrs.some(a => a.isDefault)) {
       userAddrs[0].isDefault = true;
     }
+    this.saveToDisk();
     return true;
   }
 
   public getUserPaymentMethods(userId: string): PaymentMethodModel[] {
+    this.loadFromDisk();
     return this.paymentMethods.filter(pm => pm.userId === userId);
   }
 
   public addPaymentMethod(userId: string, data: Omit<PaymentMethodModel, 'id' | 'userId' | 'createdAt'>): PaymentMethodModel {
+    this.loadFromDisk();
     const now = new Date().toISOString();
     if (data.isDefault) {
       this.paymentMethods.filter(pm => pm.userId === userId).forEach(pm => pm.isDefault = false);
@@ -1897,10 +2233,12 @@ class DatabaseStore {
       createdAt: now,
     };
     this.paymentMethods.push(newPm);
+    this.saveToDisk();
     return newPm;
   }
 
   public deletePaymentMethod(id: string, userId: string): boolean {
+    this.loadFromDisk();
     const idx = this.paymentMethods.findIndex(pm => pm.id === id && pm.userId === userId);
     if (idx === -1) return false;
     this.paymentMethods.splice(idx, 1);
@@ -1908,11 +2246,13 @@ class DatabaseStore {
     if (userPms.length > 0 && !userPms.some(pm => pm.isDefault)) {
       userPms[0].isDefault = true;
     }
+    this.saveToDisk();
     return true;
   }
 
   public updateUserProfile(userId: string, updates: Partial<UserModel>): UserModel | null {
-    const user = this.users.find(u => u.id === userId);
+    this.loadFromDisk();
+    const user = this.findUserById(userId);
     if (!user) return null;
     const allowed = ['name', 'phone', 'villageOrCity', 'mandalOrArea', 'district', 'state', 'pinCode', 'preferredLanguage', 'smsUpdates', 'whatsappUpdates', 'bio'];
     for (const key of allowed) {
@@ -1921,11 +2261,13 @@ class DatabaseStore {
       }
     }
     user.updatedAt = new Date().toISOString();
+    this.saveUser(user);
     return user;
   }
 
   public updateUserAvatar(userId: string, avatarDataUrl: string): { user: UserModel; avatarUrl: string } | null {
-    const user = this.users.find(u => u.id === userId);
+    this.loadFromDisk();
+    const user = this.findUserById(userId);
     if (!user) return null;
     const mediaId = `avatar-${userId}`;
     const now = new Date().toISOString();
@@ -1948,11 +2290,13 @@ class DatabaseStore {
 
     user.avatar = `/api/media/${mediaId}?t=${Date.now()}`;
     user.updatedAt = now;
+    this.saveUser(user);
     return { user, avatarUrl: user.avatar };
   }
 
   public changeUserPassword(userId: string, oldPass: string, newPass: string): { success: boolean; error?: string } {
-    const user = this.users.find(u => u.id === userId);
+    this.loadFromDisk();
+    const user = this.findUserById(userId);
     if (!user) return { success: false, error: 'User not found' };
     const isValid = bcrypt.compareSync(oldPass, user.passwordHash);
     if (!isValid) {
@@ -1960,39 +2304,136 @@ class DatabaseStore {
     }
     user.passwordHash = bcrypt.hashSync(newPass, 10);
     user.updatedAt = new Date().toISOString();
+    this.saveUser(user);
     return { success: true };
+  }
+
+  public updateOrderStatus(
+    orderId: string,
+    targetStatus: OrderStatus,
+    details?: {
+      title?: string;
+      description?: string;
+      location?: string;
+      courierPartner?: string;
+      trackingNumber?: string;
+      actor?: string;
+    }
+  ): OrderModel {
+    const order = this.orders.find(o => o.orderId === orderId || o.id === orderId);
+    if (!order) {
+      throw new Error(`Order #${orderId} not found in database.`);
+    }
+
+    const currentStatus = order.orderStatus as OrderStatus;
+    const currentRank = ORDER_STATUS_RANKS[currentStatus] || 0;
+    const targetRank = ORDER_STATUS_RANKS[targetStatus] || 0;
+
+    // Check terminal states
+    if (currentStatus === 'DELIVERED') {
+      throw new Error(`Invalid status transition: Order #${order.orderId} is DELIVERED (terminal state) and cannot undergo further status transitions.`);
+    }
+    if (currentStatus === 'CANCELLED') {
+      throw new Error(`Invalid status transition: Order #${order.orderId} is CANCELLED (terminal state) and cannot be modified.`);
+    }
+
+    // Cancellation check: only allowed before DISPATCHED
+    if (targetStatus === 'CANCELLED') {
+      if (currentRank >= ORDER_STATUS_RANKS.DISPATCHED) {
+        throw new Error(`Invalid status transition: Order #${order.orderId} has already reached '${currentStatus}' stage and cannot be cancelled directly. Please initiate a Return/Refund request instead under 7-day assurance.`);
+      }
+    } else {
+      // Forward-only check
+      if (targetRank <= currentRank) {
+        throw new Error(`Invalid status transition: Order #${order.orderId} is currently '${currentStatus}' (Rank ${currentRank}) and cannot revert back to '${targetStatus}' (Rank ${targetRank}). Only forward status progression is permitted under delivery compliance.`);
+      }
+    }
+
+    const now = new Date().toISOString();
+    order.orderStatus = targetStatus;
+    order.updatedAt = now;
+
+    if (details?.courierPartner) order.courierPartner = details.courierPartner;
+    if (details?.trackingNumber) order.trackingNumber = details.trackingNumber;
+
+    if (targetStatus === 'DELIVERED') {
+      order.paymentStatus = 'CAPTURED';
+    }
+
+    // Append timeline event
+    order.timeline.push({
+      id: `tl-${order.orderId}-${order.timeline.length + 1}`,
+      orderId: order.orderId,
+      stage: targetStatus,
+      title: details?.title || `Stage Advanced: ${targetStatus}`,
+      description: details?.description || `Consignment status progressed to ${targetStatus}`,
+      location: details?.location || `${order.villageOrCity} Delivery Point, PIN 503145`,
+      courierPartner: order.courierPartner || 'KB Local Village Runner (Kalwaral 10km)',
+      trackingNumber: order.trackingNumber || `KB-EXP-${order.orderId.replace(/[^0-9]/g, '')}`,
+      timestamp: now,
+    });
+
+    this.addAuditLog(
+      details?.actor || 'SYSTEM',
+      'ADMIN',
+      'ORDER_STAGE_ADVANCED',
+      'ORDER',
+      order.orderId,
+      { previousStatus: currentStatus, newStatus: targetStatus, details }
+    );
+
+    this.saveToDisk();
+    return order;
   }
 
   public getOrderTracking(orderId: string): any {
     const order = this.orders.find(o => o.orderId === orderId || o.id === orderId || o.trackingNumber === orderId);
     if (!order) return null;
 
+    const carrier = order.courierPartner || 'KB Local Village Runner (Kalwaral 10km)';
+    const trackingCode = order.trackingNumber || `KB-EXP-${order.orderId.replace(/[^0-9]/g, '')}`;
+
     // Structured stage steps
     const stages = [
-      { key: 'ORDER_PLACED', label: 'Order Placed', desc: 'Received at Kalwaral Village Store' },
-      { key: 'CONFIRMED', label: 'Order Confirmed', desc: 'Handloom weave & meter cut verified' },
-      { key: 'DISPATCHED', label: 'Dispatched', desc: `Handed to ${order.courierPartner || 'Telangana Express Postal Logistics'}` },
-      { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Delivery partner en route to destination' },
-      { key: 'DELIVERED', label: 'Delivered', desc: 'Package delivered with verified OTP / Signature' }
+      { key: 'ORDER_PLACED', label: 'Order Placed', desc: 'Received at Kalwaral Village Store Hub' },
+      { key: 'CONFIRMED', label: 'Order Confirmed', desc: 'Handloom weave & meter cut verified by weaver' },
+      { key: 'DISPATCHED', label: 'Dispatched', desc: `Handed over to ${carrier}` },
+      { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Village delivery runner en route to destination' },
+      { key: 'DELIVERED', label: 'Delivered', desc: 'Doorstep delivered with customer verification' }
     ];
 
     const currentIdx = stages.findIndex(s => s.key === order.orderStatus);
+    const relatedRefund = this.refundRequests.find(r => r.orderId === order.orderId);
+
+    const steps = stages.map((s, idx) => ({
+      ...s,
+      title: s.label,
+      description: s.desc,
+      completed: currentIdx >= idx,
+      isCurrent: currentIdx === idx,
+    }));
 
     return {
       orderId: order.orderId,
       invoiceNumber: order.invoiceNumber,
       orderStatus: order.orderStatus,
-      courierPartner: order.courierPartner || 'Telangana Express Postal Logistics',
-      trackingNumber: order.trackingNumber || `KB-EXP-${order.orderId.replace(/[^0-9]/g, '')}`,
+      currentStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      courierPartner: carrier,
+      carrier: carrier,
+      trackingNumber: trackingCode,
+      trackingCode: trackingCode,
       destination: `${order.streetAddress}, ${order.villageOrCity}, ${order.district}, ${order.pinCode}`,
       customerName: order.customerName,
+      customerPhone: order.customerPhone,
       createdAt: order.createdAt,
+      estimatedDelivery: order.orderStatus === 'DELIVERED' ? 'Consignment Delivered' : 'Within 24-48 Hours (10 km Local Radius)',
       timeline: order.timeline,
-      stages: stages.map((s, idx) => ({
-        ...s,
-        completed: currentIdx >= idx,
-        isCurrent: currentIdx === idx,
-      })),
+      stages: steps,
+      steps: steps,
+      refund: relatedRefund || null,
+      items: order.items,
+      totalPaid: order.totalPaid,
     };
   }
 
@@ -2101,11 +2542,16 @@ class DatabaseStore {
       if (!ticket.firstResponseAt) {
         ticket.firstResponseAt = now;
       }
-      if (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') {
+      if (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS' || ticket.status === 'REOPENED') {
         ticket.status = 'WAITING_FOR_CUSTOMER';
       }
     } else if (messageData.senderRole === 'CUSTOMER') {
-      if (ticket.status === 'WAITING_FOR_CUSTOMER' || ticket.status === 'RESOLVED') {
+      if (ticket.status === 'CLOSED') {
+        throw new Error(`Ticket #${ticket.ticketNumber} is closed. Please raise a new ticket for further assistance.`);
+      }
+      if (ticket.status === 'RESOLVED') {
+        ticket.status = 'REOPENED'; // Explicitly REOPENED, never back to initial OPEN
+      } else if (ticket.status === 'WAITING_FOR_CUSTOMER') {
         ticket.status = 'IN_PROGRESS';
       }
     }
@@ -2116,9 +2562,10 @@ class DatabaseStore {
       'TICKET_MESSAGE_POSTED',
       'TICKET',
       ticket.id,
-      { ticketNumber: ticket.ticketNumber, role: messageData.senderRole }
+      { ticketNumber: ticket.ticketNumber, role: messageData.senderRole, currentStatus: ticket.status }
     );
 
+    this.saveToDisk();
     return newMsg;
   }
 
@@ -2126,12 +2573,34 @@ class DatabaseStore {
     const ticket = this.supportTickets.find(t => t.id === ticketId || t.ticketNumber === ticketId);
     if (!ticket) return null;
 
+    const currentStatus = ticket.status;
+
+    // Rule 1: No ticket status can revert back to 'OPEN' (the initial created status)
+    if (status === 'OPEN' && currentStatus !== 'OPEN') {
+      throw new Error(`Invalid ticket transition: Ticket #${ticket.ticketNumber} is currently '${currentStatus}' and cannot revert back to initial 'OPEN' status.`);
+    }
+
+    // Rule 2: CLOSED is terminal and immutable
+    if (currentStatus === 'CLOSED') {
+      throw new Error(`Invalid ticket transition: Ticket #${ticket.ticketNumber} is permanently CLOSED and cannot be modified.`);
+    }
+
+    // Rule 3: Once RESOLVED, ticket cannot revert back to OPEN, IN_PROGRESS, or WAITING_FOR_CUSTOMER. It can only be CLOSED or REOPENED.
+    if (currentStatus === 'RESOLVED') {
+      if (status !== 'RESOLVED' && status !== 'CLOSED' && status !== 'REOPENED') {
+        throw new Error(`Invalid ticket transition: Resolved ticket #${ticket.ticketNumber} can only transition to 'CLOSED' or 'REOPENED', not '${status}'.`);
+      }
+    }
+
     const now = new Date().toISOString();
     ticket.status = status;
     ticket.updatedAt = now;
 
-    if (status === 'RESOLVED' || status === 'CLOSED') {
+    if (status === 'RESOLVED') {
       ticket.resolvedAt = now;
+    } else if (status === 'CLOSED') {
+      ticket.closedAt = now;
+      if (!ticket.resolvedAt) ticket.resolvedAt = now;
     }
 
     this.addAuditLog(
@@ -2140,9 +2609,10 @@ class DatabaseStore {
       'TICKET_STATUS_UPDATED',
       'TICKET',
       ticket.id,
-      { ticketNumber: ticket.ticketNumber, status }
+      { ticketNumber: ticket.ticketNumber, previousStatus: currentStatus, newStatus: status }
     );
 
+    this.saveToDisk();
     return ticket;
   }
 }

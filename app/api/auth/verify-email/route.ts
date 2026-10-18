@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/auth/signin?error=Invalid+verification+token', req.url));
     }
 
-    const user = db.users.find(u => u.emailVerificationToken === token);
+    const user = db.findUserByVerificationToken(token);
 
     if (!user) {
       return NextResponse.redirect(new URL('/auth/signin?error=Verification+token+not+found+or+already+used', req.url));
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     if (user.emailVerificationExpiresAt && new Date(user.emailVerificationExpiresAt).getTime() < Date.now()) {
       user.emailVerificationToken = null;
       user.emailVerificationExpiresAt = null;
+      db.saveUser(user);
       return NextResponse.redirect(
         new URL('/auth/signin?error=Security+Notice:+Activation+link+expired.+Links+are+strictly+valid+for+5+minutes+only.+Please+sign+in+with+password+and+OTP.', req.url)
       );
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
     user.emailVerificationToken = null;
     user.emailVerificationExpiresAt = null;
     user.isActive = true;
+    db.saveUser(user);
 
     db.addAuditLog(
       user.email,

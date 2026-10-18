@@ -16,9 +16,13 @@ export async function POST(req: NextRequest) {
 
     const { name, email, phone, password } = parsed.data;
     const lowerEmail = email.toLowerCase().trim();
+    const cleanPhone = phone.trim();
+    const normalizedPhone = cleanPhone.startsWith('+91')
+      ? cleanPhone
+      : (cleanPhone.replace(/\D/g, '').length === 10 ? `+91${cleanPhone.replace(/\D/g, '')}` : cleanPhone);
 
-    // Check if user already exists
-    const existing = db.users.find(u => u.email.toLowerCase() === lowerEmail || u.phone === phone);
+    // Check if user already exists across disk and memory
+    const existing = db.findUser(lowerEmail) || db.findUser(normalizedPhone);
     if (existing) {
       return NextResponse.json({ error: 'An account is already registered with this email or phone number' }, { status: 409 });
     }
@@ -35,7 +39,7 @@ export async function POST(req: NextRequest) {
       id: `usr-${Date.now()}`,
       name: name.trim(),
       email: lowerEmail,
-      phone: phone.trim(),
+      phone: normalizedPhone,
       passwordHash,
       role: 'CUSTOMER',
       isActive: true,
@@ -48,7 +52,7 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
 
-    db.users.push(newUser);
+    db.addUser(newUser);
 
     db.addAuditLog(
       newUser.email,

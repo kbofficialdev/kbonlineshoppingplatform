@@ -28,10 +28,12 @@ export async function PUT(req: NextRequest) {
       ...parsed.data,
       updatedAt: new Date().toISOString(),
     };
+    db.saveToDisk();
 
     let emailsDispatched = 0;
     if (parsed.data.notifyCustomersOnPolicyChange && parsed.data.policyUpdateTitle) {
       const { sendPolicyUpdateNotificationEmail } = await import('@/lib/email');
+      db.loadFromDisk();
       const customers = db.users.filter(u => u.role === 'CUSTOMER' && u.email);
       for (const cust of customers) {
         try {

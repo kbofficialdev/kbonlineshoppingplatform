@@ -40,7 +40,7 @@ export async function POST(
       }, { status: 400 });
     }
 
-    const user = db.users.find(u => u.id === auth.userId);
+    const user = db.findUserById(auth.userId);
     const senderRole = auth.role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER';
     const senderName = auth.role === 'ADMIN'
       ? `KB Support Team (${user?.name || 'Administrator'})`

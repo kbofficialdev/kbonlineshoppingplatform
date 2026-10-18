@@ -447,89 +447,114 @@ export default function CheckoutPage() {
       {/* Cashfree Hosted Checkout Web SDK */}
       <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload" />
 
-      {/* Title & Multi-step Breadcrumbs */}
-      <div className="border-b border-kbBorder pb-4 mb-8">
+      {/* Checkout Progress Header */}
+      <div className="bg-white rounded-3xl border border-neutral-200/90 p-6 sm:p-8 mb-8 hover-elevate-card">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-kbBlack">Checkout</h1>
-            <p className="text-xs text-neutral-500 mt-1">Direct from KB FASHIONS (Kalwaral, Telangana) to your door</p>
+            <div className="inline-block px-3 py-0.5 rounded-full text-[10px] font-mono tracking-wider uppercase bg-neutral-100 text-neutral-800 border border-neutral-200 mb-1">
+              Secure Village Store Checkout • PIN 503145
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">Checkout</h1>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Fulfillment directly from KB FASHIONS (Kalwaral Village, Telangana)
+            </p>
           </div>
-          {/* Step Badges */}
-          <div className="flex items-center gap-3 text-xs font-bold">
-            <span className={`px-3 py-1 rounded-full ${step === 1 ? 'bg-black text-white' : 'bg-neutral-200 text-neutral-600'}`}>
-              1. Delivery Details
-            </span>
-            <span>→</span>
-            <span className={`px-3 py-1 rounded-full ${step === 2 ? 'bg-black text-white' : 'bg-neutral-200 text-neutral-600'}`}>
-              2. Payment & Confirmation
-            </span>
+
+          {/* Stepper Indicator */}
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => setStep(1)}
+              className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-all ${
+                step === 1
+                  ? 'bg-black text-white shadow-xs'
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+              }`}
+            >
+              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">1</span>
+              <span>Delivery Details</span>
+            </button>
+            <span className="text-neutral-300">→</span>
+            <button
+              onClick={() => validateStep1() && setStep(2)}
+              className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-all ${
+                step === 2
+                  ? 'bg-black text-white shadow-xs'
+                  : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+              }`}
+            >
+              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
+              <span>Payment &amp; Review</span>
+            </button>
           </div>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="mb-6 bg-red-50 border border-red-300 text-red-800 text-xs p-4 rounded-kb-md font-medium">
-          ⚠️ {errorMsg}
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 text-xs p-4 rounded-2xl font-medium flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{errorMsg}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-        {/* Left 2 Cols: Step Form */}
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Left Column (2 Cols): Form Steps */}
+        <div className="lg:col-span-2 space-y-6">
           {step === 1 && (
-            <div className="bg-white border border-kbBorder p-6 sm:p-8 rounded-kb-lg space-y-6 shadow-sm">
-              <h2 className="text-base font-black text-kbBlack uppercase tracking-wider text-xs">
-                Step 1: Contact & Delivery Address
-              </h2>
+            <div className="bg-white border border-neutral-200/90 p-6 sm:p-8 rounded-3xl space-y-6 hover-elevate-card">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+                <div>
+                  <h2 className="text-base font-black text-neutral-900">
+                    Step 1: Contact &amp; Delivery Destination
+                  </h2>
+                  <p className="text-xs text-neutral-500">
+                    Enter recipient and village coordinates for local runner delivery
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-neutral-700 bg-neutral-100 px-3 py-1 rounded-full border border-neutral-200">
+                  📍 10 km Radius
+                </span>
+              </div>
 
-              {/* Hyper-Local Village Delivery Zone (10 km Radius of PIN 503145) & Google Maps Selector */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+              {/* Local Village Quick Selector & Google Map */}
+              <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">📍</span>
-                      <span className="text-xs font-black uppercase tracking-wider text-neutral-900">
-                        Direct Delivery Service Area: 10 km Radius (PIN 503145)
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-neutral-600 mt-0.5">
-                      Direct doorstep delivery from KB FASHIONS, Kalwaral village, Kamareddy, Telangana.
+                    <span className="text-xs font-black uppercase tracking-wider text-neutral-900 block">
+                      Local Villages Covered within 10 km of Kalwaral Hub (PIN 503145)
+                    </span>
+                    <p className="text-[11px] text-neutral-500">
+                      Tap your village for instant coordinate setup
                     </p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                    ✓ 10 KM SERVICE RADIUS
+                  <span className="text-[10px] font-bold bg-neutral-200 text-neutral-800 px-2.5 py-0.5 rounded-full">
+                    Runner Dispatch
                   </span>
                 </div>
 
-                {/* Village Quick Selection */}
-                <div>
-                  <label className="text-[11px] font-bold text-neutral-800 block mb-2">
-                    Quick-Select Your Village within 10 km of Kalwaral Store:
-                  </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {LOCAL_VILLAGES_503145.map((v) => {
-                      const isSelected = villageOrCity.toLowerCase() === v.name.toLowerCase() && pinCode === '503145';
-                      return (
-                        <button
-                          key={v.name}
-                          type="button"
-                          onClick={() => selectLocalVillage(v.name)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${
-                            isSelected
-                              ? 'bg-kb-blue text-white shadow-sm ring-2 ring-blue-300'
-                              : 'bg-white border border-slate-200 text-neutral-700 hover:border-kb-blue hover:text-kb-blue'
-                          }`}
-                        >
-                          <span>{v.name}</span>
-                          <span className="text-[10px] opacity-75 font-normal">({v.distance})</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Village Quick Selection Buttons */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {LOCAL_VILLAGES_503145.map((v) => {
+                    const isSelected = villageOrCity.toLowerCase() === v.name.toLowerCase() && pinCode === '503145';
+                    return (
+                      <button
+                        key={v.name}
+                        type="button"
+                        onClick={() => selectLocalVillage(v.name)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-black text-white shadow-xs'
+                            : 'bg-white border border-neutral-200 text-neutral-700 hover:border-black'
+                        }`}
+                      >
+                        <span>{v.name}</span>
+                        <span className="text-[10px] opacity-60 font-normal">({v.distance})</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Embedded Interactive Google Map with 10km Visual Area */}
-                <div className="rounded-xl overflow-hidden border border-slate-200 bg-neutral-100 relative h-48 sm:h-56">
+                {/* Embedded Interactive Google Map */}
+                <div className="rounded-xl overflow-hidden border border-neutral-200 bg-neutral-200 relative h-40 sm:h-48">
                   <iframe
                     title="KB Fashions 10km Delivery Radius - Kalwaral 503145"
                     width="100%"
@@ -540,150 +565,157 @@ export default function CheckoutPage() {
                     referrerPolicy="no-referrer-when-downgrade"
                     src="https://maps.google.com/maps?q=18.4285,78.2615&hl=en&z=12&output=embed"
                   />
-                  <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-md text-[10px] font-bold text-neutral-800 shadow-sm border border-black/10 flex items-center gap-1.5">
+                  <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-md text-[10px] font-bold text-neutral-800 shadow-xs border border-black/10 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Google Maps Delivery Radius • Kalwaral Center (PIN 503145)</span>
+                    <span>10 km Doorstep Coverage Area • Kalwaral Center (PIN 503145)</span>
                   </div>
                 </div>
 
-                {/* Postal Eligibility Feedback */}
+                {/* Coverage Feedback */}
                 {pinCode === '503145' ? (
                   <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium">
                     <span>✓</span>
                     <span>
-                      <strong>Eligible for Direct Doorstep Delivery:</strong> Address is within the 10 km Kalwaral radius under PIN 503145. Local village delivery applied.
+                      <strong>Eligible for Direct Local Delivery:</strong> Address is within the certified 10 km Kalwaral store radius under PIN 503145.
                     </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium">
                     <span>⚠️</span>
                     <span>
-                      <strong>Local 10 km Radius Notice:</strong> Store deliveries are strictly operated within a 10 km radius of Kalwaral under PIN 503145. Please ensure your delivery location is within this zone.
+                      <strong>Local Coverage Notice:</strong> Store deliveries are strictly operated within a 10 km radius of Kalwaral under PIN 503145.
                     </span>
                   </div>
                 )}
               </div>
 
+              {/* Form Input Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Full Name *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">Recipient Full Name *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Recipient's name"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="Recipient's legal name"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Mobile Phone (+91) *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">Mobile Phone (10 Digits) *</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="10-digit Indian phone number"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black font-mono"
+                    placeholder="10-digit mobile number"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black font-mono text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-700 block mb-1">Email Address (for Bill & Live Tracking) *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">Email Address (for Bill of Supply &amp; Live Tracking) *</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-700 block mb-1">House / Building / Street Address *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">House Number / Street / Landmark *</label>
                   <input
                     type="text"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="House number, Street name, Landmark"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="House number, Street name, agricultural landmark"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">PIN Code (6 Digits) *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">PIN Code *</label>
                   <input
                     type="text"
                     maxLength={6}
                     value={pinCode}
                     onChange={(e) => handlePinChange(e.target.value)}
-                    placeholder="e.g. 503145 or 560038"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black font-mono font-bold"
+                    placeholder="503145"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black font-mono font-bold text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Village / Town / City *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">Village / Habitation *</label>
                   <input
                     type="text"
                     value={villageOrCity}
                     onChange={(e) => setVillageOrCity(e.target.value)}
-                    placeholder="Village or City name"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="Village name"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Mandal / Sub-District / Area</label>
+                  <label className="font-bold text-neutral-800 block mb-1">Mandal / Sub-District</label>
                   <input
                     type="text"
                     value={mandalOrArea || ''}
                     onChange={(e) => setMandalOrArea(e.target.value)}
-                    placeholder="Mandal or Locality"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="Sadasivanagar"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">District *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">District *</label>
                   <input
                     type="text"
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
-                    placeholder="District name"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="Kamareddy"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-700 block mb-1">State *</label>
+                  <label className="font-bold text-neutral-800 block mb-1">State *</label>
                   <input
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    placeholder="e.g. Telangana, Karnataka, Maharashtra"
-                    className="w-full px-3.5 py-2.5 rounded-kb-sm border border-kbBorder bg-kbLight focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    placeholder="Telangana"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-kbBorder flex justify-end">
+              <div className="pt-4 border-t border-neutral-100 flex justify-end">
                 <button
                   type="button"
                   onClick={handleProceedToPayment}
-                  className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm"
+                  className="bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3.5 rounded-full transition-all shadow-sm flex items-center gap-2"
                 >
-                  Continue to Payment Selection →
+                  <span>Continue to Payment Selection</span>
+                  <span>→</span>
                 </button>
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="bg-white border border-kbBorder p-6 sm:p-8 rounded-kb-lg space-y-6 shadow-sm">
-              <div className="flex justify-between items-center">
-                <h2 className="text-base font-black text-kbBlack uppercase tracking-wider text-xs">
-                  Step 2: Choose Payment Method
-                </h2>
+            <div className="bg-white border border-neutral-200/90 p-6 sm:p-8 rounded-3xl space-y-6 hover-elevate-card">
+              <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
+                <div>
+                  <h2 className="text-base font-black text-neutral-900">
+                    Step 2: Payment Method &amp; Confirmation
+                  </h2>
+                  <p className="text-xs text-neutral-500">
+                    Select payment option and verify statutory e-commerce consents
+                  </p>
+                </div>
                 <button
                   onClick={() => setStep(1)}
                   className="text-xs font-semibold text-neutral-500 hover:text-black underline"
@@ -692,123 +724,116 @@ export default function CheckoutPage() {
                 </button>
               </div>
 
-              {/* Delivery Summary Review */}
-              <div className="bg-kbLight p-4 rounded-kb-sm text-xs space-y-1 border border-kbBorder">
-                <div className="font-bold text-neutral-900">Delivering to: {name} ({phone})</div>
-                <div className="text-neutral-600">{streetAddress}, {villageOrCity}, {district}, {state} - {pinCode}</div>
+              {/* Delivery Review Banner */}
+              <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 text-xs space-y-1">
+                <div className="font-bold text-neutral-900">
+                  Delivering to: {name} ({phone})
+                </div>
+                <div className="text-neutral-600">
+                  {streetAddress}, {villageOrCity}, {district}, {state} - {pinCode} (10 km Rural Delivery)
+                </div>
               </div>
 
-              {/* Payment Methods */}
+              {/* Payment Options */}
               <div className="space-y-3">
-                <label className={`block border p-4 rounded-kb-md cursor-pointer transition-all ${
-                  paymentMethod === 'CASHFREE' ? 'border-black bg-neutral-50 ring-2 ring-black' : 'border-kbBorder hover:border-neutral-400'
+                {/* Option 1: Cashfree Payments Hosted Checkout (Sandbox) */}
+                <label className={`block border p-4 sm:p-5 rounded-2xl cursor-pointer transition-all ${
+                  paymentMethod === 'CASHFREE'
+                    ? 'border-black bg-neutral-50 shadow-xs'
+                    : 'border-neutral-200 hover:border-neutral-400 bg-white'
                 }`}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start sm:items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
                       checked={paymentMethod === 'CASHFREE'}
                       onChange={() => setPaymentMethod('CASHFREE')}
-                      className="accent-black"
+                      className="mt-1 sm:mt-0 accent-black w-4 h-4"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs text-neutral-900 flex items-center gap-2">
+                      <div className="font-bold text-xs sm:text-sm text-neutral-900 flex items-center gap-2 flex-wrap">
                         <span>Cashfree Payments Hosted Checkout</span>
-                        <span className="text-[10px] font-black uppercase text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-mono uppercase bg-neutral-200 text-neutral-800 px-2 py-0.5 rounded-full">
                           Sandbox
                         </span>
                       </div>
-                      <div className="text-[11px] text-neutral-500 mt-0.5">
-                        UPI (GPay/PhonePe/Paytm), Debit &amp; Credit Cards, NetBanking, and Wallets via Cashfree redirect flow (API 2026-01-01).
+                      <div className="text-[11px] text-neutral-500 mt-1">
+                        Secure redirect checkout supporting UPI (GPay, PhonePe, Paytm), Debit &amp; Credit Cards, NetBanking, and Wallets via Cashfree API 2026-01-01.
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold text-neutral-800 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full shrink-0">
                       Instant Confirmation
                     </span>
                   </div>
                 </label>
 
-                <label className={`block border p-4 rounded-kb-md cursor-pointer transition-all ${
-                  paymentMethod === 'COD' ? 'border-black bg-neutral-50 ring-1 ring-black' : 'border-kbBorder hover:border-neutral-400'
+                {/* Option 2: Cash on Delivery */}
+                <label className={`block border p-4 sm:p-5 rounded-2xl cursor-pointer transition-all ${
+                  paymentMethod === 'COD'
+                    ? 'border-black bg-neutral-50 shadow-xs'
+                    : 'border-neutral-200 hover:border-neutral-400 bg-white'
                 }`}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start sm:items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
                       checked={paymentMethod === 'COD'}
                       onChange={() => setPaymentMethod('COD')}
-                      className="accent-black"
+                      className="mt-1 sm:mt-0 accent-black w-4 h-4"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs text-neutral-900">Cash on Delivery (COD)</div>
-                      <div className="text-[11px] text-neutral-500 mt-0.5">
-                        Pay cash or scan courier UPI QR code when garment arrives at your doorstep. Zero extra charges.
+                      <div className="font-bold text-xs sm:text-sm text-neutral-900">
+                        Cash on Delivery (COD) / Village Runner Handover
+                      </div>
+                      <div className="text-[11px] text-neutral-500 mt-1">
+                        Pay cash directly to the Kalwaral store runner upon physical delivery of your consignment. Requires 6-digit confirmation OTP.
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                      Most Popular
-                    </span>
                   </div>
                 </label>
 
-                <label className={`block border p-4 rounded-kb-md cursor-pointer transition-all ${
-                  paymentMethod === 'UPI' ? 'border-black bg-neutral-50 ring-1 ring-black' : 'border-kbBorder hover:border-neutral-400'
+                {/* Option 3: Instant UPI */}
+                <label className={`block border p-4 sm:p-5 rounded-2xl cursor-pointer transition-all ${
+                  paymentMethod === 'UPI'
+                    ? 'border-black bg-neutral-50 shadow-xs'
+                    : 'border-neutral-200 hover:border-neutral-400 bg-white'
                 }`}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start sm:items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
                       checked={paymentMethod === 'UPI'}
                       onChange={() => setPaymentMethod('UPI')}
-                      className="accent-black"
+                      className="mt-1 sm:mt-0 accent-black w-4 h-4"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs text-neutral-900">Instant UPI Payment</div>
-                      <div className="text-[11px] text-neutral-500 mt-0.5">
-                        Google Pay, PhonePe, Paytm, or BHIM UPI instant verification.
+                      <div className="font-bold text-xs sm:text-sm text-neutral-900">
+                        Instant UPI Verification
                       </div>
-                    </div>
-                  </div>
-                </label>
-
-                <label className={`block border p-4 rounded-kb-md cursor-pointer transition-all ${
-                  paymentMethod === 'CARD' ? 'border-black bg-neutral-50 ring-1 ring-black' : 'border-kbBorder hover:border-neutral-400'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === 'CARD'}
-                      onChange={() => setPaymentMethod('CARD')}
-                      className="accent-black"
-                    />
-                    <div className="flex-1">
-                      <div className="font-bold text-xs text-neutral-900">Debit / Credit Card & NetBanking</div>
-                      <div className="text-[11px] text-neutral-500 mt-0.5">
-                        All major Indian debit/credit cards and netbanking supported.
+                      <div className="text-[11px] text-neutral-500 mt-1">
+                        Direct merchant UPI transfer with 5-minute confirmation authorization.
                       </div>
                     </div>
                   </div>
                 </label>
               </div>
 
-              {/* Mandatory Policy Consent & Statutory Declarations */}
-              <div className="pt-4 border-t border-kbBorder space-y-3 bg-neutral-50 p-4 rounded-2xl border">
-                <div className="text-[11px] font-black uppercase tracking-wider text-black flex items-center gap-1.5">
-                  <span>📜</span>
-                  <span>Mandatory Statutory Consent &amp; E-Commerce Policies</span>
-                </div>
+              {/* Statutory Policy Consents */}
+              <div className="bg-neutral-50 p-4 sm:p-5 rounded-2xl border border-neutral-200 space-y-3">
+                <span className="text-[11px] font-black uppercase tracking-wider text-neutral-900 block">
+                  Mandatory Statutory Consents (Consumer Protection Rules 2020)
+                </span>
 
-                <div className="space-y-2 text-xs">
+                <div className="space-y-2.5 text-xs text-neutral-700">
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={agreeTerms}
                       onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
+                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black shrink-0"
                     />
-                    <span className="text-neutral-700 leading-snug">
-                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-blue-700">Terms of Sale</Link> and agree to 10-km local village delivery guidelines.
+                    <span className="leading-snug">
+                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-black">Terms &amp; Conditions of Sale</Link> and agree to 10-km radius village delivery parameters.
                     </span>
                   </label>
 
@@ -817,10 +842,10 @@ export default function CheckoutPage() {
                       type="checkbox"
                       checked={agreeReturn}
                       onChange={(e) => setAgreeReturn(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
+                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black shrink-0"
                     />
-                    <span className="text-neutral-700 leading-snug">
-                      I agree to the <Link href="/policies/refunds" target="_blank" className="font-bold underline text-blue-700">Refund &amp; Return Policy</Link> (7-day window for packaged handloom garments).
+                    <span className="leading-snug">
+                      I accept the <Link href="/policies/refunds" target="_blank" className="font-bold underline text-black">Refund &amp; Return Policy</Link> (7-day window for packaged handloom garments).
                     </span>
                   </label>
 
@@ -829,17 +854,17 @@ export default function CheckoutPage() {
                       type="checkbox"
                       checked={agreePrivacy}
                       onChange={(e) => setAgreePrivacy(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black"
+                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black shrink-0"
                     />
-                    <span className="text-neutral-700 leading-snug">
-                      I have reviewed the <Link href="/policies/privacy" target="_blank" className="font-bold underline text-blue-700">Privacy Policy</Link> and <Link href="/policies/statutory-declaration" target="_blank" className="font-bold underline text-blue-700">Section 23 CGST Tax Exemption Notice</Link>.
+                    <span className="leading-snug">
+                      I consent to the <Link href="/policies/privacy" target="_blank" className="font-bold underline text-black">Privacy Policy</Link> and have noted the <Link href="/policies/statutory-declaration" target="_blank" className="font-bold underline text-black">Section 23 CGST Tax Exemption Notice</Link>.
                     </span>
                   </label>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-kbBorder flex justify-between items-center">
+              <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
@@ -854,12 +879,12 @@ export default function CheckoutPage() {
                     id="cashfree-pay-now-btn"
                     onClick={handleCashfreeCheckout}
                     disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
-                    className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3.5 rounded-full transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
                         <SmoothLoader size="xs" color="white" />
-                        <span>Connecting Cashfree...</span>
+                        <span>Connecting to Cashfree...</span>
                       </>
                     ) : (
                       <span>Pay with Cashfree Hosted Checkout (₹{cart.total}) →</span>
@@ -871,7 +896,7 @@ export default function CheckoutPage() {
                     id="confirm-place-order-btn"
                     onClick={handleInitiateOrderOtp}
                     disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
-                    className="bg-kb-blue text-white text-sm font-semibold px-8 py-3.5 rounded-kb-pill hover:bg-blue-600 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3.5 rounded-full transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -891,7 +916,7 @@ export default function CheckoutPage() {
         {/* Modal: Order Confirmation OTP Popup */}
         {showOtpModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6 relative animate-scale-up">
+            <div className="bg-white rounded-3xl border border-neutral-200 shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6 relative animate-scale-up">
               <button
                 onClick={() => setShowOtpModal(false)}
                 className="absolute top-5 right-5 text-neutral-400 hover:text-black font-black text-xl"
@@ -900,15 +925,15 @@ export default function CheckoutPage() {
               </button>
 
               <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-blue-50 text-kb-blue border border-blue-200 rounded-full flex items-center justify-center mx-auto text-xl">
+                <div className="w-12 h-12 bg-neutral-100 text-black border border-neutral-200 rounded-full flex items-center justify-center mx-auto text-xl">
                   🛡️
                 </div>
-                <h3 className="text-lg font-black text-black">Confirm Order Placement</h3>
+                <h3 className="text-lg font-black text-neutral-900">Authorize Order Placement</h3>
                 <p className="text-xs text-neutral-500">
-                  Please enter the 6-digit confirmation code sent to <strong className="text-black">{email}</strong> to authorize your order of <strong>₹{cart.total}</strong>.
+                  Please enter the 6-digit confirmation code sent to <strong className="text-neutral-900">{email}</strong> to confirm your order of <strong>₹{cart.total}</strong>.
                 </p>
                 {otpSentMessage && (
-                  <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-1 px-3 rounded-full inline-block">
+                  <div className="text-[11px] font-bold text-neutral-800 bg-neutral-100 py-1 px-3 rounded-full inline-block border border-neutral-200">
                     {otpSentMessage}
                   </div>
                 )}
@@ -926,10 +951,10 @@ export default function CheckoutPage() {
                     placeholder="• • • • • •"
                     value={orderOtp}
                     onChange={(e) => setOrderOtp(e.target.value.replace(/\D/g, ''))}
-                    className="w-full text-center text-2xl font-mono font-black tracking-widest py-3 px-4 rounded-2xl border-2 border-slate-300 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
+                    className="w-full text-center text-2xl font-mono font-black tracking-widest py-3 px-4 rounded-2xl border-2 border-neutral-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   />
                   <p className="text-[10px] text-center text-neutral-400 mt-1">
-                    Valid for 5 minutes only. Check spam folder if not received in 30s.
+                    Strictly valid for 5 minutes. Check spam folder if not received in 30 seconds.
                   </p>
                 </div>
 
@@ -938,7 +963,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => handleInitiateOrderOtp()}
                     disabled={isSendingOtp}
-                    className="w-1/3 py-3 text-xs font-bold text-neutral-600 hover:text-black border border-slate-200 rounded-2xl disabled:opacity-50"
+                    className="w-1/3 py-3 text-xs font-bold text-neutral-700 hover:text-black border border-neutral-200 rounded-full disabled:opacity-50"
                   >
                     {isSendingOtp ? 'Sending...' : 'Resend Code'}
                   </button>
@@ -947,7 +972,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => handlePlaceOrder()}
                     disabled={isSubmitting || orderOtp.length !== 6}
-                    className="w-2/3 py-3 text-xs font-extrabold bg-black text-white hover:bg-neutral-800 rounded-2xl transition-all shadow-md disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="w-2/3 py-3 text-xs font-black bg-black text-white hover:bg-neutral-800 rounded-full transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -955,7 +980,7 @@ export default function CheckoutPage() {
                         <span>Verifying...</span>
                       </>
                     ) : (
-                      <span>Verify &amp; Finalize Order →</span>
+                      <span>Verify &amp; Confirm Order →</span>
                     )}
                   </button>
                 </div>
@@ -964,51 +989,69 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Right Col: Order Items Summary */}
-        <div className="bg-kbSurfaceAlt border border-kbBorder p-6 rounded-kb-lg space-y-4">
-          <h3 className="font-black text-xs text-neutral-900 uppercase tracking-wider">
-            Order Items ({cart.items.length})
-          </h3>
+        {/* Right Column (1 Col): Sticky Order Items Summary */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-28 bg-white border border-neutral-200/90 rounded-3xl p-6 sm:p-8 space-y-5 hover-elevate-card">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <h3 className="font-black text-xs text-neutral-900 uppercase tracking-wider">
+                Order Items ({cart.items.length})
+              </h3>
+              <Link href="/cart" className="text-xs text-neutral-500 hover:text-black underline">
+                Edit Bag
+              </Link>
+            </div>
 
-          <div className="divide-y divide-kbBorder text-xs max-h-72 overflow-y-auto">
-            {cart.items.map((item: any, idx: number) => (
-              <div key={idx} className="py-2.5 flex justify-between items-center">
-                <div>
-                  <div className="font-bold text-neutral-900 line-clamp-1">{item.name}</div>
-                  <div className="text-[10px] text-neutral-500">
-                    {item.cutLength ? `✂ Cut: ${item.cutLength}m • ` : ''}Size: {item.size} • Qty: {item.qty}
+            <div className="divide-y divide-neutral-100 text-xs max-h-72 overflow-y-auto pr-1">
+              {cart.items.map((item: any, idx: number) => (
+                <div key={idx} className="py-3 flex justify-between items-center gap-3">
+                  <div className="flex-1">
+                    <div className="font-bold text-neutral-900 line-clamp-1">{item.name}</div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">
+                      {item.cutLength ? `✂ Cut: ${item.cutLength}m • ` : ''}Size: {item.size} • Qty: {item.qty}
+                    </div>
+                  </div>
+                  <div className="font-bold text-neutral-900 text-right shrink-0">
+                    ₹{item.price * item.qty}
                   </div>
                 </div>
-                <div className="font-bold text-black text-right">
-                  ₹{item.price * item.qty}
+              ))}
+            </div>
+
+            <div className="border-t border-neutral-100 pt-3 space-y-2 text-xs">
+              <div className="flex justify-between text-neutral-600">
+                <span>Items Subtotal:</span>
+                <span className="font-medium text-neutral-900">₹{cart.subtotal}</span>
+              </div>
+              {cart.discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>Festival Discount:</span>
+                  <span>-₹{cart.discountAmount}</span>
                 </div>
+              )}
+              <div className="flex justify-between text-neutral-600 items-center">
+                <span>10 km Doorstep Delivery:</span>
+                <span className="font-bold text-neutral-900">
+                  {cart.shippingFee === 0 ? (
+                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">
+                      FREE
+                    </span>
+                  ) : (
+                    `₹${cart.shippingFee}`
+                  )}
+                </span>
               </div>
-            ))}
-          </div>
-
-          <div className="border-t border-kbBorder pt-3 space-y-1.5 text-xs">
-            <div className="flex justify-between text-neutral-600">
-              <span>Subtotal:</span>
-              <span>₹{cart.subtotal}</span>
-            </div>
-            {cart.discountAmount > 0 && (
-              <div className="flex justify-between text-emerald-700 font-semibold">
-                <span>Discount:</span>
-                <span>-₹{cart.discountAmount}</span>
+              <div className="border-t border-neutral-200 pt-3 flex justify-between items-baseline font-black text-neutral-900">
+                <span className="text-sm">Total Payable:</span>
+                <span className="text-2xl">₹{cart.total}</span>
               </div>
-            )}
-            <div className="flex justify-between text-neutral-600">
-              <span>Shipping:</span>
-              <span>{cart.shippingFee === 0 ? 'FREE' : `₹${cart.shippingFee}`}</span>
             </div>
-            <div className="border-t border-kbBorder pt-2 flex justify-between font-black text-base text-black">
-              <span>Total Payable:</span>
-              <span>₹{cart.total}</span>
-            </div>
-          </div>
 
-          <div className="bg-white p-3 rounded text-[10px] text-neutral-500 border border-kbBorder">
-            Dispatched from: <strong>KB FASHIONS</strong>, Kalwaral(Vil), Kamareddy(D), Telangana (503145).
+            <div className="bg-neutral-50 p-3.5 rounded-2xl text-[11px] text-neutral-600 border border-neutral-200 space-y-1">
+              <div className="font-bold text-neutral-900">✓ Handloom Provenance Guaranteed</div>
+              <p className="text-[10px] leading-relaxed">
+                Dispatched directly from <strong>KB FASHIONS</strong>, Kalwaral Village, Kamareddy, Telangana (503145). Accompanied by authentic Bill of Supply.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -1016,7 +1059,7 @@ export default function CheckoutPage() {
       {isSubmitting && (
         <SmoothLoadingOverlay
           message="Confirming Order with Kalwaral Store..."
-          submessage="Validating local 10 km delivery coverage, stock, and generating bill of supply..."
+          submessage="Validating local 10 km delivery coverage and generating Bill of Supply..."
         />
       )}
     </div>

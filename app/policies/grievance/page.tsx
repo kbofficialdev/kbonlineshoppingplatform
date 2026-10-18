@@ -3,165 +3,183 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 
 export const metadata = {
-  title: 'Grievance Redressal Officer | KB FASHIONS',
-  description: 'Statutory Grievance Redressal Officer details under Consumer Protection (E-Commerce) Rules 2020 for KB FASHIONS, Kalwaral village.',
+  title: 'Statutory Grievance Redressal Mechanism | KB FASHIONS',
+  description: 'Designated Grievance Redressal Officer disclosure under Rule 5(9) of the Consumer Protection (E-Commerce) Rules 2020 for KB FASHIONS, Telangana.',
 };
 
 export default function GrievanceRedressalPage() {
   const store = db.storeSettings;
 
   return (
-    <div className="space-y-8 pb-20 bg-[#FAF9F6] min-h-screen">
-      {/* Policy Hero Banner with Royal Purple-Violet Gradient */}
-      <section className="bg-gradient-to-r from-[#17092B] via-[#2A104E] to-[#140625] text-white border-b border-purple-900/50 py-12 sm:py-16 px-4 sm:px-6 lg:px-8 shadow-md">
-        <div className="max-w-5xl mx-auto space-y-4">
-          <div className="text-xs text-purple-300 flex items-center gap-2">
+    <div className="bg-[#f8f9fa] min-h-screen text-neutral-900 pb-20">
+      {/* Sleek Pure Black Hero Banner with Custom Handcrafted SVG Icon */}
+      <section className="bg-black text-white border-b border-neutral-800 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="text-xs text-neutral-400 flex items-center gap-2">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <span>/</span>
             <Link href="/policies/terms" className="hover:text-white transition-colors">Policies</Link>
             <span>/</span>
-            <span className="text-white font-semibold">Grievance Redressal</span>
+            <span className="text-white font-medium">Grievance Redressal</span>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-200 border border-purple-400/30">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-            <span>RULE 5(9) CONSUMER PROTECTION (E-COMMERCE) RULES 2020 DISCLOSURE</span>
+          <div className="flex items-start sm:items-center gap-4 pt-2">
+            {/* Custom SVG Icon for Grievance Redressal (Ombudsman Scales & Official Helpdesk) */}
+            <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-700 flex items-center justify-center shrink-0 shadow-inner">
+              <svg className="w-8 h-8 text-neutral-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21h18" />
+                <path d="M5 21V7l8-4v18" />
+                <path d="M19 21V11l-6-4" />
+                <path d="M9 9v.01" />
+                <path d="M9 12v.01" />
+                <path d="M9 15v.01" />
+                <path d="M9 18v.01" />
+              </svg>
+            </div>
+
+            <div>
+              <div className="inline-block px-3 py-0.5 rounded-full text-[10px] font-mono tracking-wider uppercase bg-neutral-800 text-neutral-300 border border-neutral-700 mb-1">
+                Consumer Protection (E-Commerce) Rules, 2020 • Rule 5(9)
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
+                Statutory Grievance Redressal Mechanism
+              </h1>
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
-            Consumer Grievance Redressal Mechanism
-          </h1>
-          <p className="text-sm text-purple-100/90 max-w-3xl leading-relaxed">
-            Statutory Nodal Grievance Redressal Officer &amp; Dispute Resolution Framework for {store.officialName}, Kalwaral Village.
+          <p className="text-xs sm:text-sm text-neutral-300 max-w-3xl leading-relaxed pt-1">
+            Mandatory disclosure of the Designated Grievance Redressal Officer, 48-hour statutory acknowledgement, and consumer dispute redressal procedures for {store.officialName}.
           </p>
 
-          {/* Quick Policy Navigation Strip */}
-          <div className="pt-3 flex flex-wrap gap-2 text-xs">
-            <Link href="/policies/shipping" className="bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-1.5 rounded-full border border-white/15 transition-colors">
-              🚚 Shipping &amp; 10 km
-            </Link>
-            <Link href="/policies/refunds" className="bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-1.5 rounded-full border border-white/15 transition-colors">
-              ↩️ 7-Day Returns
-            </Link>
-            <Link href="/policies/grievance" className="bg-white text-black font-bold px-3 py-1.5 rounded-full shadow-sm">
-              ⚖️ Grievance Officer
-            </Link>
-            <Link href="/policies/terms" className="bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-1.5 rounded-full border border-white/15 transition-colors">
+          {/* Minimalist Policy Navigation Strip */}
+          <div className="pt-4 flex flex-wrap gap-2 text-xs">
+            <Link href="/policies/terms" className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-medium px-3.5 py-1.5 rounded-full border border-neutral-700 transition-colors">
               📜 Terms of Sale
             </Link>
-            <Link href="/policies/privacy" className="bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-1.5 rounded-full border border-white/15 transition-colors">
-              🛡️ Privacy Policy
+            <Link href="/policies/shipping" className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-medium px-3.5 py-1.5 rounded-full border border-neutral-700 transition-colors">
+              🚚 Shipping &amp; 10 km Radius
             </Link>
-            <Link href="/policies/statutory-declaration" className="bg-white/10 hover:bg-white/20 text-white font-medium px-3 py-1.5 rounded-full border border-white/15 transition-colors">
+            <Link href="/policies/refunds" className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-medium px-3.5 py-1.5 rounded-full border border-neutral-700 transition-colors">
+              ↩️ 7-Day Returns
+            </Link>
+            <Link href="/policies/privacy" className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-medium px-3.5 py-1.5 rounded-full border border-neutral-700 transition-colors">
+              🛡️ Privacy &amp; Data Security
+            </Link>
+            <Link href="/policies/grievance" className="bg-white text-black font-bold px-3.5 py-1.5 rounded-full shadow-xs">
+              ⚖️ Grievance Redressal
+            </Link>
+            <Link href="/policies/statutory-declaration" className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-medium px-3.5 py-1.5 rounded-full border border-neutral-700 transition-colors">
               🏛️ Sec 23 Tax Exemption
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Main Content Container */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      {/* Main Content Area */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6 text-xs sm:text-sm leading-relaxed">
         
-        {/* Officer Contact Card (Dynamically Loaded from DB) */}
-        <div className="bg-gradient-to-br from-white to-purple-50/50 border-2 border-purple-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-100 pb-5">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-900 to-indigo-950 text-white flex items-center justify-center font-black text-2xl shadow-md border border-purple-300">
-                ⚖️
-              </div>
-              <div>
-                <div className="text-xl font-black text-neutral-900">{store.officialName || 'KB FASHIONS'}</div>
-                <div className="text-xs font-bold text-purple-700">{store.grievanceOfficerDesignation || 'Designated Grievance Redressal Officer & Managing Proprietorship'}</div>
-              </div>
+        {/* Designated Grievance Officer Card (Official Designation Only - No Person Names) */}
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 sm:p-8 space-y-6 hover-elevate-card">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-neutral-200 pb-5">
+            <div>
+              <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-500 block">
+                Statutory Authority • Rule 5(9)
+              </span>
+              <h2 className="text-lg sm:text-xl font-black text-neutral-900">
+                Designated Grievance Redressal Officer &amp; Customer Ombudsman
+              </h2>
+              <span className="text-xs font-bold text-neutral-700 block mt-0.5">
+                {store.officialName}
+              </span>
             </div>
 
             <Link
               href="/support"
-              className="px-5 py-2.5 rounded-full bg-purple-900 text-white font-bold text-xs hover:bg-purple-950 transition-colors shadow-sm inline-flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-full bg-black text-white hover:bg-neutral-800 text-xs font-bold transition-all shadow-xs shrink-0"
             >
-              <span>🎫</span>
-              <span>Open Online Support Ticket →</span>
+              Open Support Ticket →
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-            <div className="bg-white p-4 rounded-2xl border border-purple-100 space-y-1">
-              <span className="text-neutral-400 font-bold block text-[10px] uppercase">Official Email</span>
-              <a href={`mailto:${store.grievanceOfficerEmail}`} className="font-bold text-purple-900 hover:underline break-all">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="border border-neutral-200 rounded-xl p-4 bg-neutral-50 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Official Support Email</span>
+              <a href={`mailto:${store.grievanceOfficerEmail || 'kb.official.admin@gmail.com'}`} className="font-bold text-neutral-900 hover:underline break-all block">
                 {store.grievanceOfficerEmail || 'kb.official.admin@gmail.com'}
               </a>
+              <span className="text-[10px] text-neutral-500 block">Dedicated statutory inbox</span>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-purple-100 space-y-1">
-              <span className="text-neutral-400 font-bold block text-[10px] uppercase">Direct Helpline</span>
-              <a href={`tel:${store.grievanceOfficerPhone}`} className="font-bold text-purple-900 hover:underline">
+            <div className="border border-neutral-200 rounded-xl p-4 bg-neutral-50 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Direct Redressal Helpline</span>
+              <a href={`tel:${store.grievanceOfficerPhone || '+917989768200'}`} className="font-bold text-neutral-900 hover:underline block">
                 {store.grievanceOfficerPhone || '+91 7989768200'}
               </a>
+              <span className="text-[10px] text-neutral-500 block">Mon - Sat: 9:00 AM - 7:00 PM IST</span>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-purple-100 space-y-1">
-              <span className="text-neutral-400 font-bold block text-[10px] uppercase">Acknowledgement SLA</span>
-              <div className="font-bold text-emerald-700">Within 48 Hours</div>
+            <div className="border border-neutral-200 rounded-xl p-4 bg-neutral-50 space-y-1">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Physical Office Address</span>
+              <span className="font-medium text-neutral-800 text-xs block leading-snug">
+                {store.grievanceOfficerAddress || store.address}
+              </span>
             </div>
-
-            <div className="bg-white p-4 rounded-2xl border border-purple-100 space-y-1">
-              <span className="text-neutral-400 font-bold block text-[10px] uppercase">Redressal Mandate</span>
-              <div className="font-bold text-emerald-700">Within 30 Calendar Days</div>
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-purple-100 text-xs text-neutral-600 flex items-start gap-2">
-            <span className="text-amber-500">📍</span>
-            <span><strong>Physical Chamber &amp; Post Address:</strong> {store.grievanceOfficerAddress || store.address}</span>
           </div>
         </div>
 
-        {/* Escalation Matrix Table */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
-          <div className="flex items-center gap-3 border-b border-neutral-100 pb-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-lg">
-              📈
-            </div>
-            <div>
-              <h2 className="text-base font-black text-neutral-900">Three-Tier Dispute Escalation Matrix</h2>
-              <p className="text-xs text-neutral-500">Transparent consumer redressal hierarchy under Government of India guidelines</p>
-            </div>
-          </div>
+        {/* 1. Legal Mandate */}
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 sm:p-8 space-y-3 hover-elevate-card">
+          <h2 className="text-base sm:text-lg font-black text-neutral-900">
+            1. Legal Mandate &amp; Consumer Protection Framework
+          </h2>
+          <p className="text-neutral-700">
+            In accordance with Rule 5(9) of the Consumer Protection (E-Commerce) Rules, 2020 framed under the Consumer Protection Act, 2019, every e-commerce entity is legally required to establish a consumer grievance redressal mechanism and appoint a designated Grievance Officer.
+          </p>
+          <p className="text-neutral-700">
+            The Designated Grievance Redressal Officer acts as an impartial ombudsman to examine patron grievances concerning order delays, fabric cut discrepancies, payment disputes, or statutory return queries.
+          </p>
+        </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 text-xs">
-            <table className="w-full text-left divide-y divide-slate-200">
-              <thead className="bg-slate-50 text-slate-700 font-bold">
-                <tr>
-                  <th className="p-3.5">Escalation Tier</th>
-                  <th className="p-3.5">Responsible Desk</th>
-                  <th className="p-3.5">Resolution Window</th>
-                  <th className="p-3.5">Channel</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-neutral-800">
-                <tr className="hover:bg-slate-50/50">
-                  <td className="p-3.5 font-bold text-blue-700">Level 1: Support Desk</td>
-                  <td className="p-3.5">Kalwaral Village Customer Service Team</td>
-                  <td className="p-3.5 font-semibold text-emerald-700">Within 24 Hours</td>
-                  <td className="p-3.5">
-                    <Link href="/support" className="underline font-bold text-blue-600">Online Support Ticket</Link> / Helpline
-                  </td>
-                </tr>
-                <tr className="hover:bg-slate-50/50">
-                  <td className="p-3.5 font-bold text-purple-700">Level 2: Grievance Officer</td>
-                  <td className="p-3.5">{store.grievanceOfficerName} ({store.grievanceOfficerDesignation})</td>
-                  <td className="p-3.5 font-semibold text-emerald-700">Ack: 48h • Final: 15–30 Days</td>
-                  <td className="p-3.5">{store.grievanceOfficerEmail}</td>
-                </tr>
-                <tr className="hover:bg-slate-50/50">
-                  <td className="p-3.5 font-bold text-neutral-900">Level 3: Statutory Authority</td>
-                  <td className="p-3.5">National Consumer Helpline (NCH, Govt of India) / Consumer Forum</td>
-                  <td className="p-3.5 font-semibold">Statutory Judicial SLA</td>
-                  <td className="p-3.5">Toll-free 1915 / consumerhelpline.gov.in</td>
-                </tr>
-              </tbody>
-            </table>
+        {/* 2. Statutory Timelines */}
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 sm:p-8 space-y-4 hover-elevate-card">
+          <h2 className="text-base sm:text-lg font-black text-neutral-900">
+            2. Statutory Resolution Timelines
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="border-l-4 border-black bg-neutral-50 p-4 rounded-r-xl space-y-1">
+              <span className="font-black text-neutral-900 text-xs uppercase tracking-wider block">
+                48-Hour Acknowledgment Guarantee:
+              </span>
+              <p className="text-neutral-700 text-xs leading-relaxed">
+                As required by law, every formal grievance received via email or our online support ticket system will be assigned a unique ticket reference number and acknowledged in writing within <strong>48 hours</strong> of receipt.
+              </p>
+            </div>
+
+            <div className="border-l-4 border-black bg-neutral-50 p-4 rounded-r-xl space-y-1">
+              <span className="font-black text-neutral-900 text-xs uppercase tracking-wider block">
+                30-Day Disposal Guarantee:
+              </span>
+              <p className="text-neutral-700 text-xs leading-relaxed">
+                All consumer complaints shall be thoroughly investigated and redressed within <strong>30 calendar days</strong> from the date of formal receipt. Most local village inquiries are resolved within 2 to 3 working days.
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* 3. Grievance Lodging Procedure */}
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 sm:p-8 space-y-3 hover-elevate-card">
+          <h2 className="text-base sm:text-lg font-black text-neutral-900">
+            3. Grievance Lodging &amp; Escalation Process
+          </h2>
+          <p className="text-neutral-700">
+            To enable prompt resolution of your inquiry:
+          </p>
+          <ol className="list-decimal pl-5 space-y-1.5 text-neutral-700">
+            <li><strong>Step 1 (Online Ticket):</strong> Navigate to <Link href="/support" className="text-black font-bold underline hover:text-neutral-700">Online Support Desk</Link> and submit your inquiry with Order ID, Bill of Supply Number, and a brief description.</li>
+            <li><strong>Step 2 (Direct Escalation):</strong> If your ticket is not resolved within 48 hours, send an email directly to <a href={`mailto:${store.grievanceOfficerEmail || 'kb.official.admin@gmail.com'}`} className="text-black font-bold underline">{store.grievanceOfficerEmail || 'kb.official.admin@gmail.com'}</a> quoting your Ticket Reference Number.</li>
+            <li><strong>Step 3 (Statutory Escalation):</strong> If a dispute remains unresolved, consumers retain the right to approach the National Consumer Helpline (NCH Toll-Free: <strong>1915</strong> or visit <a href="https://consumerhelpline.gov.in" target="_blank" rel="noopener noreferrer" className="text-black font-bold underline">consumerhelpline.gov.in</a>) or the competent District Consumer Disputes Redressal Commission in Kamareddy, Telangana.</li>
+          </ol>
         </div>
 
       </div>

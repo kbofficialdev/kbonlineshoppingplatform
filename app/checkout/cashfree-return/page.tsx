@@ -133,35 +133,61 @@ function CashfreeReturnContent() {
           </div>
         ) : (
           <div className="text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-2xl mx-auto">
+            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-2xl mx-auto shadow-inner">
               ⚠️
             </div>
 
             <div className="space-y-1">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                Payment Incomplete
+                Payment Incomplete / Exited
               </span>
-              <h1 className="text-2xl font-black text-neutral-900 pt-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 pt-2">
                 Transaction Status
               </h1>
-              <p className="text-xs text-neutral-500">
-                {errorMessage || 'Your transaction was not confirmed by the payment gateway.'}
+              <p className="text-xs text-neutral-600 max-w-md mx-auto leading-relaxed">
+                {errorMessage || 'Your transaction was not completed or you exited before concluding the payment.'}
               </p>
             </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+            {order && (
+              <div className="bg-neutral-50 rounded-2xl border border-neutral-200 p-4 text-xs text-left space-y-2">
+                <div className="flex justify-between border-b border-neutral-200 pb-2">
+                  <span className="text-neutral-500">Order ID:</span>
+                  <span className="font-mono font-bold text-neutral-900 break-all">{order.orderId}</span>
+                </div>
+                <div className="flex justify-between border-b border-neutral-200 pb-2">
+                  <span className="text-neutral-500">Payable Amount:</span>
+                  <span className="font-black text-neutral-900">₹{order.totalPaid}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Current Gateway Status:</span>
+                  <span className="font-bold text-amber-800">{order.paymentStatus || 'PENDING'}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href="/checkout"
-                className="px-6 py-3 rounded-full bg-black text-white hover:bg-neutral-800 text-xs font-bold transition-all"
+                className="px-6 py-3 rounded-full bg-black text-white hover:bg-neutral-800 text-xs font-bold transition-all shadow-sm"
               >
                 Retry Payment at Checkout →
               </Link>
+
+              {order && (
+                <Link
+                  href={`/orders/${order.orderId}`}
+                  className="px-5 py-3 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold transition-all"
+                >
+                  View Order Details
+                </Link>
+              )}
 
               <Link
                 href="/support"
                 className="px-5 py-3 rounded-full border border-neutral-200 text-neutral-700 hover:text-black text-xs font-semibold transition-all"
               >
-                Contact Village Support
+                Support Tickets
               </Link>
             </div>
           </div>

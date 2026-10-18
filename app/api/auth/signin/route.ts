@@ -14,10 +14,8 @@ export async function POST(req: NextRequest) {
 
     const { emailOrPhone, password } = parsed.data;
 
-    // Find user by email or phone
-    const user = db.users.find(
-      u => u.email.toLowerCase() === emailOrPhone.toLowerCase() || u.phone === emailOrPhone
-    );
+    // Find user by email or phone (automatically loads disk state & normalizes format)
+    const user = db.findUser(emailOrPhone);
 
     if (!user) {
       return NextResponse.json({ error: 'No account found with this email or phone number' }, { status: 401 });
@@ -56,6 +54,7 @@ export async function POST(req: NextRequest) {
       if (user.failedLoginAttempts >= 5) {
         // Freeze account for exactly 10 minutes
         user.lockedUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        db.saveUser(user);
         db.addAuditLog(
           user.email,
           user.role,
@@ -76,6 +75,7 @@ export async function POST(req: NextRequest) {
         }, { status: 423 });
       }
 
+      db.saveUser(user);
       const attemptsRemaining = 5 - user.failedLoginAttempts;
       return NextResponse.json({
         error: `Incorrect password. Warning: ${attemptsRemaining} attempt(s) remaining before a 10-minute security freeze.`,
@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
     // 3. Reset failed password attempts on successful match
     user.failedLoginAttempts = 0;
     user.lockedUntil = null;
+    db.saveUser(user);
 
     // Strict Password + OTP Verification for Customers
     const providedOtp = (body.otp || '').trim();
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
       user.otpExpiresAt = fiveMinutesLater;
       user.emailVerificationToken = verificationToken;
       user.emailVerificationExpiresAt = fiveMinutesLater;
+      db.saveUser(user);
 
       const host = req.headers.get('host') || 'localhost:3000';
       const protocol = req.nextUrl.protocol || 'http:';
@@ -131,6 +133,7 @@ export async function POST(req: NextRequest) {
       }
       user.otpCode = null;
       user.otpExpiresAt = null;
+      db.saveUser(user);
     }
 
     db.addAuditLog(

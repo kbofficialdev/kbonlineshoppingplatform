@@ -26,6 +26,15 @@ export default function ContactPage() {
         <p className="text-sm text-neutral-500 max-w-lg mx-auto">
           We are here to help with sizing, fabric questions, order inquiries, or special village artisan requests.
         </p>
+        <div className="pt-2">
+          <Link
+            href="/support"
+            className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-sm"
+          >
+            <span>🎫</span>
+            <span>Raise a Ticket in Online Support Desk (24h SLA) →</span>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">

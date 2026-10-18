@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ authenticated: false, user: null });
   }
 
-  const user = db.users.find(u => u.id === auth.userId);
+  const user = db.findUserById(auth.userId);
   if (!user || !user.isActive) {
     return NextResponse.json({ authenticated: false, user: null });
   }

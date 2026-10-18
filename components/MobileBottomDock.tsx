@@ -67,7 +67,7 @@ export default function MobileBottomDock() {
             : 'text-neutral-400 hover:text-white'
         }`}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isHome ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isHome ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
@@ -83,7 +83,7 @@ export default function MobileBottomDock() {
             : 'text-neutral-400 hover:text-white'
         }`}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isCategories ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isCategories ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
           <rect x="3" y="3" width="7" height="7" rx="1.5" />
           <rect x="14" y="3" width="7" height="7" rx="1.5" />
           <rect x="14" y="14" width="7" height="7" rx="1.5" />
@@ -102,7 +102,7 @@ export default function MobileBottomDock() {
         }`}
       >
         <div className="relative">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isWishlist ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isWishlist ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
           {wishlistCount > 0 && (
@@ -124,7 +124,7 @@ export default function MobileBottomDock() {
         }`}
       >
         <div className="relative">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isCart ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isCart ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
             <circle cx="9" cy="21" r="1" />
             <circle cx="20" cy="21" r="1" />
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
@@ -148,7 +148,7 @@ export default function MobileBottomDock() {
             : 'text-neutral-400 hover:text-white'
         }`}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isAccount ? "2.4" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${isAccount ? 'text-kb-blue' : ''}`}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isAccount ? "2.4" : "1.8"} strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${isAccount ? 'text-kb-blue' : ''}`}>
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>

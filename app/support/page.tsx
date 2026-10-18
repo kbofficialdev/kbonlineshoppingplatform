@@ -222,30 +222,6 @@ export default function SupportPage() {
     }
   };
 
-  const handleMarkResolved = async (ticketId: string) => {
-    try {
-      const res = await authFetch(`/api/support/tickets/${ticketId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'RESOLVED' }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast({
-          type: 'success',
-          title: 'Ticket Resolved',
-          message: 'Thank you for confirming resolution of your issue.',
-        });
-        if (selectedTicket && selectedTicket.id === ticketId) {
-          setSelectedTicket(data.ticket);
-        }
-        loadSupportData();
-      }
-    } catch (err) {
-      showToast({ type: 'error', title: 'Error', message: 'Could not update status' });
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
@@ -254,6 +230,8 @@ export default function SupportPage() {
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-900 border border-blue-200"><span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>In Progress</span>;
       case 'WAITING_FOR_CUSTOMER':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-200"><span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>Action Required</span>;
+      case 'REOPENED':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-100 text-orange-900 border border-orange-200"><span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse"></span>Reopened</span>;
       case 'RESOLVED':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">✓ Resolved</span>;
       case 'CLOSED':
@@ -685,16 +663,11 @@ export default function SupportPage() {
                   )}
                 </div>
 
-                <div className="flex justify-between items-center">
-                  {selectedTicket.status !== 'RESOLVED' && (
-                    <button
-                      type="button"
-                      onClick={() => handleMarkResolved(selectedTicket.id)}
-                      className="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline"
-                    >
-                      ✓ Mark as Resolved
-                    </button>
-                  )}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1 border-t border-slate-100">
+                  <div className="flex items-center gap-2 text-[11px] text-neutral-500 font-medium bg-neutral-100/70 px-3 py-1.5 rounded-lg border border-neutral-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span>Status managed by KB Support Desk</span>
+                  </div>
                   <div className="flex gap-2 ml-auto">
                     <button
                       type="submit"

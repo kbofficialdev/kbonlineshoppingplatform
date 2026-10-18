@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
     }
 
-    const user = db.users.find(u => u.id === auth.userId);
+    const user = db.findUserById(auth.userId);
     if (!user || !user.isActive) {
       return NextResponse.json({ error: 'User account not found or deactivated' }, { status: 404 });
     }

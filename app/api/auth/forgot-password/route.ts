@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { email } = parsed.data;
-    const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const user = db.findUser(email);
 
     if (!user) {
       // Return success even if not found to prevent user enumeration attacks
@@ -29,8 +29,9 @@ export async function POST(req: NextRequest) {
 
     user.resetToken = resetToken;
     user.resetExpiresAt = resetExpiresAt;
+    db.saveUser(user);
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://kbfashions.in'}/auth/reset-password?token=${resetToken}`;
 
     const { sendPasswordResetEmail } = await import('@/lib/email');
     await sendPasswordResetEmail(user.email, user.name, resetUrl);

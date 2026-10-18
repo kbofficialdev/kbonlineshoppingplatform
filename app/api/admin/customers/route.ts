@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
+    db.loadFromDisk();
     const customers = db.users
       .filter(u => u.role === 'CUSTOMER')
       .map(u => {
@@ -46,13 +47,14 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const { userId, isActive } = body;
 
-    const user = db.users.find(u => u.id === userId);
+    const user = db.findUserById(userId);
     if (!user) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     user.isActive = Boolean(isActive);
     user.updatedAt = new Date().toISOString();
+    db.saveUser(user);
 
     db.addAuditLog(
       auth.email,

@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Lookup user details
-    const user = db.users.find(u => u.id === auth.userId);
+    const user = db.findUserById(auth.userId);
     const customerName = user?.name || auth.name || 'Patron';
     const customerEmail = user?.email || auth.email || '';
     const customerPhone = user?.phone || '';

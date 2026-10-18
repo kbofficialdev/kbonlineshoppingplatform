@@ -9,9 +9,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
+  const tracking = db.getOrderTracking(order.orderId);
+
   return NextResponse.json({
     success: true,
     order,
+    tracking,
     store: db.storeSettings,
   });
 }

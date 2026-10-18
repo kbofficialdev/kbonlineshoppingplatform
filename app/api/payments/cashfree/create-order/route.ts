@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
     const invoiceNumber = `BILL-2026-${Date.now().toString().slice(-6)}`;
     const now = new Date().toISOString();
 
-    const host = req.headers.get('host') || 'localhost:3000';
+    const host = req.headers.get('host') || 'kbfashions.in';
     const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
-    const appUrl = `${protocol}://${host}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
     const returnUrl = `${appUrl}/checkout/cashfree-return?order_id=${orderId}`;
 
     // Clean phone number for Cashfree
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
         customer_phone: cleanPhone,
       },
       returnUrl,
+      notifyUrl: `${appUrl}/api/payments/cashfree/webhook`,
       orderNote: `KB Fashions Kalwaral Order #${orderId}`,
     });
 
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       timeline: initialTimeline,
     };
 
-    db.orders.unshift(newOrder);
+    db.addOrder(newOrder);
 
     // Audit log
     db.addAuditLog(

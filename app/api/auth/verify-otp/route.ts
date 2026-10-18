@@ -13,9 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { emailOrPhone, otp } = parsed.data;
-    const user = db.users.find(
-      u => u.email.toLowerCase() === emailOrPhone.toLowerCase() || u.phone === emailOrPhone
-    );
+    const user = db.findUser(emailOrPhone);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -37,6 +35,7 @@ export async function POST(req: NextRequest) {
         user.lockedUntil = new Date(Date.now() + 10 * 60 * 1000).toISOString();
         user.otpCode = null;
         user.otpExpiresAt = null;
+        db.saveUser(user);
 
         const { sendAccountLockedEmail } = await import('@/lib/email');
         await sendAccountLockedEmail(user.email, user.name, 10);
@@ -48,6 +47,7 @@ export async function POST(req: NextRequest) {
         }, { status: 423 });
       }
 
+      db.saveUser(user);
       return NextResponse.json({
         error: `Invalid OTP code. Warning: Attempt ${user.failedLoginAttempts} of 3.`,
         attemptsRemaining: 3 - user.failedLoginAttempts,
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
     user.failedLoginAttempts = 0;
     user.otpRequestCount = 0;
     user.lockedUntil = null;
+    db.saveUser(user);
 
     db.addAuditLog(
       user.email,
