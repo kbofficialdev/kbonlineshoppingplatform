@@ -2,22 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useModalAlert } from '@/components/ModalContext';
+import { useToast } from '@/components/ToastContext';
 import { authFetch } from '@/lib/clientAuth';
 
 export default function WishlistPage() {
   const { showModal } = useModalAlert();
+  const { showToast } = useToast();
   const [wishlist, setWishlist] = useState<any[]>([]);
 
   useEffect(() => {
-    authFetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (!data?.authenticated) {
-          window.location.href = '/auth/signin?redirect=%2Fwishlist&reason=auth_required';
-        }
-      })
-      .catch(() => {});
     loadWishlist();
   }, []);
 
@@ -38,10 +33,10 @@ export default function WishlistPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('kb_wishlist', JSON.stringify(updated));
     }
-    showModal({
+    showToast({
       type: 'info',
       title: 'Item Removed',
-      message: 'Garment removed from your wishlist.',
+      message: 'Item removed from your wishlist.',
     });
   };
 
@@ -62,8 +57,8 @@ export default function WishlistPage() {
       if (res.status === 401 || data.requiresAuth) {
         showModal({
           type: 'auth',
-          title: 'Sign In Required to Shop',
-          message: 'An active account session is required to move saved wishlist items into your shopping bag.',
+          title: 'Sign In Required',
+          message: 'Please sign in to move saved wishlist items to your shopping cart.',
           primaryBtn: {
             text: 'Sign In to Account →',
             href: `/auth/signin?redirect=%2Fwishlist&reason=auth_required`,
@@ -77,79 +72,86 @@ export default function WishlistPage() {
       }
 
       if (!res.ok) {
-        showModal({
+        showToast({
           type: 'error',
-          title: 'Unable to Add to Bag',
-          message: data.error || 'Failed to move item to bag. Please try again.',
+          title: 'Unable to Add',
+          message: data.error || 'Failed to move item to bag.',
         });
         return;
       }
 
       handleRemove(product.productId || product.id);
-      showModal({
+      showToast({
         type: 'success',
-        title: 'Moved to Shopping Bag',
-        message: `✓ "${product.name}" was moved from wishlist to your shopping bag!`,
-        primaryBtn: {
-          text: 'View Shopping Bag & Checkout →',
-          href: '/cart',
-        },
-        secondaryBtn: {
-          text: 'Keep Viewing Wishlist',
-        },
+        title: 'Moved to Cart',
+        message: `✓ "${product.name}" added to your shopping cart!`,
       });
     } catch (e) {
-      showModal({
+      showToast({
         type: 'error',
         title: 'Network Error',
-        message: 'Could not connect to the store servers. Please check your internet connection.',
+        message: 'Could not connect to store servers.',
       });
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 sm:pb-12">
       {/* Header */}
-      <div className="flex justify-between items-baseline border-b border-kbBorder pb-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutralBorder pb-4 mb-8 gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-kbBlack">My Wishlist</h1>
-          <p className="text-xs text-neutral-500 mt-1">Saved favorites from KB FASHIONS village catalog</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-warmGray text-obsidian border border-neutralBorder mb-1">
+            <span>🤍 Saved Favorites</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-obsidian tracking-tight">
+            My Wishlist ({wishlist.length})
+          </h1>
         </div>
-        <Link href="/search?category=All" className="text-xs font-semibold text-neutral-600 hover:text-black underline">
-          ← Discover More Clothes
+        <Link
+          href="/search?category=All"
+          className="text-xs font-bold text-electricBlue hover:underline flex items-center gap-1"
+        >
+          <span>← Browse Catalog</span>
         </Link>
       </div>
 
       {wishlist.length === 0 ? (
-        <div className="bg-kbSurfaceAlt border border-kbBorder rounded-kb-lg p-12 text-center max-w-lg mx-auto space-y-4">
-          <div className="text-4xl">♡</div>
-          <h2 className="text-lg font-bold">Your wishlist is empty</h2>
-          <p className="text-xs text-neutral-500">
-            Bookmark items you love by tapping the heart icon on any garment in our store.
+        <div className="bg-white border border-neutralBorder rounded-2xl p-12 text-center max-w-md mx-auto space-y-4 shadow-xs">
+          <div className="w-16 h-16 rounded-full bg-warmGray mx-auto flex items-center justify-center text-2xl">
+            🤍
+          </div>
+          <h2 className="text-lg font-bold text-obsidian">Your wishlist is empty</h2>
+          <p className="text-xs text-secondaryText max-w-xs mx-auto">
+            Tap the heart icon on any handloom saree, kurti, or fabric to save it for later.
           </p>
           <Link
             href="/search?category=All"
-            className="inline-block bg-black text-white text-xs font-bold px-6 py-3 rounded-full hover:bg-neutral-800"
+            className="inline-block bg-obsidian text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-neutral-800 transition-colors shadow-sm"
           >
-            Explore Authentic Garments
+            Explore Handlooms &amp; Festive Wear →
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {wishlist.map(product => {
-            const imageSrc = product.images?.[0]?.data || '';
+            const imageSrc = product.images?.[0]?.data || product.image || '';
             const prodId = product.productId || product.id;
 
             return (
               <div
                 key={prodId}
-                className="bg-white border border-kbBorder hover:border-black rounded-kb-md p-4 transition-all hover:shadow-md flex flex-col justify-between"
+                className="bg-white border border-neutralBorder hover:border-obsidian rounded-2xl p-3 sm:p-4 transition-all shadow-xs flex flex-col justify-between group"
               >
                 <div>
-                  <Link href={`/products/${prodId}`} className="block relative aspect-[4/5] bg-kbCardBg rounded-kb-sm overflow-hidden mb-3">
+                  <Link href={`/products/${prodId}`} className="block relative aspect-3/4 bg-warmGray rounded-xl overflow-hidden mb-3">
                     {imageSrc ? (
-                      <img src={imageSrc} alt={product.name} className="w-full h-full object-cover" />
+                      <Image
+                        src={imageSrc}
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        unoptimized={imageSrc.startsWith('http')}
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-bold text-neutral-300">KB</div>
                     )}
@@ -160,26 +162,26 @@ export default function WishlistPage() {
                   </div>
 
                   <Link href={`/products/${prodId}`}>
-                    <h3 className="font-bold text-sm text-neutral-900 hover:underline line-clamp-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-obsidian hover:text-electricBlue line-clamp-1 transition-colors">
                       {product.name}
                     </h3>
                   </Link>
 
-                  <div className="mt-2 font-extrabold text-sm text-black">
+                  <div className="mt-1 font-bold text-sm sm:text-base text-obsidian">
                     ₹{product.price}
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-kbBorder mt-3 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-neutralBorder mt-3 flex items-center gap-2">
                   <button
                     onClick={() => handleMoveToBag(product)}
-                    className="flex-1 bg-black text-white text-xs font-bold py-2 rounded-kb-pill hover:bg-neutral-800 text-center"
+                    className="flex-1 bg-electricBlue text-white text-xs font-bold py-2 rounded-xl hover:bg-blue-600 transition-colors text-center shadow-xs"
                   >
-                    + Move to Bag
+                    Move to Bag
                   </button>
                   <button
                     onClick={() => handleRemove(prodId)}
-                    className="w-8 h-8 rounded-full border border-kbBorder hover:border-red-500 hover:text-red-500 flex items-center justify-center text-xs"
+                    className="w-8 h-8 rounded-xl border border-neutralBorder hover:border-rose-300 hover:text-rose-600 flex items-center justify-center text-xs transition-colors shrink-0"
                     title="Remove from wishlist"
                   >
                     ✕
@@ -193,4 +195,3 @@ export default function WishlistPage() {
     </div>
   );
 }
-

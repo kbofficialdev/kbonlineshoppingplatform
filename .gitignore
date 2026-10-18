@@ -10,3 +10,5 @@ build/
 .next/
 coverage/
 *.tsbuildinfo
+data/backups/
+data/screenshots_revamp/

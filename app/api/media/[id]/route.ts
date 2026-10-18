@@ -9,6 +9,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Image not found' }, { status: 404 });
   }
 
+  // If stored as external HTTP/HTTPS URL
+  if (image.data.startsWith('http://') || image.data.startsWith('https://')) {
+    return NextResponse.redirect(image.data, { status: 302 });
+  }
+
   // If stored as Data URL (SVG or Base64)
   if (image.data.startsWith('data:')) {
     const [header, base64OrSvg] = image.data.split(',');

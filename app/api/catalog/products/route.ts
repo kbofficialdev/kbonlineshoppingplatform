@@ -102,13 +102,20 @@ export async function POST(req: NextRequest) {
     const productId = `prod-${Date.now()}`;
     const imageId = `img-${Date.now()}`;
 
+    const rawImage = (data as any).imageUrl || data.imageData || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=80';
+    const { validateImageDataPayload } = await import('@/lib/imageValidation');
+    const valResult = validateImageDataPayload(rawImage);
+    if (!valResult.valid) {
+      return NextResponse.json({ error: valResult.error || 'Invalid product image' }, { status: 400 });
+    }
+
     // Store image directly in database
     const imageModel: ProductImageModel = {
       id: imageId,
       productId,
       name: `${data.name} Image`,
-      mimeType: data.imageData.startsWith('data:image/svg') ? 'image/svg+xml' : 'image/jpeg',
-      data: data.imageData,
+      mimeType: valResult.mimeType || 'image/jpeg',
+      data: valResult.sanitizedUrl || rawImage,
       isPrimary: true,
       createdAt: now,
     };

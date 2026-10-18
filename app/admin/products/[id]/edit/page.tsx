@@ -24,6 +24,7 @@ export default function AdminEditProductPage() {
   const [description, setDescription] = useState('');
   const [fabricCare, setFabricCare] = useState('');
   const [origin, setOrigin] = useState('Kalwaral, Telangana, India');
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [imageData, setImageData] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -99,6 +100,9 @@ export default function AdminEditProductPage() {
 
         if (p.images?.[0]?.data) {
           setImagePreview(p.images[0].data);
+          if (p.images[0].data.startsWith('http')) {
+            setImageUrl(p.images[0].data);
+          }
         }
       }
     } catch (e) {
@@ -174,6 +178,9 @@ export default function AdminEditProductPage() {
         };
       }
 
+      if (imageUrl.trim()) {
+        payload.imageUrl = imageUrl.trim();
+      }
       if (imageData) {
         payload.imageData = imageData;
       }
@@ -390,24 +397,46 @@ export default function AdminEditProductPage() {
         )}
 
         {/* Image update */}
-        <div className="border-t border-kbBorder pt-6 space-y-3">
-          <label className="font-black text-sm text-neutral-900 block">
-            Update Photograph / Artwork (Saved in PostgreSQL Database)
-          </label>
-          <div className="flex gap-4 items-center">
-            <div className="w-20 h-24 bg-kbCardBg border border-kbBorder rounded overflow-hidden flex items-center justify-center">
+        <div className="border-t border-neutral-200 pt-6 space-y-4">
+          <div>
+            <label className="font-bold text-sm text-neutral-900 block">
+              Update Product Photography (Persisted in PostgreSQL)
+            </label>
+            <p className="text-[11px] text-neutral-500 mt-0.5">
+              Enter an external image URL (Unsplash/CDN) or upload a local image file.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
+            <div className="w-24 h-32 bg-neutral-100 border border-neutral-200 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
               {imagePreview ? (
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-neutral-400 font-bold text-xs">No Image</span>
               )}
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageFileChange}
-              className="text-xs text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-kb-pill file:border-0 file:text-xs file:font-bold file:bg-black file:text-white hover:file:bg-neutral-800"
-            />
+            <div className="flex-1 space-y-2 w-full">
+              <div>
+                <label className="font-bold text-neutral-700 block mb-1">External Photography URL</label>
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    setImageUrl(e.target.value);
+                    setImageData('');
+                    setImagePreview(e.target.value);
+                  }}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-xs font-mono"
+                />
+              </div>
+              <div className="text-neutral-400 text-xs">— or upload new file —</div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageFileChange}
+                className="text-xs text-neutral-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-black file:text-white hover:file:bg-neutral-800"
+              />
+            </div>
           </div>
         </div>
 

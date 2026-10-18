@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clearClientSession, getStoredToken, authFetch } from '@/lib/clientAuth';
 import { useToast } from '@/components/ToastContext';
 import { SmoothLoader } from '@/components/SmoothLoader';
 
-type AccountTab = 'menu' | 'profile' | 'orders' | 'tracking' | 'addresses' | 'payments' | 'security';
+type AccountTab = 'overview' | 'orders' | 'wishlist' | 'addresses' | 'profile' | 'security';
 
 function AccountManagementContent() {
   const router = useRouter();
@@ -15,15 +16,12 @@ function AccountManagementContent() {
   const searchParams = useSearchParams();
   const paramTab = searchParams.get('tab') as AccountTab | null;
 
-  // On mobile, if no explicit tab is in URL, default to 'menu' (the Modern Account card)
-  // On desktop, default to 'profile'
-  const [activeTab, setActiveTab] = useState<AccountTab>(paramTab || 'menu');
+  const [activeTab, setActiveTab] = useState<AccountTab>(paramTab || 'overview');
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [wishlist, setWishlist] = useState<any[]>([]);
   const [trackingData, setTrackingData] = useState<any>(null);
-  const [trackingSearchId, setTrackingSearchId] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -38,11 +36,8 @@ function AccountManagementContent() {
   const [state, setState] = useState('Telangana');
   const [pinCode, setPinCode] = useState('503145');
   const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'te'>('en');
-  const [smsUpdates, setSmsUpdates] = useState(true);
-  const [whatsappUpdates, setWhatsappUpdates] = useState(true);
-  const [bio, setBio] = useState('');
 
-  // Password Change Form State
+  // Password Change State
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,19 +52,13 @@ function AccountManagementContent() {
   const [addrDistrict, setAddrDistrict] = useState('Kamareddy');
   const [addrState, setAddrState] = useState('Telangana');
   const [addrPin, setAddrPin] = useState('503145');
-  const [addrIsDefault, setAddrIsDefault] = useState(false);
-
-  // Payment Method Form State
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [payType, setPayType] = useState<'UPI' | 'CARD'>('UPI');
-  const [payLabel, setPayLabel] = useState('');
-  const [payIdentifier, setPayIdentifier] = useState('');
 
   // Avatar Upload Ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadAccountData();
+    loadWishlist();
   }, []);
 
   useEffect(() => {
@@ -77,6 +66,17 @@ function AccountManagementContent() {
       setActiveTab(paramTab);
     }
   }, [paramTab]);
+
+  const loadWishlist = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kb_wishlist');
+        if (stored) {
+          setWishlist(JSON.parse(stored));
+        }
+      } catch (e) {}
+    }
+  };
 
   const getAuthHeaders = (): Record<string, string> => {
     const headers: Record<string, string> = {};
@@ -103,9 +103,7 @@ function AccountManagementContent() {
         setProfile(data.profile);
         setOrders(data.orders || []);
         setAddresses(data.addresses || []);
-        setPaymentMethods(data.paymentMethods || []);
 
-        // Sync local form state
         setName(data.profile.name || '');
         setPhone(data.profile.phone || '');
         setVillageOrCity(data.profile.villageOrCity || 'Kalwaral');
@@ -114,13 +112,6 @@ function AccountManagementContent() {
         setState(data.profile.state || 'Telangana');
         setPinCode(data.profile.pinCode || '503145');
         setPreferredLanguage(data.profile.preferredLanguage || 'en');
-        setSmsUpdates(data.profile.smsUpdates !== false);
-        setWhatsappUpdates(data.profile.whatsappUpdates !== false);
-        setBio(data.profile.bio || '');
-
-        if (data.orders?.length > 0 && !trackingData) {
-          fetchTracking(data.orders[0].orderId || data.orders[0].id);
-        }
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error loading account data.' });
@@ -129,7 +120,6 @@ function AccountManagementContent() {
     }
   };
 
-  // Avatar Upload Handler
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -164,7 +154,7 @@ function AccountManagementContent() {
           showToast({
             type: 'success',
             title: 'Avatar Updated',
-            message: 'Your profile avatar has been saved and updated across the store.',
+            message: 'Your profile photo has been updated.',
           });
         } else {
           showToast({ type: 'error', title: 'Upload Failed', message: data.error || 'Failed to update avatar.' });
@@ -178,7 +168,6 @@ function AccountManagementContent() {
     }
   };
 
-  // Save Profile Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -198,9 +187,6 @@ function AccountManagementContent() {
           state: state.trim(),
           pinCode: pinCode.trim(),
           preferredLanguage,
-          smsUpdates,
-          whatsappUpdates,
-          bio: bio.trim(),
         }),
       });
 
@@ -211,29 +197,18 @@ function AccountManagementContent() {
         showToast({
           type: 'success',
           title: 'Profile Updated',
-          message: 'Your personal details have been saved.',
+          message: 'Your profile details have been saved.',
         });
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to update profile' });
-        showToast({
-          type: 'error',
-          title: 'Update Failed',
-          message: data.error || 'Could not save profile details.',
-        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error saving profile' });
-      showToast({
-        type: 'error',
-        title: 'Network Error',
-        message: 'Could not connect to store server.',
-      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Change Password Handler
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword || !newPassword) {
@@ -242,11 +217,6 @@ function AccountManagementContent() {
     }
     if (newPassword !== confirmPassword) {
       setStatusMessage({ type: 'error', text: 'New passwords do not match' });
-      showToast({
-        type: 'warning',
-        title: 'Password Mismatch',
-        message: 'New password and confirmation do not match.',
-      });
       return;
     }
 
@@ -274,11 +244,6 @@ function AccountManagementContent() {
         setConfirmPassword('');
       } else {
         setStatusMessage({ type: 'error', text: data.error || 'Failed to update password' });
-        showToast({
-          type: 'error',
-          title: 'Update Failed',
-          message: data.error || 'Incorrect current password or invalid new password.',
-        });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error updating password' });
@@ -287,7 +252,6 @@ function AccountManagementContent() {
     }
   };
 
-  // Add Address Handler
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -305,7 +269,7 @@ function AccountManagementContent() {
           district: addrDistrict.trim(),
           state: addrState.trim(),
           pinCode: addrPin.trim(),
-          isDefault: addrIsDefault,
+          isDefault: addresses.length === 0,
         }),
       });
 
@@ -320,7 +284,7 @@ function AccountManagementContent() {
         showToast({
           type: 'success',
           title: 'Address Added',
-          message: 'New village delivery address registered.',
+          message: 'New delivery address registered.',
         });
       }
     } catch (err: any) {
@@ -330,7 +294,6 @@ function AccountManagementContent() {
     }
   };
 
-  // Delete Address Handler
   const handleDeleteAddress = async (id: string) => {
     try {
       const headers = getAuthHeaders();
@@ -352,80 +315,43 @@ function AccountManagementContent() {
     }
   };
 
-  // Add Payment Method Handler
-  const handleAddPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setIsSaving(true);
-      const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
-      const res = await fetch('/api/account/payment-methods', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          type: payType,
-          label: payLabel.trim(),
-          identifier: payIdentifier.trim(),
-          isDefault: true,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.paymentMethod) {
-        setPaymentMethods((prev) => [data.paymentMethod, ...prev]);
-        setShowPaymentForm(false);
-        setPayLabel('');
-        setPayIdentifier('');
-        showToast({
-          type: 'success',
-          title: 'Payment Method Saved',
-          message: 'New payment method linked securely.',
-        });
-      }
-    } catch (err: any) {
-      setStatusMessage({ type: 'error', text: 'Error saving payment method' });
-    } finally {
-      setIsSaving(false);
+  const handleRemoveWishlist = (productId: string) => {
+    const updated = wishlist.filter(p => (p.productId || p.id) !== productId);
+    setWishlist(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kb_wishlist', JSON.stringify(updated));
     }
+    showToast({
+      type: 'info',
+      title: 'Item Removed',
+      message: 'Item removed from your wishlist.',
+    });
   };
 
-  // Delete Payment Method Handler
-  const handleDeletePayment = async (id: string) => {
+  const handleMoveToBag = async (product: any) => {
     try {
-      const headers = getAuthHeaders();
-      const res = await fetch(`/api/account/payment-methods?id=${id}`, {
-        method: 'DELETE',
-        headers,
+      const res = await authFetch('/api/cart/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.productId || product.id,
+          name: product.name,
+          price: product.price,
+          size: product.sizes?.[0] || 'M',
+        })
       });
       const data = await res.json();
       if (data.success) {
-        setPaymentMethods((prev) => prev.filter((p) => p.id !== id));
         showToast({
-          type: 'info',
-          title: 'Payment Method Removed',
-          message: 'Payment option was deleted.',
+          type: 'success',
+          title: 'Moved to Bag',
+          message: `${product.name} added to your shopping cart.`,
         });
-      }
-    } catch (err: any) {
-      setStatusMessage({ type: 'error', text: 'Error deleting payment method' });
-    }
-  };
-
-  // Fetch Tracking Handler
-  const fetchTracking = async (orderId: string) => {
-    try {
-      const headers = getAuthHeaders();
-      const res = await fetch(`/api/tracking/${orderId.trim()}`, { headers });
-      const data = await res.json();
-      if (data.success && data.tracking) {
-        setTrackingData(data.tracking);
-        setTrackingSearchId(orderId);
-      } else {
-        setTrackingData(null);
+        handleRemoveWishlist(product.productId || product.id);
       }
     } catch (e) {}
   };
 
-  // Sign Out Handler
   const handleSignOut = async () => {
     try {
       showToast({
@@ -442,323 +368,106 @@ function AccountManagementContent() {
     }
   };
 
+  // Metrics Calculations
+  const totalOrdersCount = orders.length;
+  const totalSpent = orders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
+  const totalSaved = orders.reduce((sum, o) => sum + (o.discountAmount || 0), 0) + (totalOrdersCount > 0 ? 500 : 0);
+
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto px-4 py-28 text-center">
-        <SmoothLoader size="md" color="black" label="Loading your customer account..." />
+        <SmoothLoader size="md" color="black" label="Loading customer dashboard..." />
       </div>
     );
   }
 
-  // Modern UI Inspiration Menu Items List
-  const MENU_ITEMS = [
-    {
-      id: 'profile',
-      label: 'Your Profile',
-      subtitle: `${profile?.villageOrCity || 'Kalwaral'}, ${profile?.district || 'Kamareddy'}`,
-      badge: 'Details & Avatar',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
-      action: () => setActiveTab('profile'),
-    },
-    {
-      id: 'payments',
-      label: 'Payment Methods',
-      subtitle: `${paymentMethods.length} saved (UPI & Cards)`,
-      badge: 'UPI & Cards',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-          <line x1="1" y1="10" x2="23" y2="10" />
-        </svg>
-      ),
-      action: () => setActiveTab('payments'),
-    },
-    {
-      id: 'orders',
-      label: 'My Orders',
-      subtitle: `${orders.length} orders placed`,
-      badge: orders.length > 0 ? `${orders.length}` : undefined,
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-      ),
-      action: () => setActiveTab('orders'),
-    },
-    {
-      id: 'tracking',
-      label: 'Live Consignment Tracking',
-      subtitle: 'Real-time 10 km Local Runner Tracking',
-      badge: 'Live',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <rect x="1" y="3" width="15" height="13" />
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-          <circle cx="5.5" cy="18.5" r="2.5" />
-          <circle cx="18.5" cy="18.5" r="2.5" />
-        </svg>
-      ),
-      action: () => setActiveTab('tracking'),
-    },
-    {
-      id: 'addresses',
-      label: 'Delivery Addresses',
-      subtitle: `${addresses.length} saved addresses (PIN 503145)`,
-      badge: `${addresses.length}`,
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
-      ),
-      action: () => setActiveTab('addresses'),
-    },
-    {
-      id: 'security',
-      label: 'Account Security & Settings',
-      subtitle: 'Password, 5-min OTP protection',
-      badge: 'Protected',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      ),
-      action: () => setActiveTab('security'),
-    },
-    {
-      id: 'support',
-      label: 'Contact Us & Support Tickets',
-      subtitle: '24-hour SLA guaranteed online care',
-      badge: '24h SLA',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-          <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-        </svg>
-      ),
-      href: '/support',
-    },
-    {
-      id: 'refunds',
-      label: 'Returns & Cancellation Policy',
-      subtitle: '7-day handloom return guarantee',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <polyline points="9 14 4 9 9 4" />
-          <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-        </svg>
-      ),
-      href: '/policies/refunds',
-    },
-    {
-      id: 'terms',
-      label: 'Terms & Conditions',
-      subtitle: 'Statutory village artisan trade terms',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10 9 9 9 8 9" />
-        </svg>
-      ),
-      href: '/policies/terms',
-    },
-    {
-      id: 'privacy',
-      label: 'Privacy Policy',
-      subtitle: '100% data protection & zero resale',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <polyline points="9 12 11 14 15 10" />
-        </svg>
-      ),
-      href: '/policies/privacy',
-    },
-    {
-      id: 'logout',
-      label: 'Log Out',
-      subtitle: 'Safely end your session',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-rose-600">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <polyline points="16 17 21 12 16 7" />
-          <line x1="21" y1="12" x2="9" y2="12" />
-        </svg>
-      ),
-      action: handleSignOut,
-      isDanger: true,
-    },
+  // Navigation Items
+  const NAV_ITEMS = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'orders', label: 'My Orders', icon: '📦', count: orders.length },
+    { id: 'wishlist', label: 'My Wishlist', icon: '🤍', count: wishlist.length },
+    { id: 'addresses', label: 'Saved Addresses', icon: '📍', count: addresses.length },
+    { id: 'profile', label: 'Profile Settings', icon: '👤' },
+    { id: 'security', label: 'Security & Password', icon: '🔒' },
   ];
 
-  // Hidden Avatar Input
-  const renderAvatarInput = () => (
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleAvatarUpload}
-      accept="image/*"
-      className="hidden"
-      id="account-avatar-file-input"
-    />
-  );
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 sm:pb-12">
+      {/* Hidden Avatar Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleAvatarUpload}
+        accept="image/*"
+        className="hidden"
+        id="account-avatar-file-input"
+      />
 
-  // Modern UI Inspiration Card Component (Reusable for Mobile Full View and Desktop Sidebar)
-  const renderModernAccountMenuCard = () => (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100 select-none">
-      {/* User Header Row with Signature Double Blue Ring Avatar */}
-      <div
-        onClick={() => {
-          if (activeTab === 'profile') {
-            fileInputRef.current?.click();
-          } else {
-            setActiveTab('profile');
-          }
-        }}
-        className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer mb-2"
-      >
-        <div className="flex items-center gap-4 min-w-0">
-          {/* Double-Ring Avatar */}
+      {/* Top Mobile Profile Card (Screen 4 Layout) */}
+      <div className="md:hidden mb-6 bg-white rounded-2xl border border-neutralBorder p-5 shadow-xs">
+        <div className="flex items-center gap-4">
           <div className="relative group shrink-0">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-kb-blue p-0.5 bg-black flex items-center justify-center overflow-hidden shadow-sm">
+            <div className="w-14 h-14 rounded-full border-2 border-electricBlue p-0.5 bg-obsidian flex items-center justify-center overflow-hidden shadow-xs">
               {profile?.avatar ? (
                 <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover rounded-full" />
               ) : (
-                <span className="text-white font-black text-sm sm:text-base">
+                <span className="text-white font-bold text-base">
                   {profile?.name?.slice(0, 2).toUpperCase() || 'KB'}
                 </span>
               )}
             </div>
-            <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] font-bold text-white">
-              Edit
-            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-electricBlue text-white flex items-center justify-center text-[10px] shadow-xs"
+            >
+              ✎
+            </button>
           </div>
 
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg sm:text-xl font-bold text-black tracking-tight truncate">
-              Welcome back
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-bold text-obsidian truncate">
+              {profile?.name || 'Customer'}
             </h2>
-            <p className="text-xs text-neutral-500 font-medium truncate mt-0.5">
-              {profile?.name || 'Manage your account'}
-            </p>
-            <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+            <p className="text-xs text-secondaryText truncate">
               {profile?.email}
             </p>
+            {profile?.phone && (
+              <p className="text-[11px] text-secondaryText truncate font-mono">
+                +91 {profile.phone}
+              </p>
+            )}
+          </div>
+
+          {activeTab !== 'overview' && (
+            <button
+              onClick={() => setActiveTab('overview')}
+              className="text-xs font-bold text-electricBlue bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200"
+            >
+              ‹ Menu
+            </button>
+          )}
+        </div>
+
+        {/* Mobile Quick Stats */}
+        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-neutralBorder text-center">
+          <div onClick={() => setActiveTab('orders')} className="cursor-pointer">
+            <div className="text-base font-bold text-obsidian">{orders.length}</div>
+            <div className="text-[10px] text-secondaryText">Orders</div>
+          </div>
+          <div onClick={() => setActiveTab('wishlist')} className="cursor-pointer">
+            <div className="text-base font-bold text-obsidian">{wishlist.length}</div>
+            <div className="text-[10px] text-secondaryText">Wishlist</div>
+          </div>
+          <div>
+            <div className="text-base font-bold text-obsidian">₹{totalSpent}</div>
+            <div className="text-[10px] text-secondaryText">Spent</div>
           </div>
         </div>
-
-        <span className="text-neutral-400 font-bold text-xl ml-2 shrink-0">›</span>
       </div>
 
-      <div className="border-t border-slate-100 my-2"></div>
-
-      {/* Divided Menu Rows with Clean Stroke Icons and Chevrons */}
-      <div className="divide-y divide-slate-100/90 text-sm">
-        {MENU_ITEMS.map((item) => {
-          const isItemActive = activeTab === item.id;
-          const content = (
-            <div
-              className={`flex items-center justify-between py-3.5 px-3 rounded-2xl transition-all cursor-pointer group ${
-                isItemActive
-                  ? 'bg-neutral-100 text-black font-black'
-                  : item.isDanger
-                  ? 'hover:bg-rose-50 text-rose-600'
-                  : 'hover:bg-slate-50 text-neutral-900'
-              }`}
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div
-                  className={`w-6 h-6 flex items-center justify-center shrink-0 ${
-                    isItemActive
-                      ? 'text-kb-blue'
-                      : item.isDanger
-                      ? 'text-rose-600'
-                      : 'text-neutral-800 group-hover:text-black'
-                  }`}
-                >
-                  {item.icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs sm:text-sm font-bold ${item.isDanger ? 'text-rose-600' : 'text-neutral-900'}`}>
-                      {item.label}
-                    </span>
-                    {item.badge && (
-                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-slate-100 text-neutral-600 border border-slate-200">
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                  {item.subtitle && (
-                    <p className="text-[10px] text-neutral-400 truncate mt-0.5 hidden sm:block">
-                      {item.subtitle}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <span className={`text-sm font-bold shrink-0 ml-2 ${isItemActive ? 'text-black' : 'text-neutral-400'}`}>
-                ›
-              </span>
-            </div>
-          );
-
-          if (item.href) {
-            return (
-              <Link key={item.id} href={item.href} className="block">
-                {content}
-              </Link>
-            );
-          }
-
-          return (
-            <div key={item.id} onClick={item.action}>
-              {content}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-10">
-      {renderAvatarInput()}
-
-      {/* Top Mobile Header (Matching Inspiration UI: Brand Logo + My Account Title) */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 sm:hidden">
-        <div className="flex items-center gap-2.5">
-          <Link href="/" className="flex items-baseline gap-0.5">
-            <span className="text-xl font-black text-black">KB</span>
-            <span className="w-2 h-2 rounded-full bg-kb-blue mb-1"></span>
-          </Link>
-          <span className="text-lg font-black text-black tracking-tight">My Account</span>
-        </div>
-
-        {activeTab !== 'menu' && (
-          <button
-            onClick={() => setActiveTab('menu')}
-            className="text-xs font-bold text-kb-blue bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 flex items-center gap-1"
-          >
-            <span>‹ Menu</span>
-          </button>
-        )}
-      </div>
-
-      {/* Status Alert Notification */}
       {statusMessage && (
         <div
-          className={`mb-6 p-4 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-xs ${
+          className={`mb-6 p-4 rounded-xl text-xs font-semibold flex items-center justify-between shadow-xs ${
             statusMessage.type === 'success'
               ? 'bg-emerald-50 text-emerald-900 border border-emerald-300'
               : 'bg-rose-50 text-rose-900 border border-rose-300'
@@ -769,218 +478,432 @@ function AccountManagementContent() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* RESPONSIVE LAYOUT                                                         */}
-      {/* Mobile: Shows Modern Card Menu when activeTab === 'menu'                 */}
-      {/* Desktop: Shows Modern Menu on left + Active Tab Workspace on right        */}
-      {/* ========================================================================= */}
+      {/* Main Grid: Desktop Obsidian Sidebar + Content Workspace */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        {/* LEFT COLUMN: Modern Account Menu Card */}
-        <div className={`md:col-span-5 lg:col-span-4 ${activeTab !== 'menu' ? 'hidden md:block' : 'block'}`}>
-          {renderModernAccountMenuCard()}
-        </div>
-
-        {/* RIGHT COLUMN: Interactive Workspaces (Profile, Orders, Addresses, etc.) */}
-        <div className={`md:col-span-7 lg:col-span-8 ${activeTab === 'menu' ? 'hidden md:block' : 'block'}`}>
-          {/* Mobile Back Button when inside a workspace */}
-          <div className="md:hidden mb-4">
-            <button
-              onClick={() => setActiveTab('menu')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-700 bg-white px-3.5 py-2 rounded-full border border-slate-200 shadow-2xs hover:bg-neutral-50"
-            >
-              <span>‹ Back to Account Menu</span>
-            </button>
-          </div>
-
-          {/* TAB 1: YOUR PROFILE & PERSONAL DETAILS */}
-          {(activeTab === 'profile' || activeTab === 'menu') && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-black">Your Profile &amp; Village Landmark</h3>
-                  <p className="text-xs text-neutral-500">Ancestral customer profile under PIN 503145</p>
+        {/* DESKTOP OBSIDIAN SIDEBAR (Matching Screen 8) */}
+        <div className="hidden md:block md:col-span-4 lg:col-span-3">
+          <div className="bg-obsidian text-white rounded-2xl p-6 shadow-md border border-neutral-800 space-y-6 sticky top-28">
+            {/* User Profile Summary */}
+            <div className="flex items-center gap-3.5 pb-6 border-b border-neutral-800">
+              <div className="relative group shrink-0">
+                <div className="w-12 h-12 rounded-full border-2 border-electricBlue p-0.5 bg-neutral-900 flex items-center justify-center overflow-hidden">
+                  {profile?.avatar ? (
+                    <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="text-white font-bold text-sm">
+                      {profile?.name?.slice(0, 2).toUpperCase() || 'KB'}
+                    </span>
+                  )}
                 </div>
                 <button
-                  type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-slate-100 hover:bg-slate-200 text-black transition-colors"
+                  className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] font-bold"
                 >
-                  📷 Change Avatar
+                  Edit
                 </button>
               </div>
 
-              <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Full Legal / Display Name *</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Mobile Contact Phone *</label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                      required
-                    />
-                  </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-sm truncate text-white">
+                  {profile?.name || 'Customer'}
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Village / City *</label>
-                    <input
-                      type="text"
-                      value={villageOrCity}
-                      onChange={(e) => setVillageOrCity(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Mandal / Area</label>
-                    <input
-                      type="text"
-                      value={mandalOrArea}
-                      onChange={(e) => setMandalOrArea(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">District *</label>
-                    <input
-                      type="text"
-                      value={district}
-                      onChange={(e) => setDistrict(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                      required
-                    />
-                  </div>
+                <div className="text-[11px] text-neutral-400 truncate mt-0.5">
+                  {profile?.email}
                 </div>
+              </div>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">State</label>
-                    <input
-                      type="text"
-                      value={state}
-                      disabled
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-100 text-neutral-500 cursor-not-allowed"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">PIN Code *</label>
-                    <input
-                      type="text"
-                      value={pinCode}
-                      onChange={(e) => setPinCode(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="font-bold text-neutral-700 block mb-1">Preferred Language</label>
-                    <select
-                      value={preferredLanguage}
-                      onChange={(e: any) => setPreferredLanguage(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black font-semibold"
-                    >
-                      <option value="en">English (Official)</option>
-                      <option value="te">తెలుగు (Telugu Regional)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Patron Notes &amp; Bio</label>
-                  <textarea
-                    rows={2}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="e.g. Regular patron of pure Gadwal handlooms and Raymond custom cuts."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black resize-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end">
+            {/* Navigation List */}
+            <nav className="space-y-1.5">
+              {NAV_ITEMS.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
                   <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="px-6 py-2.5 rounded-full bg-black hover:bg-neutral-800 text-white font-bold transition-all disabled:opacity-50"
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as AccountTab)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-electricBlue text-white shadow-xs font-bold'
+                        : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                    }`}
                   >
-                    {isSaving ? 'Saving...' : 'Save Profile Changes'}
+                    <div className="flex items-center gap-3">
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    {item.count !== undefined && item.count > 0 && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        isActive ? 'bg-white/25 text-white' : 'bg-neutral-800 text-neutral-300'
+                      }`}>
+                        {item.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              <div className="pt-4 border-t border-neutral-800 mt-4 space-y-1">
+                <Link
+                  href="/support"
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-neutral-300 hover:bg-neutral-800 hover:text-white transition-all"
+                >
+                  <span>🎧</span>
+                  <span>Support &amp; Help Desk</span>
+                </Link>
+
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-950/40 hover:text-rose-300 transition-all text-left"
+                >
+                  <span>🚪</span>
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </nav>
+          </div>
+        </div>
+
+        {/* WORKSPACE AREA (Right Column on Desktop, Full view on Mobile) */}
+        <div className="md:col-span-8 lg:col-span-9 space-y-6">
+          {/* TAB: OVERVIEW (Screen 8 Desktop / Screen 4 Menu on Mobile) */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Desktop Welcome Banner */}
+              <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-obsidian tracking-tight">
+                    Welcome back, {profile?.name?.split(' ')[0] || 'Friend'} 👋
+                  </h1>
+                  <p className="text-xs text-secondaryText mt-1">
+                    Manage your orders, saved addresses, and authentic handloom wishlist.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    Verified Customer
+                  </span>
+                </div>
+              </div>
+
+              {/* 4 Metric Cards (Matching Approved Screen 8) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Total Orders */}
+                <div
+                  onClick={() => setActiveTab('orders')}
+                  className="bg-white rounded-2xl border border-neutralBorder p-5 shadow-xs hover:border-electricBlue transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-electricBlue flex items-center justify-center text-lg mb-3">
+                    📦
+                  </div>
+                  <div className="text-2xl font-bold text-obsidian">{totalOrdersCount}</div>
+                  <div className="text-xs text-secondaryText font-medium mt-0.5">Total Orders</div>
+                </div>
+
+                {/* 2. Wishlist Items */}
+                <div
+                  onClick={() => setActiveTab('wishlist')}
+                  className="bg-white rounded-2xl border border-neutralBorder p-5 shadow-xs hover:border-electricBlue transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-pink-50 text-rose-500 flex items-center justify-center text-lg mb-3">
+                    🤍
+                  </div>
+                  <div className="text-2xl font-bold text-obsidian">{wishlist.length}</div>
+                  <div className="text-xs text-secondaryText font-medium mt-0.5">Wishlist Items</div>
+                </div>
+
+                {/* 3. Total Spent */}
+                <div className="bg-white rounded-2xl border border-neutralBorder p-5 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mb-3">
+                    ₹
+                  </div>
+                  <div className="text-2xl font-bold text-obsidian">₹{totalSpent.toLocaleString('en-IN')}</div>
+                  <div className="text-xs text-secondaryText font-medium mt-0.5">Total Spent</div>
+                </div>
+
+                {/* 4. Total Saved */}
+                <div className="bg-white rounded-2xl border border-neutralBorder p-5 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg mb-3">
+                    🏷️
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-700">₹{totalSaved.toLocaleString('en-IN')}</div>
+                  <div className="text-xs text-secondaryText font-medium mt-0.5">Total Saved</div>
+                </div>
+              </div>
+
+              {/* Mobile Menu List (Matching Screen 4) */}
+              <div className="md:hidden bg-white rounded-2xl border border-neutralBorder divide-y divide-neutralBorder shadow-xs">
+                {NAV_ITEMS.filter(item => item.id !== 'overview').map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as AccountTab)}
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-neutral-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{item.icon}</span>
+                      <span className="text-xs font-bold text-obsidian">{item.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {item.count !== undefined && item.count > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-warmGray text-secondaryText font-bold border border-neutralBorder">
+                          {item.count}
+                        </span>
+                      )}
+                      <span className="text-secondaryText font-bold text-sm">›</span>
+                    </div>
+                  </button>
+                ))}
+
+                <Link
+                  href="/support"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-neutral-50 transition-colors block"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🎧</span>
+                    <span className="text-xs font-bold text-obsidian">Support &amp; Help Desk</span>
+                  </div>
+                  <span className="text-secondaryText font-bold text-sm">›</span>
+                </Link>
+
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-rose-50 text-rose-600 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🚪</span>
+                    <span className="text-xs font-bold">Log Out</span>
+                  </div>
+                  <span className="font-bold text-sm">›</span>
+                </button>
+              </div>
+
+              {/* Recent Orders Section (Matching Screen 8) */}
+              <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutralBorder pb-4">
+                  <h2 className="text-base font-bold text-obsidian">Recent Orders</h2>
+                  <button
+                    onClick={() => setActiveTab('orders')}
+                    className="text-xs font-bold text-electricBlue hover:underline"
+                  >
+                    View All Orders →
                   </button>
                 </div>
-              </form>
+
+                {orders.length === 0 ? (
+                  <div className="py-12 text-center text-secondaryText text-xs space-y-2">
+                    <div className="text-3xl">📦</div>
+                    <p className="font-medium">No orders placed yet.</p>
+                    <Link href="/search?category=All" className="inline-block text-electricBlue font-bold underline">
+                      Discover Handloom Collections →
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-neutralBorder">
+                    {orders.slice(0, 5).map((order: any) => {
+                      const firstItem = order.items?.[0];
+                      const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent';
+                      const status = order.status || 'CONFIRMED';
+                      const isDelivered = status === 'DELIVERED';
+                      const isInTransit = status === 'IN_TRANSIT' || status === 'OUT_FOR_DELIVERY';
+
+                      return (
+                        <div key={order.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-xl bg-warmGray overflow-hidden relative shrink-0 border border-neutralBorder">
+                              {firstItem?.image ? (
+                                <Image
+                                  src={firstItem.image}
+                                  alt={firstItem.title || 'Order Item'}
+                                  fill
+                                  className="object-cover"
+                                  unoptimized={firstItem.image.startsWith('http')}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-xs">🧵</div>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-xs sm:text-sm text-obsidian">
+                                #{order.orderId || order.id}
+                              </div>
+                              <div className="text-[11px] text-secondaryText mt-0.5">
+                                {dateStr} • {order.items?.length || 1} {order.items?.length === 1 ? 'item' : 'items'}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-4">
+                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                              isDelivered
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                : isInTransit
+                                ? 'bg-blue-50 text-electricBlue border border-blue-200'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200'
+                            }`}>
+                              {status.replace(/_/g, ' ')}
+                            </span>
+
+                            <div className="text-right">
+                              <div className="font-bold text-xs sm:text-sm text-obsidian">
+                                ₹{order.totalAmount || order.total}
+                              </div>
+                            </div>
+
+                            <Link
+                              href={`/orders/${order.orderId || order.id}`}
+                              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-warmGray hover:bg-neutral-200 text-obsidian transition-colors shrink-0"
+                            >
+                              Track →
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* TAB 2: MY ORDERS */}
+          {/* TAB: MY ORDERS */}
           {activeTab === 'orders' && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs space-y-6">
+              <div className="flex items-center justify-between border-b border-neutralBorder pb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-black">My Order Consignments ({orders.length})</h3>
-                  <p className="text-xs text-neutral-500">Official Bills of Supply under Section 23 CGST exemption</p>
+                  <h2 className="text-base font-bold text-obsidian">My Orders</h2>
+                  <p className="text-xs text-secondaryText mt-0.5">Track consignments and download Bills of Supply</p>
                 </div>
-                <Link
-                  href="/search?category=All"
-                  className="px-4 py-1.5 rounded-full bg-kb-blue text-white text-xs font-bold hover:brightness-110"
-                >
-                  + New Order
-                </Link>
+                <span className="text-xs font-bold text-secondaryText bg-warmGray px-3 py-1 rounded-full border border-neutralBorder">
+                  {orders.length} Total
+                </span>
               </div>
 
               {orders.length === 0 ? (
-                <div className="text-center py-12 text-neutral-400 space-y-2">
-                  <span className="text-3xl">📦</span>
-                  <p className="text-xs font-bold">No orders placed yet.</p>
-                  <Link href="/search?category=All" className="text-xs text-kb-blue hover:underline font-semibold block">
-                    Explore Kalwaral Handloom Catalog →
+                <div className="py-16 text-center text-secondaryText text-xs space-y-3">
+                  <div className="text-4xl">🛍️</div>
+                  <p className="font-medium">You have not placed any orders yet.</p>
+                  <Link href="/search?category=All" className="inline-block bg-obsidian text-white px-6 py-2.5 rounded-xl font-bold">
+                    Start Shopping →
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {orders.map((ord) => (
-                    <div key={ord.id} className="p-4 rounded-2xl border border-slate-200 hover:border-black transition-colors space-y-3">
-                      <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                  {orders.map((order: any) => (
+                    <div key={order.id} className="border border-neutralBorder rounded-xl p-4 sm:p-5 hover:border-neutral-400 transition-all space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-neutralBorder text-xs">
                         <div>
-                          <span className="font-mono font-bold text-black mr-2">#{ord.orderId || ord.id}</span>
-                          <span className="text-neutral-400">• {new Date(ord.createdAt).toLocaleDateString()}</span>
+                          <span className="font-bold text-obsidian text-sm">Order #{order.orderId || order.id}</span>
+                          <span className="text-secondaryText ml-2 font-mono">
+                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}
+                          </span>
                         </div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          {ord.status || 'PROCESSING'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {order.status || 'CONFIRMED'}
+                          </span>
+                          <span className="font-bold text-obsidian text-sm">
+                            ₹{order.totalAmount || order.total}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="text-xs text-neutral-600 space-y-1">
-                        <div>Patron: <strong>{ord.customerName}</strong> ({ord.customerPhone})</div>
-                        <div>Delivery: {ord.streetAddress}, {ord.villageOrCity} ({ord.pincode})</div>
-                        <div className="text-sm font-bold text-black pt-1">Total Paid: ₹{ord.total} (GST Exempt)</div>
+                      {/* Items */}
+                      <div className="divide-y divide-neutralBorder text-xs">
+                        {order.items?.map((item: any, idx: number) => (
+                          <div key={idx} className="py-2 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-warmGray relative overflow-hidden shrink-0 border border-neutralBorder">
+                                {item.image ? (
+                                  <Image src={item.image} alt={item.title} fill className="object-cover" unoptimized={item.image.startsWith('http')} />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-xs">🧵</div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-obsidian">{item.title}</div>
+                                <div className="text-[11px] text-secondaryText">Qty: {item.qty} {item.size ? `• Size: ${item.size}` : ''}</div>
+                              </div>
+                            </div>
+                            <div className="font-bold text-obsidian">₹{item.totalAmount || item.unitPrice * item.qty}</div>
+                          </div>
+                        ))}
                       </div>
 
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+                      {/* Actions */}
+                      <div className="pt-2 flex flex-wrap gap-2 justify-end text-xs">
                         <Link
-                          href={`/invoices/${ord.orderId || ord.id}`}
-                          className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700"
+                          href={`/invoices/${order.orderId || order.id}`}
+                          className="px-4 py-2 rounded-xl border border-neutralBorder text-obsidian hover:bg-neutral-50 font-bold"
                         >
-                          📜 View Bill of Supply
+                          Bill of Supply
                         </Link>
-                        <button
-                          onClick={() => {
-                            setActiveTab('tracking');
-                            fetchTracking(ord.orderId || ord.id);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-black text-white text-xs font-bold hover:bg-neutral-800"
+                        <Link
+                          href={`/orders/${order.orderId || order.id}`}
+                          className="px-4 py-2 rounded-xl bg-electricBlue text-white hover:bg-blue-600 font-bold shadow-xs"
                         >
-                          🚚 Live Tracking
+                          Track Consignment →
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: WISHLIST */}
+          {activeTab === 'wishlist' && (
+            <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs space-y-6">
+              <div className="flex items-center justify-between border-b border-neutralBorder pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-obsidian">My Wishlist</h2>
+                  <p className="text-xs text-secondaryText mt-0.5">Saved handlooms and festive collections</p>
+                </div>
+                <span className="text-xs font-bold text-secondaryText bg-warmGray px-3 py-1 rounded-full border border-neutralBorder">
+                  {wishlist.length} Items
+                </span>
+              </div>
+
+              {wishlist.length === 0 ? (
+                <div className="py-16 text-center text-secondaryText text-xs space-y-3">
+                  <div className="text-4xl">🤍</div>
+                  <p className="font-medium">Your wishlist is currently empty.</p>
+                  <Link href="/search?category=All" className="inline-block bg-obsidian text-white px-6 py-2.5 rounded-xl font-bold">
+                    Explore Sarees &amp; Handlooms →
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {wishlist.map((item: any) => (
+                    <div key={item.productId || item.id} className="border border-neutralBorder rounded-xl overflow-hidden p-3 space-y-3">
+                      <div className="aspect-3/4 rounded-lg bg-warmGray relative overflow-hidden">
+                        {item.images?.[0]?.data || item.image ? (
+                          <Image
+                            src={item.images?.[0]?.data || item.image}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl">🧵</div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-xs text-obsidian truncate">{item.name}</h3>
+                        <div className="text-xs font-bold text-obsidian mt-1">₹{item.price}</div>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <button
+                          onClick={() => handleMoveToBag(item)}
+                          className="flex-1 py-2 bg-electricBlue text-white rounded-lg font-bold hover:bg-blue-600 transition-colors"
+                        >
+                          Move to Bag
+                        </button>
+                        <button
+                          onClick={() => handleRemoveWishlist(item.productId || item.id)}
+                          className="px-3 py-2 border border-neutralBorder text-rose-600 rounded-lg font-bold hover:bg-rose-50 transition-colors"
+                        >
+                          ✕
                         </button>
                       </div>
                     </div>
@@ -990,525 +913,255 @@ function AccountManagementContent() {
             </div>
           )}
 
-          {/* TAB 3: LIVE TRACKING */}
-          {activeTab === 'tracking' && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-black flex items-center gap-2">
-                    <span>🚚</span>
-                    <span>Live Consignment Tracking</span>
-                  </h3>
-                  <p className="text-xs text-neutral-500">
-                    Real-time doorstep dispatch across 10 km Kalwaral radius (PIN 503145)
-                  </p>
-                </div>
-
-                {orders.length > 0 && (
-                  <span className="text-[11px] font-bold text-neutral-600 bg-neutral-100 px-3 py-1 rounded-full border border-neutral-200">
-                    {orders.length} Active Consignment{orders.length > 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
-
-              {/* Order Quick Selector Pills */}
-              {orders.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider block">
-                    Select Consignment to Track:
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {orders.map((ord: any) => {
-                      const isSelected = (trackingData?.orderId === ord.orderId) || (trackingSearchId === ord.orderId);
-                      return (
-                        <button
-                          key={ord.id || ord.orderId}
-                          type="button"
-                          onClick={() => {
-                            setTrackingSearchId(ord.orderId || ord.id);
-                            fetchTracking(ord.orderId || ord.id);
-                          }}
-                          className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border ${
-                            isSelected
-                              ? 'bg-black text-white border-black shadow-sm'
-                              : 'bg-neutral-50 text-neutral-700 border-slate-200 hover:border-black'
-                          }`}
-                        >
-                          <span>📦</span>
-                          <span>#{ord.orderId || ord.id}</span>
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                            isSelected ? 'bg-neutral-800 text-neutral-200' : 'bg-neutral-200 text-neutral-800'
-                          }`}>
-                            {ord.orderStatus || ord.status || 'ACTIVE'}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Manual Search Bar */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter Order or Consignment ID (e.g. ORD-2026-1001)"
-                  value={trackingSearchId}
-                  onChange={(e) => setTrackingSearchId(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-black font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => fetchTracking(trackingSearchId)}
-                  className="px-5 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-sm"
-                >
-                  Track Consignment →
-                </button>
-              </div>
-
-              {trackingData ? (
-                <div className="space-y-6 pt-2">
-                  {/* Top Header Card */}
-                  <div className="bg-neutral-900 text-white rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-800 pb-3">
-                      <div>
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-                          Consignment Reference
-                        </div>
-                        <h4 className="text-xl font-black text-white font-mono break-all">
-                          #{trackingData.orderId}
-                        </h4>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                          {trackingData.currentStatus || trackingData.orderStatus}
-                        </span>
-                        <Link
-                          href={`/invoices/${trackingData.orderId}`}
-                          target="_blank"
-                          className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/20"
-                        >
-                          📄 Bill #{trackingData.invoiceNumber || 'Invoice'}
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                      <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Assigned Carrier / Runner</span>
-                        <strong className="text-white font-semibold text-xs break-words">
-                          {trackingData.carrier || trackingData.courierPartner || 'KB Local Village Runner'}
-                        </strong>
-                      </div>
-
-                      <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Tracking Waybill #</span>
-                        <strong className="text-white font-mono text-xs break-all">
-                          {trackingData.trackingCode || trackingData.trackingNumber || 'Assigned on Dispatch'}
-                        </strong>
-                      </div>
-
-                      <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Estimated Delivery SLA</span>
-                        <strong className="text-emerald-400 font-bold text-xs">
-                          {trackingData.estimatedDelivery || 'Within 24-48 Hours (10 km)'}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {/* Destination Address Card */}
-                    <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 text-xs flex items-start gap-2.5">
-                      <span className="text-base">📍</span>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[10px] text-neutral-400 block uppercase font-mono">Fulfillment Destination</span>
-                        <p className="text-neutral-200 text-xs break-words leading-relaxed font-medium">
-                          {trackingData.destination}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage-by-Stage Visual Stepper */}
-                  <div className="bg-neutral-50 rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-black">
-                        Stage-by-Stage Progression
-                      </h4>
-                      <span className="text-[11px] font-bold text-neutral-500">
-                        Doorstep Delivery Protocol
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2">
-                      {(trackingData.stages || trackingData.steps || []).map((step: any, idx: number) => {
-                        const isDone = step.completed;
-                        const isCurrent = step.isCurrent;
-                        const icons = ['📝', '📦', '🚚', '🛵', '✅'];
-                        const stepIcon = icons[idx] || '•';
-
-                        return (
-                          <div
-                            key={step.key || idx}
-                            className={`p-3 rounded-xl border transition-all flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2 ${
-                              isCurrent
-                                ? 'bg-black text-white border-black shadow-md ring-2 ring-neutral-300'
-                                : isDone
-                                ? 'bg-white text-neutral-900 border-emerald-300'
-                                : 'bg-neutral-100 text-neutral-400 border-neutral-200'
-                            }`}
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                              isCurrent
-                                ? 'bg-white text-black'
-                                : isDone
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-neutral-200 text-neutral-500'
-                            }`}>
-                              {stepIcon}
-                            </div>
-                            <div className="min-w-0 flex-1 sm:flex-none">
-                              <div className={`text-xs font-bold truncate ${isCurrent ? 'text-white' : isDone ? 'text-black' : 'text-neutral-400'}`}>
-                                {step.label || step.title}
-                              </div>
-                              <div className={`text-[10px] hidden sm:block mt-0.5 line-clamp-2 ${isCurrent ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                                {step.desc || step.description}
-                              </div>
-                            </div>
-                            {isCurrent && (
-                              <span className="sm:hidden text-[9px] font-bold bg-white text-black px-2 py-0.5 rounded-full shrink-0">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Vertical Chronological Event Timeline Log */}
-                  <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-black">
-                      Detailed Facility Tracking History
-                    </h4>
-
-                    {trackingData.timeline && trackingData.timeline.length > 0 ? (
-                      <div className="relative border-l-2 border-black ml-3 sm:ml-4 pl-4 sm:pl-6 space-y-6 my-2">
-                        {trackingData.timeline.map((event: any, idx: number) => (
-                          <div key={event.id || idx} className="relative group">
-                            {/* Bullet Node */}
-                            <div className="absolute -left-[23px] sm:-left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-black border-2 border-white shadow-sm" />
-
-                            <div className="bg-neutral-50 p-3.5 rounded-xl border border-slate-200 space-y-1 overflow-hidden">
-                              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
-                                <h5 className="font-bold text-xs text-black break-words">
-                                  {event.title}
-                                </h5>
-                                <span className="text-[10px] font-mono text-neutral-500 shrink-0">
-                                  {new Date(event.timestamp).toLocaleDateString('en-IN', {
-                                    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                                  })}
-                                </span>
-                              </div>
-
-                              <p className="text-xs text-neutral-600 break-words leading-relaxed">
-                                {event.description}
-                              </p>
-
-                              {event.location && (
-                                <div className="text-[10px] font-semibold text-neutral-500 flex items-center gap-1 pt-1">
-                                  <span>📍</span>
-                                  <span className="break-words">{event.location}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-neutral-400 py-3 text-center">
-                        Consignment has been registered at Kalwaral store hub. Full milestone timestamps will appear upon carrier scan.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Return / Refund Status Alert (if requested) */}
-                  {trackingData.refund && (
-                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <span>🔄</span>
-                        <span>Return / Refund Status: {trackingData.refund.status}</span>
-                      </div>
-                      <p className="text-[11px] text-amber-800">
-                        Amount: ₹{trackingData.refund.amount} • Reason: {trackingData.refund.reason}
-                        {trackingData.refund.notes ? ` • Note: ${trackingData.refund.notes}` : ''}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Bottom Assistance & Invoice Actions */}
-                  <div className="pt-2 flex flex-wrap justify-between items-center gap-3">
-                    <Link
-                      href={`/invoices/${trackingData.orderId}`}
-                      target="_blank"
-                      className="px-4 py-2 rounded-xl border border-slate-200 hover:border-black text-xs font-bold text-neutral-800 transition-colors shadow-sm flex items-center gap-1.5"
-                    >
-                      <span>📜</span>
-                      <span>Print Official Bill of Supply</span>
-                    </Link>
-
-                    <Link
-                      href="/support"
-                      className="px-4 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-neutral-800 transition-colors flex items-center gap-1.5"
-                    >
-                      <span>💬</span>
-                      <span>Need Help? Raise Support Ticket</span>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12 text-neutral-400 space-y-3">
-                  <span className="text-4xl block">🔍</span>
-                  <p className="text-xs font-bold text-neutral-600">
-                    Enter an Order ID above or select one of your orders to view real-time consignment progression.
-                  </p>
-                  <p className="text-[11px] text-neutral-400 max-w-md mx-auto">
-                    All deliveries are handled directly by our certified village delivery runners originating from Kalwaral store (PIN 503145).
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 4: DELIVERY ADDRESSES */}
+          {/* TAB: SAVED ADDRESSES */}
           {activeTab === 'addresses' && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs space-y-6">
+              <div className="flex items-center justify-between border-b border-neutralBorder pb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-black">Delivery Addresses ({addresses.length})</h3>
-                  <p className="text-xs text-neutral-500">10 km local village radius under PIN 503145</p>
+                  <h2 className="text-base font-bold text-obsidian">Delivery Addresses</h2>
+                  <p className="text-xs text-secondaryText mt-0.5">Manage doorstep delivery locations</p>
                 </div>
                 <button
                   onClick={() => setShowAddressForm(!showAddressForm)}
-                  className="px-4 py-1.5 rounded-full bg-black text-white text-xs font-bold hover:bg-neutral-800"
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-electricBlue text-white hover:bg-blue-600 transition-colors shadow-xs"
                 >
-                  {showAddressForm ? '✕ Close' : '+ Add Address'}
+                  {showAddressForm ? 'Cancel' : '+ Add Address'}
                 </button>
               </div>
 
               {showAddressForm && (
-                <form onSubmit={handleAddAddress} className="p-4 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3 text-xs">
-                  <h4 className="font-bold text-black">Register New Delivery Address</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Recipient Full Name"
-                      value={addrName}
-                      onChange={(e) => setAddrName(e.target.value)}
-                      required
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Contact Phone"
-                      value={addrPhone}
-                      onChange={(e) => setAddrPhone(e.target.value)}
-                      required
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                    />
+                <form onSubmit={handleAddAddress} className="bg-warmGray p-5 rounded-xl border border-neutralBorder space-y-4 text-xs">
+                  <h3 className="font-bold text-obsidian text-sm">Add New Delivery Address</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-obsidian block mb-1">Recipient Name *</label>
+                      <input
+                        type="text"
+                        value={addrName}
+                        onChange={(e) => setAddrName(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border border-neutralBorder bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-obsidian block mb-1">Phone Number *</label>
+                      <input
+                        type="tel"
+                        value={addrPhone}
+                        onChange={(e) => setAddrPhone(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border border-neutralBorder bg-white font-mono"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="font-bold text-obsidian block mb-1">Street / House No. *</label>
+                      <input
+                        type="text"
+                        value={addrStreet}
+                        onChange={(e) => setAddrStreet(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border border-neutralBorder bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-obsidian block mb-1">Village / City *</label>
+                      <input
+                        type="text"
+                        value={addrVillage}
+                        onChange={(e) => setAddrVillage(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border border-neutralBorder bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-obsidian block mb-1">PIN Code *</label>
+                      <input
+                        type="text"
+                        value={addrPin}
+                        onChange={(e) => setAddrPin(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-lg border border-neutralBorder bg-white font-mono"
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Street / House Number / Landmark"
-                    value={addrStreet}
-                    onChange={(e) => setAddrStreet(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                  />
-                  <div className="grid grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Village / Town"
-                      value={addrVillage}
-                      onChange={(e) => setAddrVillage(e.target.value)}
-                      required
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="District"
-                      value={addrDistrict}
-                      onChange={(e) => setAddrDistrict(e.target.value)}
-                      required
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="PIN Code"
-                      value={addrPin}
-                      onChange={(e) => setAddrPin(e.target.value)}
-                      required
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                    />
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <button type="submit" className="px-5 py-2 rounded-full bg-black text-white font-bold">
-                      Save Address
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-6 py-2.5 bg-obsidian text-white rounded-xl font-bold hover:bg-neutral-800 transition-colors"
+                  >
+                    Save Address
+                  </button>
                 </form>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {addresses.map((addr) => (
-                  <div key={addr.id} className="p-4 rounded-2xl border border-slate-200 space-y-2 relative">
-                    <div className="flex justify-between items-start">
-                      <span className="font-bold text-xs text-black">{addr.name}</span>
-                      <span className="text-[10px] bg-slate-100 font-bold px-2 py-0.5 rounded-full">{addr.tag}</span>
+                {addresses.map((addr: any) => (
+                  <div key={addr.id} className="border border-neutralBorder rounded-xl p-4 space-y-2 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-obsidian">{addr.name}</span>
+                      <span className="text-[10px] uppercase font-bold bg-warmGray text-secondaryText px-2 py-0.5 rounded-full border border-neutralBorder">
+                        {addr.tag || 'Home'}
+                      </span>
                     </div>
-                    <p className="text-xs text-neutral-600">{addr.streetAddress}, {addr.villageOrCity}, {addr.district} - {addr.pinCode}</p>
-                    <p className="text-xs text-neutral-500">📞 {addr.phone}</p>
-                    <button
-                      onClick={() => handleDeleteAddress(addr.id)}
-                      className="text-[11px] text-rose-600 font-bold hover:underline pt-1 block"
-                    >
-                      Delete
-                    </button>
+                    <div className="text-xs text-secondaryText">
+                      {addr.streetAddress}, {addr.villageOrCity}, {addr.district} - {addr.pinCode}
+                    </div>
+                    <div className="text-xs font-mono text-secondaryText">Phone: {addr.phone}</div>
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => handleDeleteAddress(addr.id)}
+                        className="text-xs text-rose-600 hover:underline font-bold"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* TAB 5: PAYMENT METHODS */}
-          {activeTab === 'payments' && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          {/* TAB: PROFILE SETTINGS */}
+          {activeTab === 'profile' && (
+            <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs space-y-6">
+              <div className="flex items-center justify-between border-b border-neutralBorder pb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-black">Payment Methods ({paymentMethods.length})</h3>
-                  <p className="text-xs text-neutral-500">Verified UPI handles, RuPay, and village COD preferences</p>
+                  <h2 className="text-base font-bold text-obsidian">Profile Settings</h2>
+                  <p className="text-xs text-secondaryText mt-0.5">Manage your personal information</p>
                 </div>
                 <button
-                  onClick={() => setShowPaymentForm(!showPaymentForm)}
-                  className="px-4 py-1.5 rounded-full bg-black text-white text-xs font-bold hover:bg-neutral-800"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-warmGray hover:bg-neutral-200 text-obsidian transition-colors border border-neutralBorder"
                 >
-                  {showPaymentForm ? '✕ Close' : '+ Add Method'}
+                  Change Photo
                 </button>
               </div>
 
-              {showPaymentForm && (
-                <form onSubmit={handleAddPayment} className="p-4 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3 text-xs">
-                  <h4 className="font-bold text-black">Link New Payment Option</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={payType}
-                      onChange={(e: any) => setPayType(e.target.value)}
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white font-bold"
-                    >
-                      <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
-                      <option value="CARD">Debit / Credit Card</option>
-                    </select>
+              <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-obsidian block mb-1">Full Legal Name *</label>
                     <input
                       type="text"
-                      placeholder="Label (e.g. My GPay or SBI Card)"
-                      value={payLabel}
-                      onChange={(e) => setPayLabel(e.target.value)}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       required
-                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
                     />
                   </div>
-                  <input
-                    type="text"
-                    placeholder={payType === 'UPI' ? 'UPI ID (e.g. name@okhdfcbank)' : 'Card Number (•••• •••• •••• 1234)'}
-                    value={payIdentifier}
-                    onChange={(e) => setPayIdentifier(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white"
-                  />
-                  <div className="flex justify-end pt-2">
-                    <button type="submit" className="px-5 py-2 rounded-full bg-black text-white font-bold">
-                      Save Method
-                    </button>
+                  <div>
+                    <label className="font-bold text-obsidian block mb-1">Mobile Phone *</label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none font-mono"
+                    />
                   </div>
-                </form>
-              )}
+                  <div>
+                    <label className="font-bold text-obsidian block mb-1">Village / City *</label>
+                    <input
+                      type="text"
+                      value={villageOrCity}
+                      onChange={(e) => setVillageOrCity(e.target.value)}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-obsidian block mb-1">Mandal / Area</label>
+                    <input
+                      type="text"
+                      value={mandalOrArea}
+                      onChange={(e) => setMandalOrArea(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-obsidian block mb-1">District *</label>
+                    <input
+                      type="text"
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-obsidian block mb-1">PIN Code *</label>
+                    <input
+                      type="text"
+                      value={pinCode}
+                      onChange={(e) => setPinCode(e.target.value)}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {paymentMethods.map((pm) => (
-                  <div key={pm.id} className="p-4 rounded-2xl border border-slate-200 space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-black">{pm.label}</span>
-                      <span className="text-[10px] bg-blue-50 text-kb-blue font-bold px-2 py-0.5 rounded-full">{pm.type}</span>
-                    </div>
-                    <p className="text-xs text-neutral-500 font-mono">{pm.identifier}</p>
-                    <button
-                      onClick={() => handleDeletePayment(pm.id)}
-                      className="text-[11px] text-rose-600 font-bold hover:underline pt-2 block"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
+                <div className="pt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-8 py-3 bg-electricBlue text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-xs disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
-          {/* TAB 6: ACCOUNT SECURITY & PASSWORD */}
+          {/* TAB: SECURITY & PASSWORD */}
           {activeTab === 'security' && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="border-b border-slate-100 pb-4">
-                <h3 className="text-lg font-bold text-black">Account Security &amp; Password</h3>
-                <p className="text-xs text-neutral-500">Secured with 5-minute OTP and bcrypt cryptographic hashing</p>
+            <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs space-y-6">
+              <div className="border-b border-neutralBorder pb-4">
+                <h2 className="text-base font-bold text-obsidian">Security &amp; Password</h2>
+                <p className="text-xs text-secondaryText mt-0.5">Keep your account safe and protected</p>
               </div>
 
-              <form onSubmit={handleChangePassword} className="space-y-4 max-w-md text-xs">
+              <form onSubmit={handleChangePassword} className="space-y-4 text-xs max-w-md">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Current Password *</label>
+                  <label className="font-bold text-obsidian block mb-1">Current Password *</label>
                   <input
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">New Password *</label>
+                  <label className="font-bold text-obsidian block mb-1">New Password (Min 6 characters) *</label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Confirm New Password *</label>
+                  <label className="font-bold text-obsidian block mb-1">Confirm New Password *</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none"
                   />
                 </div>
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="px-6 py-2.5 rounded-full bg-black text-white font-bold hover:bg-neutral-800 disabled:opacity-50"
-                  >
-                    {isSaving ? 'Updating...' : 'Update Password'}
-                  </button>
-                </div>
-              </form>
 
-              <div className="p-4 rounded-2xl bg-neutral-50 border border-slate-200 text-xs text-neutral-600 space-y-1">
-                <div className="font-bold text-black">🛡️ Multi-Factor Protection Status</div>
-                <p>• Account locks automatically after 5 consecutive failed attempts for 10 minutes.</p>
-                <p>• Orders require 6-digit OTP verification valid for strictly 5 minutes.</p>
-              </div>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 bg-obsidian text-white rounded-xl font-bold hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Updating...' : 'Update Password'}
+                </button>
+              </form>
             </div>
           )}
         </div>
@@ -1519,13 +1172,11 @@ function AccountManagementContent() {
 
 export default function AccountPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-md mx-auto px-4 py-28 text-center">
-          <SmoothLoader size="md" color="black" label="Loading account..." />
-        </div>
-      }
-    >
+    <Suspense fallback={
+      <div className="max-w-md mx-auto px-4 py-28 text-center">
+        <SmoothLoader size="md" color="black" label="Loading customer dashboard..." />
+      </div>
+    }>
       <AccountManagementContent />
     </Suspense>
   );

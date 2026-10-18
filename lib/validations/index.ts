@@ -80,7 +80,8 @@ export const productCreateSchema = z.object({
     matchingFallPicoAvailable: z.boolean().default(true),
     customDesignerNotes: z.string().optional(),
   }).optional().nullable(),
-  imageData: z.string().min(10, "Product image data is required (stored in database)"),
+  imageData: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 export const productUpdateSchema = productCreateSchema.partial();
@@ -122,7 +123,7 @@ export const checkoutSchema = z.object({
     state: z.string().min(2, "State is required"),
     pinCode: z.string().regex(pinRegex, "PIN code must be exactly 6 digits"),
   }),
-  paymentMethod: z.enum(['COD', 'UPI', 'CARD', 'NETBANKING']).default('COD'),
+  paymentMethod: z.enum(['COD', 'UPI', 'CARD', 'NETBANKING', 'CASHFREE']).default('COD'),
   sessionId: z.string().default('default-guest'),
   otp: z.string().optional(),
   termsAccepted: z.boolean().optional(),

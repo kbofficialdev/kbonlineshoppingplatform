@@ -52,15 +52,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       updatedAt: new Date().toISOString(),
     };
 
-    // If new image was uploaded
-    if (parsed.data.imageData) {
+    // If new image was provided (either uploaded Base64 or external URL)
+    const rawImage = (parsed.data as any).imageUrl || parsed.data.imageData;
+    if (rawImage) {
+      const { validateImageDataPayload } = await import('@/lib/imageValidation');
+      const valResult = validateImageDataPayload(rawImage);
+      if (!valResult.valid) {
+        return NextResponse.json({ error: valResult.error || 'Invalid product image' }, { status: 400 });
+      }
+
       const imgId = `img-${Date.now()}`;
       const newImg = {
         id: imgId,
         productId: current.productId,
         name: `${updated.name} Updated Image`,
-        mimeType: parsed.data.imageData.startsWith('data:image/svg') ? 'image/svg+xml' : 'image/jpeg',
-        data: parsed.data.imageData,
+        mimeType: valResult.mimeType || 'image/jpeg',
+        data: valResult.sanitizedUrl || rawImage,
         isPrimary: true,
         createdAt: new Date().toISOString(),
       };

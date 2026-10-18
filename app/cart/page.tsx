@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useModalAlert } from '@/components/ModalContext';
 import { useToast } from '@/components/ToastContext';
-import { SmoothLoader } from '@/components/SmoothLoader';
 import { authFetch } from '@/lib/clientAuth';
+import CircularContentLoader from '@/components/CircularContentLoader';
+import { OrderSummarySkeleton } from '@/components/SkeletonPlaceholder';
 
 interface CartItem {
   id: string;
@@ -16,44 +16,23 @@ interface CartItem {
   size: string;
   color: string;
   qty: number;
-  cutLength?: number | null;
-  configuration?: Record<string, any> | null;
+  imageUrl?: string;
 }
 
 export default function CartPage() {
   const router = useRouter();
-  const { showModal } = useModalAlert();
   const { showToast } = useToast();
-  const [user, setUser] = useState<any>(null);
-  const [cart, setCart] = useState<any>({
-    items: [],
-    subtotal: 0,
-    discountAmount: 0,
-    shippingFee: 70,
-    total: 0,
-    freeShippingThreshold: 999,
-    amountNeededForFreeShipping: 999,
-    freeShippingUnlocked: false,
-    appliedPromo: null,
-  });
-  const [promoCode, setPromoCode] = useState<string>('');
-  const [promoMessage, setPromoMessage] = useState<string | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [discount, setDiscount] = useState<number>(0);
+  const [shippingFee, setShippingFee] = useState<number>(0);
+  const [total, setTotal] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   useEffect(() => {
     fetchCart();
-    fetchUser();
   }, []);
-
-  const fetchUser = async () => {
-    try {
-      const res = await authFetch('/api/auth/me');
-      const data = await res.json();
-      if (data?.authenticated) setUser(data.user);
-      else setUser(null);
-    } catch (e) {}
-  };
 
   const fetchCart = async () => {
     try {
@@ -64,12 +43,15 @@ export default function CartPage() {
         return;
       }
       const data = await res.json();
-      if (data?.requiresAuth) {
-        router.push('/auth/signin?redirect=%2Fcart&reason=auth_required');
-        return;
+      if (data?.items) {
+        setItems(data.items);
+        setSubtotal(data.subtotal || 0);
+        setDiscount(data.discountAmount || 0);
+        setShippingFee(data.shippingFee || 0);
+        setTotal(data.total || 0);
       }
-      setCart(data);
     } catch (e) {
+      console.error('Error loading cart:', e);
     } finally {
       setIsLoading(false);
     }
@@ -77,332 +59,272 @@ export default function CartPage() {
 
   const handleUpdateQty = async (productId: string, size: string, delta: number) => {
     try {
+      setIsUpdating(true);
       const res = await authFetch(`/api/cart/items/${productId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ size, delta })
+        body: JSON.stringify({ size, delta }),
       });
       const data = await res.json();
-      setCart(data);
+      if (data?.items) {
+        setItems(data.items);
+        setSubtotal(data.subtotal || 0);
+        setDiscount(data.discountAmount || 0);
+        setShippingFee(data.shippingFee || 0);
+        setTotal(data.total || 0);
+      }
+    } catch (e) {
       showToast({
-        type: 'info',
-        title: 'Bag Updated',
-        message: 'Cart quantities refreshed.',
+        type: 'error',
+        title: 'Cart Error',
+        message: 'Could not update quantity.',
       });
-    } catch (e) {}
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleRemove = async (productId: string, size: string) => {
+  const handleRemoveItem = async (productId: string, size: string) => {
     try {
+      setIsUpdating(true);
       const res = await authFetch(`/api/cart/items/${productId}?size=${encodeURIComponent(size)}`, {
         method: 'DELETE',
       });
       const data = await res.json();
-      setCart(data);
-      showToast({
-        type: 'warning',
-        title: 'Item Removed',
-        message: 'The item was removed from your shopping bag.',
-      });
-    } catch (e) {}
-  };
-
-  const handleClearCart = async () => {
-    try {
-      const res = await authFetch('/api/cart/clear', { method: 'DELETE' });
-      const data = await res.json();
-      setCart(data);
+      if (data?.items) {
+        setItems(data.items);
+        setSubtotal(data.subtotal || 0);
+        setDiscount(data.discountAmount || 0);
+        setShippingFee(data.shippingFee || 0);
+        setTotal(data.total || 0);
+      }
       showToast({
         type: 'info',
-        title: 'Bag Cleared',
-        message: 'All garments were removed from your shopping bag.',
+        title: 'Item Removed',
+        message: 'Garment removed from shopping bag.',
       });
-    } catch (e) {}
-  };
-
-  const handleApplyPromo = async () => {
-    if (!promoCode.trim()) return;
-    setPromoError(null);
-    setPromoMessage(null);
-    try {
-      const res = await authFetch('/api/cart/apply-promo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode.trim().toUpperCase() })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCart(data.cart);
-        setPromoMessage(data.message);
-        showToast({
-          type: 'success',
-          title: 'Promo Applied',
-          message: `✓ Offer "${promoCode.trim().toUpperCase()}" applied! You saved ₹${data.cart.discountAmount}.`,
-        });
-      } else {
-        setPromoError(data.error || 'Invalid promo code');
-        showToast({
-          type: 'warning',
-          title: 'Invalid Promo Code',
-          message: data.error || 'Please try "KB10".',
-        });
-      }
     } catch (e) {
-      setPromoError('Failed to apply promo code');
       showToast({
         type: 'error',
         title: 'Error',
-        message: 'Could not apply promo code.',
+        message: 'Could not remove item.',
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const handleProceedCheckout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!user) {
-      showModal({
-        type: 'auth',
-        title: 'Sign In Required for Checkout',
-        message: 'You must have an active KB Fashions account session to enter delivery details, select payment, and place an order.',
-        primaryBtn: {
-          text: 'Sign In to Proceed →',
-          href: '/auth/signin?redirect=%2Fcheckout&reason=auth_required',
-        },
-        secondaryBtn: {
-          text: 'Create New Account',
-          href: '/auth/signup?redirect=%2Fcheckout',
-        },
-      });
-      return;
-    }
-    router.push('/checkout');
-  };
+  const totalItemsCount = items.reduce((sum, item) => sum + item.qty, 0);
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-28 text-center">
-        <SmoothLoader size="md" color="black" label="Loading shopping bag..." />
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+        <CircularContentLoader message="Loading shopping bag..." />
       </div>
     );
   }
 
-  const items: CartItem[] = cart.items || [];
-  const percentComplete = Math.min(100, Math.round((cart.subtotal / (cart.freeShippingThreshold || 999)) * 100));
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {/* Page Title */}
-      <div className="flex justify-between items-baseline border-b border-kbBorder pb-4 mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-kbBlack">Shopping Bag</h1>
-          <p className="text-xs text-neutral-500 mt-1">Review your handcrafted village garments before checkout</p>
-        </div>
-        <Link href="/search?category=All" className="text-xs font-semibold text-neutral-600 hover:text-black underline">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      
+      {/* Cart Title */}
+      <div className="flex items-baseline justify-between pb-4 mb-6 border-b border-slate-200">
+        <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">
+          My Cart {totalItemsCount > 0 && <span className="text-neutral-500 font-bold text-lg sm:text-xl">({totalItemsCount} items)</span>}
+        </h1>
+        <Link
+          href="/search"
+          className="text-xs font-bold text-[#3478F6] hover:text-blue-700 transition-colors"
+        >
           ← Continue Shopping
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="bg-kbSurfaceAlt border border-kbBorder rounded-kb-lg p-12 text-center max-w-lg mx-auto space-y-4">
-          <div className="text-4xl">🛍️</div>
-          <h2 className="text-lg font-bold">Your shopping bag is empty</h2>
-          <p className="text-xs text-neutral-500">
-            Looks like you haven't added any garments from our Kalwaral collection yet.
+        <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 shadow-xs">
+          <div className="text-5xl mb-4">🛍️</div>
+          <h2 className="text-xl font-black text-neutral-900">Your bag is empty</h2>
+          <p className="text-xs text-neutral-500 mt-2 max-w-sm mx-auto">
+            You haven't added any handloom sarees, unstitched suitings, or festive attire to your cart yet.
           </p>
           <Link
-            href="/search?category=All"
-            className="inline-block bg-black text-white text-xs font-bold px-6 py-3 rounded-full hover:bg-neutral-800 transition-all"
+            href="/search"
+            className="mt-6 inline-block bg-[#3478F6] text-white text-xs font-bold px-8 py-3 rounded-full hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
           >
-            Explore Authentic Clothes
+            Explore Collections →
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-          {/* Left 2 Cols: Cart Items */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Free Shipping Progress Tier */}
-            <div className="bg-white border border-kbBorder p-4 rounded-kb-md shadow-sm">
-              <div className="flex justify-between text-xs font-bold mb-2">
-                <span>
-                  {cart.freeShippingUnlocked ? (
-                    <span className="text-emerald-700 font-extrabold">🎉 You unlocked Free Express Delivery!</span>
-                  ) : (
-                    <span>Add ₹{cart.amountNeededForFreeShipping} more to unlock <strong>FREE Express Shipping</strong></span>
-                  )}
-                </span>
-                <span className="text-neutral-500 font-mono text-[11px]">{percentComplete}%</span>
-              </div>
-              <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-emerald-600 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${percentComplete}%` }}
-                ></div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          
+          {/* LEFT COLUMN: Cart Items (LG: 7 cols) */}
+          <div className="lg:col-span-7 space-y-4">
+            {items.map((item) => (
+              <div
+                key={`${item.productId}-${item.size}`}
+                className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 flex items-center justify-between gap-4 shadow-xs hover:border-slate-300 transition-all"
+              >
+                {/* Product Thumbnail */}
+                <Link
+                  href={`/products/${item.productId}`}
+                  className="w-20 h-24 sm:w-24 sm:h-28 rounded-xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100 block"
+                >
+                  <img
+                    src={item.imageUrl || `/api/media/${item.productId}`}
+                    alt={item.name}
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=300&q=80';
+                    }}
+                  />
+                </Link>
 
-            {/* Items List */}
-            <div className="divide-y divide-kbBorder border-t border-b border-kbBorder">
-              {items.map((item) => (
-                <div key={`${item.productId}-${item.size}`} className="py-4 flex gap-4 items-center justify-between">
-                  <div className="flex gap-4 items-center">
-                    <div className="w-16 h-20 bg-kbCardBg rounded-kb-sm border border-kbBorder flex items-center justify-center font-bold text-xs text-neutral-400">
-                      KB
-                    </div>
-                    <div>
-                      <Link href={`/products/${item.productId}`} className="font-bold text-sm text-neutral-900 hover:underline">
-                        {item.name}
-                      </Link>
-                      <div className="text-xs text-neutral-500 mt-0.5 space-y-0.5">
-                        <div>
-                          {item.cutLength ? (
-                            <span className="font-semibold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
-                              ✂ Unstitched Cut: {item.cutLength}m
-                            </span>
-                          ) : (
-                            <span>Size: <strong className="text-black">{item.size}</strong></span>
-                          )}
-                          {item.configuration?.chestSize && (
-                            <span className="ml-2 font-semibold text-sky-900">
-                              • Chest: {item.configuration.chestSize}
-                            </span>
-                          )}
-                        </div>
-                        {item.configuration?.fallPico && (
-                          <div className="text-[11px] text-emerald-700 font-semibold">
-                            ✓ Fall &amp; Pico Service Included (+₹80)
-                          </div>
-                        )}
-                        {item.configuration?.matchingBlouse && (
-                          <div className="text-[11px] text-rose-700 font-semibold">
-                            ✓ Matching 2x2 Rubia Blouse Piece (+₹180)
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs font-extrabold text-black mt-1">
-                        ₹{item.price} each
-                      </div>
-                    </div>
+                {/* Info & Modifiers */}
+                <div className="flex-1 min-w-0 pr-2">
+                  <Link href={`/products/${item.productId}`}>
+                    <h3 className="text-xs sm:text-sm font-black text-neutral-900 hover:text-blue-600 transition-colors truncate">
+                      {item.name}
+                    </h3>
+                  </Link>
+
+                  <div className="text-[11px] text-neutral-500 mt-1 flex items-center gap-2 flex-wrap">
+                    {item.color && <span>Color: {item.color}</span>}
+                    {item.color && item.size && <span>•</span>}
+                    {item.size && <span>Size: {item.size}</span>}
                   </div>
 
-                  {/* Quantity & Remove */}
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center border border-kbBorder rounded-kb-pill px-2 py-0.5 bg-kbLight">
-                      <button
-                        onClick={() => handleUpdateQty(item.productId, item.size, -1)}
-                        className="w-6 h-6 flex items-center justify-center font-bold text-xs hover:bg-neutral-200 rounded-full"
-                      >
-                        -
-                      </button>
-                      <span className="w-7 text-center text-xs font-bold">{item.qty}</span>
-                      <button
-                        onClick={() => handleUpdateQty(item.productId, item.size, 1)}
-                        className="w-6 h-6 flex items-center justify-center font-bold text-xs hover:bg-neutral-200 rounded-full"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className="text-right min-w-[70px]">
-                      <div className="font-bold text-sm text-black">
-                        ₹{item.price * item.qty}
-                      </div>
-                      <button
-                        onClick={() => handleRemove(item.productId, item.size)}
-                        className="text-[10px] text-neutral-400 hover:text-red-600 underline mt-1"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                  <div className="text-sm sm:text-base font-black text-neutral-900 mt-2">
+                    ₹{(item.price * item.qty).toLocaleString('en-IN')}
+                    {item.qty > 1 && (
+                      <span className="text-[11px] font-normal text-neutral-400 ml-2">
+                        (₹{item.price.toLocaleString('en-IN')} each)
+                      </span>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="flex justify-between items-center text-xs">
-              <button
-                onClick={handleClearCart}
-                className="text-neutral-400 hover:text-red-600 underline"
-              >
-                Clear entire bag
-              </button>
-              <span className="text-neutral-500">
-                {items.length} unique item{items.length > 1 ? 's' : ''} in bag
-              </span>
-            </div>
+                {/* Quantity Modifier & Remove */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                  <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 overflow-hidden">
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => handleUpdateQty(item.productId, item.size, -1)}
+                      className="px-2.5 py-1 text-neutral-600 hover:bg-slate-200 font-bold text-xs disabled:opacity-50"
+                    >
+                      -
+                    </button>
+                    <span className="px-3 py-1 text-xs font-black text-neutral-900 select-none">
+                      {item.qty}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => handleUpdateQty(item.productId, item.size, 1)}
+                      className="px-2.5 py-1 text-neutral-600 hover:bg-slate-200 font-bold text-xs disabled:opacity-50"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={() => handleRemoveItem(item.productId, item.size)}
+                    aria-label="Remove item"
+                    className="p-1.5 rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+
+              </div>
+            ))}
           </div>
 
-          {/* Right Col: Promo & Order Summary */}
-          <div className="bg-kbSurfaceAlt border border-kbBorder p-6 rounded-kb-lg space-y-6">
-            <h2 className="font-black text-base text-kbBlack uppercase tracking-wider text-xs">Order Summary</h2>
+          {/* RIGHT COLUMN: Order Summary (LG: 5 cols matching approved mockup) */}
+          <div className="lg:col-span-5">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-xs space-y-5 sticky top-28">
+              
+              <h2 className="text-lg font-black text-neutral-900 pb-3 border-b border-slate-100">
+                Order Summary
+              </h2>
 
-            {/* Promo Code Input */}
-            <div>
-              <span className="text-xs font-bold text-neutral-700 block mb-1.5">Apply Village Offer / Promo:</span>
-              <div className="flex gap-2">
-                <input
-                  id="promo-input"
-                  type="text"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. KB10"
-                  className="flex-1 uppercase font-mono text-xs px-3 py-2.5 rounded-kb-pill border border-kbBorder bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                />
-                <button
-                  id="apply-promo-btn"
-                  onClick={handleApplyPromo}
-                  className="bg-black text-white text-xs font-bold px-4 py-2.5 rounded-kb-pill hover:bg-neutral-800"
-                >
-                  Apply
-                </button>
-              </div>
-              {promoMessage && <p className="text-[11px] text-emerald-700 font-semibold mt-1.5">{promoMessage}</p>}
-              {promoError && <p className="text-[11px] text-red-600 mt-1.5">{promoError}</p>}
-              <p className="text-[10px] text-neutral-400 mt-1.5">Tip: Try promo code <strong>KB10</strong> for 10% off</p>
-            </div>
+              <div className="space-y-3 text-xs sm:text-sm">
+                <div className="flex items-center justify-between text-neutral-600">
+                  <span>Subtotal ({totalItemsCount} items)</span>
+                  <span className="font-bold text-neutral-900">₹{subtotal.toLocaleString('en-IN')}</span>
+                </div>
 
-            {/* Calculations Breakdown */}
-            <div className="border-t border-kbBorder pt-4 space-y-2 text-xs">
-              <div className="flex justify-between text-neutral-600">
-                <span>Subtotal ({items.reduce((s, i) => s + i.qty, 0)} items):</span>
-                <span>₹{cart.subtotal}</span>
+                {discount > 0 && (
+                  <div className="flex items-center justify-between text-emerald-600 font-bold">
+                    <span>Discount</span>
+                    <span>- ₹{discount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-neutral-600">
+                  <span>Delivery</span>
+                  {shippingFee === 0 ? (
+                    <span className="font-bold text-emerald-600">FREE</span>
+                  ) : (
+                    <span className="font-bold text-neutral-900">₹{shippingFee}</span>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-200 pt-3 flex items-baseline justify-between">
+                  <span className="text-base font-black text-neutral-900">Total</span>
+                  <span className="text-2xl font-black text-neutral-900">
+                    ₹{total.toLocaleString('en-IN')}
+                  </span>
+                </div>
               </div>
-              {cart.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Village Discount ({cart.appliedPromo}):</span>
-                  <span>-₹{cart.discountAmount}</span>
+
+              {/* Primary Action Button */}
+              <Link
+                href="/checkout"
+                className="block w-full py-3.5 bg-[#3478F6] text-white text-center font-bold text-sm rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
+              >
+                Proceed to Checkout
+              </Link>
+
+              {/* Savings Banner matching mockup */}
+              {discount > 0 && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-center text-xs font-bold text-emerald-700">
+                  ✓ You saved ₹{discount.toLocaleString('en-IN')} on this order!
                 </div>
               )}
-              <div className="flex justify-between text-neutral-600">
-                <span>Express Courier Shipping:</span>
-                <span>{cart.shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : `₹${cart.shippingFee}`}</span>
-              </div>
-              <div className="border-t border-kbBorder pt-3 flex justify-between font-black text-base text-black">
-                <span>Total Amount:</span>
-                <span>₹{cart.total}</span>
-              </div>
-              <p className="text-[10px] text-neutral-500">
-                ✓ Final retail price • <strong>GST Exempted</strong> small business (Section 23 CGST Act).
+
+              {/* Statutory Note */}
+              <p className="text-[10px] text-neutral-400 text-center leading-normal">
+                ✓ Free shipping on orders above ₹999. GST exempted net retail pricing under Section 23 CGST Act.
               </p>
-            </div>
 
-            {/* Checkout Action Button */}
-            <button
-              type="button"
-              id="proceed-checkout-btn"
-              onClick={handleProceedCheckout}
-              className="block w-full bg-kb-blue text-white hover:bg-blue-600 text-center font-semibold text-sm py-4 rounded-kb-pill transition-all shadow-sm cursor-pointer"
-            >
-              Proceed to Delivery &amp; Payment →
-            </button>
-
-            <div className="text-[11px] text-neutral-400 text-center flex items-center justify-center gap-1">
-              <span>🔒</span>
-              <span>Secure Cash on Delivery (COD) & Instant UPI available</span>
             </div>
           </div>
+
         </div>
       )}
+
+      {/* Trust Strip matching approved mockup */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12 pt-8 border-t border-slate-200 text-center text-xs text-neutral-600">
+        <div className="flex items-center justify-center gap-2 p-3 bg-white rounded-xl border border-slate-100">
+          <span className="text-base">🚚</span>
+          <span className="font-bold text-neutral-800">Free Shipping</span> above ₹999
+        </div>
+        <div className="flex items-center justify-center gap-2 p-3 bg-white rounded-xl border border-slate-100">
+          <span className="text-base">🔄</span>
+          <span className="font-bold text-neutral-800">Easy Returns</span> within 7 days
+        </div>
+        <div className="flex items-center justify-center gap-2 p-3 bg-white rounded-xl border border-slate-100">
+          <span className="text-base">🔒</span>
+          <span className="font-bold text-neutral-800">Secure Payment</span> 100% Safe with Cashfree
+        </div>
+      </div>
+
     </div>
   );
 }
-

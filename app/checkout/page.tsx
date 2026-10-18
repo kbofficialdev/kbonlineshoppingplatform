@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useModalAlert } from '@/components/ModalContext';
 import { useToast } from '@/components/ToastContext';
@@ -30,14 +31,16 @@ export default function CheckoutPage() {
   const { showModal } = useModalAlert();
   const { showToast } = useToast();
   const { showLoader, hideLoader } = useLoadingOverlay();
-  const [step, setStep] = useState<number>(1);
+
+  // 3-Step Checkout Flow
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [cart, setCart] = useState<any>({ items: [], subtotal: 0, total: 0, shippingFee: 0, discountAmount: 0 });
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Customer Delivery State
+  // Step 1: Customer Delivery Address
   const [name, setName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -48,15 +51,18 @@ export default function CheckoutPage() {
   const [state, setState] = useState<string>('Telangana');
   const [pinCode, setPinCode] = useState<string>('503145');
 
-  // Payment Selection
-  const [paymentMethod, setPaymentMethod] = useState<'CASHFREE' | 'COD' | 'UPI' | 'CARD'>('CASHFREE');
+  // Step 2: Delivery Method Selection
+  const [deliveryMethod, setDeliveryMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD');
 
-  // Statutory Policies & Terms Consent
+  // Step 3: Payment Selection
+  const [paymentMethod, setPaymentMethod] = useState<'CASHFREE' | 'COD' | 'UPI'>('CASHFREE');
+
+  // Statutory Consents
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
   const [agreeReturn, setAgreeReturn] = useState<boolean>(true);
   const [agreePrivacy, setAgreePrivacy] = useState<boolean>(true);
 
-  // Checkout Confirmation OTP State
+  // OTP Confirmation
   const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
   const [orderOtp, setOrderOtp] = useState<string>('');
   const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
@@ -71,7 +77,7 @@ export default function CheckoutPage() {
     showToast({
       type: 'info',
       title: 'Local Village Selected',
-      message: `${vName} selected within 10 km delivery radius of 503145.`,
+      message: `${vName} selected within certified 10 km hub radius.`,
     });
   };
 
@@ -86,7 +92,6 @@ export default function CheckoutPage() {
       const cartData = await cartRes.json();
       setCart(cartData);
 
-      // Verify user authentication
       const userRes = await authFetch('/api/auth/me');
       const userData = await userRes.json();
       if (userData?.authenticated && userData.user) {
@@ -175,11 +180,19 @@ export default function CheckoutPage() {
     return true;
   };
 
-  const handleProceedToPayment = () => {
+  const deliveryCost = deliveryMethod === 'EXPRESS' ? 99 : 0;
+  const calculatedTotal = Math.max(0, (cart.subtotal || 0) - (cart.discountAmount || 0) + deliveryCost);
+
+  const handleProceedToDelivery = () => {
     if (validateStep1()) {
       setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleProceedToPayment = () => {
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInitiateOrderOtp = async () => {
@@ -187,7 +200,7 @@ export default function CheckoutPage() {
       showToast({
         type: 'warning',
         title: 'Policy Consent Required',
-        message: 'Please review and accept the statutory terms, return policy, and privacy policy before placing order.',
+        message: 'Please review and accept store policies before placing an order.',
       });
       return;
     }
@@ -203,12 +216,12 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           email: email.trim(),
           name: name.trim(),
-          amount: cart.total,
+          amount: calculatedTotal,
         })
       });
       const data = await res.json();
       if (data.success) {
-        setOtpSentMessage(`✓ Authorization code dispatched to ${email.trim()}`);
+        setOtpSentMessage(`✓ 6-digit authorization code dispatched to ${email.trim()}`);
         showToast({
           type: 'info',
           title: 'Order OTP Dispatched',
@@ -288,7 +301,6 @@ export default function CheckoutPage() {
         message: 'Redirecting to Cashfree Payments Hosted Checkout (Sandbox)...',
       });
 
-      // Use Cashfree.js with mode: "sandbox" to open checkout
       if (typeof window !== 'undefined' && (window as any).Cashfree) {
         const cashfree = (window as any).Cashfree({ mode: "sandbox" });
         cashfree.checkout({
@@ -296,7 +308,6 @@ export default function CheckoutPage() {
           redirectTarget: "_self"
         });
       } else {
-        // Fallback directly to return URL if SDK not loaded or in mock environment
         window.location.href = data.return_url;
       }
     } catch (err: any) {
@@ -341,7 +352,7 @@ export default function CheckoutPage() {
             state: state.trim(),
             pinCode: pinCode.trim(),
           },
-          paymentMethod,
+          paymentMethod: paymentMethod === 'CASHFREE' ? 'COD' : paymentMethod,
           sessionId: effectiveSessionId,
           otp: finalOtp.trim(),
           termsAccepted: true,
@@ -353,11 +364,6 @@ export default function CheckoutPage() {
       if (res.status === 401 || data.requiresAuth) {
         setIsSubmitting(false);
         hideLoader();
-        showToast({
-          type: 'warning',
-          title: 'Sign In Required',
-          message: 'Please sign in with your customer account to place your order.',
-        });
         showModal({
           type: 'auth',
           title: 'Authentication Session Expired',
@@ -365,10 +371,6 @@ export default function CheckoutPage() {
           primaryBtn: {
             text: 'Sign In to Proceed →',
             href: '/auth/signin?redirect=%2Fcheckout&reason=auth_required',
-          },
-          secondaryBtn: {
-            text: 'Create New Account',
-            href: '/auth/signup?redirect=%2Fcheckout',
           },
         });
         return;
@@ -404,48 +406,35 @@ export default function CheckoutPage() {
           title: 'Order Not Placed',
           message: data.error || 'Could not place order. Please review your details.',
         });
-        showModal({
-          type: 'error',
-          title: 'Unable to Place Order',
-          message: data.error || 'Failed to register your order. Please review your details and try again.',
-        });
       }
     } catch (e: any) {
       setIsSubmitting(false);
       hideLoader();
       setErrorMsg(e.message || 'Error communicating with server');
-      showToast({
-        type: 'error',
-        title: 'Server Error',
-        message: 'Could not connect to store server. Please try again.',
-      });
-      showModal({
-        type: 'error',
-        title: 'Communication Error',
-        message: 'Could not communicate with the store servers. Please check your network connection.',
-      });
     }
   };
 
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-28 text-center">
-        <SmoothLoader size="md" color="black" label="Preparing checkout session..." />
+        <SmoothLoader size="md" color="black" label="Preparing secure checkout session..." />
       </div>
     );
   }
 
   if (!cart.items || cart.items.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center space-y-4">
-        <div className="text-4xl">🛍️</div>
-        <h1 className="text-xl font-bold">Your shopping bag is empty</h1>
-        <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+      <div className="max-w-7xl mx-auto px-4 py-24 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-warmGray mx-auto flex items-center justify-center text-2xl">
+          🛍️
+        </div>
+        <h1 className="text-2xl font-bold text-obsidian">Your shopping bag is empty</h1>
+        <p className="text-sm text-secondaryText max-w-sm mx-auto">
           Add authentic village handlooms, unstitched suitings, or Gadwal sarees to your bag before checking out.
         </p>
         <div>
-          <Link href="/search?category=All" className="inline-block bg-black text-white text-xs font-bold px-6 py-3 rounded-full hover:bg-neutral-800 transition-colors shadow-sm">
-            Browse Garment Collections →
+          <Link href="/search?category=All" className="inline-block bg-obsidian text-white text-xs font-bold px-7 py-3 rounded-full hover:bg-neutral-800 transition-colors shadow-sm">
+            Browse Handloom Collections →
           </Link>
         </div>
       </div>
@@ -453,95 +442,121 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 sm:pb-12">
       {/* Cashfree Hosted Checkout Web SDK */}
       <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload" />
 
-      {/* Checkout Progress Header */}
-      <div className="bg-white rounded-3xl border border-neutral-200/90 p-6 sm:p-8 mb-8 hover-elevate-card">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* 3-Step Progress Stepper Header */}
+      <div className="bg-white rounded-2xl border border-neutralBorder p-4 sm:p-6 mb-8 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-block px-3 py-0.5 rounded-full text-[10px] font-mono tracking-wider uppercase bg-neutral-100 text-neutral-800 border border-neutral-200 mb-1">
-              Secure Village Store Checkout • PIN 503145
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-warmGray text-obsidian border border-neutralBorder mb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Kalwaral Hub 10-km Radius • PIN 503145</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">Checkout</h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Fulfillment directly from KB FASHIONS (Kalwaral Village, Telangana)
-            </p>
+            <h1 className="text-xl sm:text-2xl font-bold text-obsidian tracking-tight">Checkout</h1>
           </div>
 
-          {/* Stepper Indicator */}
-          <div className="flex items-center gap-2 text-xs">
+          {/* Stepper (1 Address -> 2 Delivery -> 3 Payment) */}
+          <div className="flex items-center gap-2 sm:gap-4 text-xs font-medium">
+            {/* Step 1 */}
             <button
               onClick={() => setStep(1)}
-              className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
                 step === 1
-                  ? 'bg-black text-white shadow-xs'
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-electricBlue text-white shadow-xs font-bold'
+                  : step > 1
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold'
+                  : 'bg-warmGray text-secondaryText'
               }`}
             >
-              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">1</span>
-              <span>Delivery Details</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                step > 1 ? 'bg-emerald-600 text-white' : 'bg-white/25 text-inherit'
+              }`}>
+                {step > 1 ? '✓' : '1'}
+              </span>
+              <span>Address</span>
             </button>
-            <span className="text-neutral-300">→</span>
+
+            <span className="text-neutral-300">——</span>
+
+            {/* Step 2 */}
             <button
               onClick={() => validateStep1() && setStep(2)}
-              className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
                 step === 2
-                  ? 'bg-black text-white shadow-xs'
-                  : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                  ? 'bg-electricBlue text-white shadow-xs font-bold'
+                  : step > 2
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold'
+                  : 'bg-warmGray text-secondaryText'
               }`}
             >
-              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
-              <span>Payment &amp; Review</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                step > 2 ? 'bg-emerald-600 text-white' : 'bg-white/25 text-inherit'
+              }`}>
+                {step > 2 ? '✓' : '2'}
+              </span>
+              <span>Delivery</span>
+            </button>
+
+            <span className="text-neutral-300">——</span>
+
+            {/* Step 3 */}
+            <button
+              onClick={() => validateStep1() && setStep(3)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
+                step === 3
+                  ? 'bg-electricBlue text-white shadow-xs font-bold'
+                  : 'bg-warmGray text-secondaryText'
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-[11px] font-bold">
+                3
+              </span>
+              <span>Payment</span>
             </button>
           </div>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 text-xs p-4 rounded-2xl font-medium flex items-center gap-2">
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 text-xs p-4 rounded-xl font-medium flex items-center gap-2">
           <span>⚠️</span>
           <span>{errorMsg}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column (2 Cols): Form Steps */}
+        {/* Left Column (2 Cols): Current Step Card */}
         <div className="lg:col-span-2 space-y-6">
+          {/* STEP 1: ADDRESS */}
           {step === 1 && (
-            <div className="bg-white border border-neutral-200/90 p-6 sm:p-8 rounded-3xl space-y-6 hover-elevate-card">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+            <div className="bg-white border border-neutralBorder p-6 sm:p-8 rounded-2xl space-y-6 shadow-xs">
+              <div className="flex items-center justify-between border-b border-neutralBorder pb-4">
                 <div>
-                  <h2 className="text-base font-black text-neutral-900">
-                    Step 1: Contact &amp; Delivery Destination
+                  <h2 className="text-base font-bold text-obsidian">
+                    1. Shipping &amp; Delivery Address
                   </h2>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-secondaryText mt-0.5">
                     Enter recipient and village coordinates for local runner delivery
                   </p>
                 </div>
-                <span className="text-[11px] font-bold text-neutral-700 bg-neutral-100 px-3 py-1 rounded-full border border-neutral-200">
-                  📍 10 km Radius
+                <span className="text-[11px] font-bold text-neutral-700 bg-warmGray px-3 py-1 rounded-full border border-neutralBorder">
+                  📍 10 km Hub
                 </span>
               </div>
 
-              {/* Local Village Quick Selector & Google Map */}
-              <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4 sm:p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-black uppercase tracking-wider text-neutral-900 block">
-                      Local Villages Covered within 10 km of Kalwaral Hub (PIN 503145)
-                    </span>
-                    <p className="text-[11px] text-neutral-500">
-                      Tap your village for instant coordinate setup
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-bold bg-neutral-200 text-neutral-800 px-2.5 py-0.5 rounded-full">
-                    Runner Dispatch
+              {/* Local Village Quick Selector */}
+              <div className="bg-warmGray/70 border border-neutralBorder rounded-xl p-4 sm:p-5 space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-obsidian">
+                    Local Villages Covered within 10 km (PIN 503145)
+                  </span>
+                  <span className="text-[10px] font-bold bg-white text-neutral-800 border border-neutralBorder px-2.5 py-0.5 rounded-full">
+                    Direct Store Runner
                   </span>
                 </div>
 
-                {/* Village Quick Selection Buttons */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {LOCAL_VILLAGES_503145.map((v) => {
                     const isSelected = villageOrCity.toLowerCase() === v.name.toLowerCase() && pinCode === '503145';
@@ -552,8 +567,8 @@ export default function CheckoutPage() {
                         onClick={() => selectLocalVillage(v.name)}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                           isSelected
-                            ? 'bg-black text-white shadow-xs'
-                            : 'bg-white border border-neutral-200 text-neutral-700 hover:border-black'
+                            ? 'bg-obsidian text-white shadow-xs'
+                            : 'bg-white border border-neutralBorder text-neutral-700 hover:border-obsidian'
                         }`}
                       >
                         <span>{v.name}</span>
@@ -562,151 +577,225 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
-
-                {/* Embedded Interactive Google Map */}
-                <div className="rounded-xl overflow-hidden border border-neutral-200 bg-neutral-200 relative h-40 sm:h-48">
-                  <iframe
-                    title="KB Fashions 10km Delivery Radius - Kalwaral 503145"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src="https://maps.google.com/maps?q=18.4285,78.2615&hl=en&z=12&output=embed"
-                  />
-                  <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-md text-[10px] font-bold text-neutral-800 shadow-xs border border-black/10 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>10 km Doorstep Coverage Area • Kalwaral Center (PIN 503145)</span>
-                  </div>
-                </div>
-
-                {/* Coverage Feedback */}
-                {pinCode === '503145' ? (
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium">
-                    <span>✓</span>
-                    <span>
-                      <strong>Eligible for Direct Local Delivery:</strong> Address is within the certified 10 km Kalwaral store radius under PIN 503145.
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium">
-                    <span>⚠️</span>
-                    <span>
-                      <strong>Local Coverage Notice:</strong> Store deliveries are strictly operated within a 10 km radius of Kalwaral under PIN 503145.
-                    </span>
-                  </div>
-                )}
               </div>
 
-              {/* Form Input Fields */}
+              {/* Address Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="font-bold text-neutral-800 block mb-1">Recipient Full Name *</label>
+                  <label className="font-bold text-obsidian block mb-1">Full Name *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Recipient's legal name"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
+                    placeholder="e.g. Ramesh Reddy"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-800 block mb-1">Mobile Phone (10 Digits) *</label>
+                  <label className="font-bold text-obsidian block mb-1">Mobile Phone (10 Digits) *</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="10-digit mobile number"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black font-mono text-xs sm:text-sm transition-colors"
+                    placeholder="e.g. 9876543210"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue font-mono text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-800 block mb-1">Email Address (for Bill of Supply &amp; Live Tracking) *</label>
+                  <label className="font-bold text-obsidian block mb-1">Email Address (for Bill of Supply &amp; Notifications) *</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
+                    placeholder="ramesh@example.com"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-800 block mb-1">House Number / Street / Landmark *</label>
+                  <label className="font-bold text-obsidian block mb-1">House No. / Street Address / Landmark *</label>
                   <input
                     type="text"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="House number, Street name, agricultural landmark"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
+                    placeholder="House 42, Temple Street, Kalwaral"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-800 block mb-1">PIN Code *</label>
+                  <label className="font-bold text-obsidian block mb-1">PIN Code *</label>
                   <input
                     type="text"
                     maxLength={6}
                     value={pinCode}
                     onChange={(e) => handlePinChange(e.target.value)}
                     placeholder="503145"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black font-mono font-bold text-xs sm:text-sm transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue font-mono font-bold text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-800 block mb-1">Village / Habitation *</label>
+                  <label className="font-bold text-obsidian block mb-1">Village / City *</label>
                   <input
                     type="text"
                     value={villageOrCity}
                     onChange={(e) => setVillageOrCity(e.target.value)}
-                    placeholder="Village name"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
+                    placeholder="Kalwaral"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-800 block mb-1">Mandal / Sub-District</label>
-                  <input
-                    type="text"
-                    value={mandalOrArea || ''}
-                    onChange={(e) => setMandalOrArea(e.target.value)}
-                    placeholder="Sadasivanagar"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-800 block mb-1">District *</label>
+                  <label className="font-bold text-obsidian block mb-1">District *</label>
                   <input
                     type="text"
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
                     placeholder="Kamareddy"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue text-xs sm:text-sm transition-colors"
                   />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-800 block mb-1">State *</label>
+                <div>
+                  <label className="font-bold text-obsidian block mb-1">State *</label>
                   <input
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     placeholder="Telangana"
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black text-xs sm:text-sm transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutralBorder bg-white focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue text-xs sm:text-sm transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-neutral-100 flex justify-end">
+              <div className="pt-4 border-t border-neutralBorder flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleProceedToDelivery}
+                  className="bg-electricBlue text-white hover:bg-blue-600 text-xs sm:text-sm font-bold px-8 py-3 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                >
+                  <span>Continue to Delivery Method</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: DELIVERY METHOD */}
+          {step === 2 && (
+            <div className="bg-white border border-neutralBorder p-6 sm:p-8 rounded-2xl space-y-6 shadow-xs">
+              <div className="flex justify-between items-center border-b border-neutralBorder pb-4">
+                <div>
+                  <h2 className="text-base font-bold text-obsidian">
+                    2. Select Delivery Method
+                  </h2>
+                  <p className="text-xs text-secondaryText mt-0.5">
+                    Choose delivery speed for dispatch from Kalwaral Store Hub
+                  </p>
+                </div>
+                <button
+                  onClick={() => setStep(1)}
+                  className="text-xs font-semibold text-electricBlue hover:underline"
+                >
+                  ← Edit Address
+                </button>
+              </div>
+
+              {/* Delivery Address Pill */}
+              <div className="bg-warmGray p-3.5 rounded-xl border border-neutralBorder text-xs flex justify-between items-center">
+                <div>
+                  <span className="font-bold text-obsidian block">{name} • {phone}</span>
+                  <span className="text-secondaryText text-[11px]">{streetAddress}, {villageOrCity}, {district} - {pinCode}</span>
+                </div>
+                <button onClick={() => setStep(1)} className="text-[11px] font-bold text-electricBlue hover:underline">
+                  Change
+                </button>
+              </div>
+
+              {/* Delivery Options */}
+              <div className="space-y-3">
+                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
+                  deliveryMethod === 'STANDARD'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
+                }`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="deliveryMethod"
+                        checked={deliveryMethod === 'STANDARD'}
+                        onChange={() => setDeliveryMethod('STANDARD')}
+                        className="accent-electricBlue w-4 h-4"
+                      />
+                      <div>
+                        <div className="font-bold text-xs sm:text-sm text-obsidian flex items-center gap-2">
+                          <span>Standard Store Runner Delivery</span>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                            FREE
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-secondaryText mt-0.5">
+                          Direct doorstep delivery within 3-5 business days from Kalwaral hub.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-bold text-emerald-700">
+                      FREE
+                    </div>
+                  </div>
+                </label>
+
+                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
+                  deliveryMethod === 'EXPRESS'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
+                }`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="deliveryMethod"
+                        checked={deliveryMethod === 'EXPRESS'}
+                        onChange={() => setDeliveryMethod('EXPRESS')}
+                        className="accent-electricBlue w-4 h-4"
+                      />
+                      <div>
+                        <div className="font-bold text-xs sm:text-sm text-obsidian flex items-center gap-2">
+                          <span>Express Priority Delivery</span>
+                          <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+                            1-2 Days
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-secondaryText mt-0.5">
+                          Priority expedited runner dispatch with real-time SMS status updates.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-bold text-obsidian">
+                      ₹99
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-neutralBorder flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-xs font-bold text-secondaryText hover:text-obsidian"
+                >
+                  ← Back to Address
+                </button>
+
                 <button
                   type="button"
                   onClick={handleProceedToPayment}
-                  className="bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3.5 rounded-full transition-all shadow-sm flex items-center gap-2"
+                  className="bg-electricBlue text-white hover:bg-blue-600 text-xs sm:text-sm font-bold px-8 py-3 rounded-xl transition-all shadow-sm flex items-center gap-2"
                 >
                   <span>Continue to Payment Selection</span>
                   <span>→</span>
@@ -715,42 +804,33 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {step === 2 && (
-            <div className="bg-white border border-neutral-200/90 p-6 sm:p-8 rounded-3xl space-y-6 hover-elevate-card">
-              <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
+          {/* STEP 3: PAYMENT METHOD */}
+          {step === 3 && (
+            <div className="bg-white border border-neutralBorder p-6 sm:p-8 rounded-2xl space-y-6 shadow-xs">
+              <div className="flex justify-between items-center border-b border-neutralBorder pb-4">
                 <div>
-                  <h2 className="text-base font-black text-neutral-900">
-                    Step 2: Payment Method &amp; Confirmation
+                  <h2 className="text-base font-bold text-obsidian">
+                    3. Payment &amp; Confirmation
                   </h2>
-                  <p className="text-xs text-neutral-500">
-                    Select payment option and verify statutory e-commerce consents
+                  <p className="text-xs text-secondaryText mt-0.5">
+                    Select payment option and verify statutory consents
                   </p>
                 </div>
                 <button
-                  onClick={() => setStep(1)}
-                  className="text-xs font-semibold text-neutral-500 hover:text-black underline"
+                  onClick={() => setStep(2)}
+                  className="text-xs font-semibold text-electricBlue hover:underline"
                 >
-                  ← Edit Address
+                  ← Change Delivery
                 </button>
               </div>
 
-              {/* Delivery Review Banner */}
-              <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 text-xs space-y-1">
-                <div className="font-bold text-neutral-900">
-                  Delivering to: {name} ({phone})
-                </div>
-                <div className="text-neutral-600">
-                  {streetAddress}, {villageOrCity}, {district}, {state} - {pinCode} (10 km Rural Delivery)
-                </div>
-              </div>
-
-              {/* Payment Options */}
+              {/* Payment Methods */}
               <div className="space-y-3">
-                {/* Option 1: Cashfree Payments Hosted Checkout (Sandbox) */}
-                <label className={`block border p-4 sm:p-5 rounded-2xl cursor-pointer transition-all ${
+                {/* Cashfree Online */}
+                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
                   paymentMethod === 'CASHFREE'
-                    ? 'border-black bg-neutral-50 shadow-xs'
-                    : 'border-neutral-200 hover:border-neutral-400 bg-white'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
                     <input
@@ -758,30 +838,27 @@ export default function CheckoutPage() {
                       name="payment"
                       checked={paymentMethod === 'CASHFREE'}
                       onChange={() => setPaymentMethod('CASHFREE')}
-                      className="mt-1 sm:mt-0 accent-black w-4 h-4"
+                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs sm:text-sm text-neutral-900 flex items-center gap-2 flex-wrap">
-                        <span>Cashfree Payments Hosted Checkout</span>
-                        <span className="text-[10px] font-mono uppercase bg-neutral-200 text-neutral-800 px-2 py-0.5 rounded-full">
-                          Sandbox
+                      <div className="font-bold text-xs sm:text-sm text-obsidian flex items-center gap-2 flex-wrap">
+                        <span>Cashfree Secure Payments</span>
+                        <span className="text-[10px] uppercase font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          Instant Confirmation
                         </span>
                       </div>
-                      <div className="text-[11px] text-neutral-500 mt-1">
-                        Secure redirect checkout supporting UPI (GPay, PhonePe, Paytm), Debit &amp; Credit Cards, NetBanking, and Wallets via Cashfree API 2026-01-01.
+                      <div className="text-[11px] text-secondaryText mt-1">
+                        Pay with UPI (GPay, PhonePe, Paytm), Credit &amp; Debit Cards, NetBanking, and Wallets via Cashfree API.
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-neutral-800 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full shrink-0">
-                      Instant Confirmation
-                    </span>
                   </div>
                 </label>
 
-                {/* Option 2: Cash on Delivery */}
-                <label className={`block border p-4 sm:p-5 rounded-2xl cursor-pointer transition-all ${
+                {/* Cash on Delivery */}
+                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
                   paymentMethod === 'COD'
-                    ? 'border-black bg-neutral-50 shadow-xs'
-                    : 'border-neutral-200 hover:border-neutral-400 bg-white'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
                     <input
@@ -789,24 +866,24 @@ export default function CheckoutPage() {
                       name="payment"
                       checked={paymentMethod === 'COD'}
                       onChange={() => setPaymentMethod('COD')}
-                      className="mt-1 sm:mt-0 accent-black w-4 h-4"
+                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs sm:text-sm text-neutral-900">
-                        Cash on Delivery (COD) / Village Runner Handover
+                      <div className="font-bold text-xs sm:text-sm text-obsidian">
+                        Cash on Delivery (COD) / Store Runner Handover
                       </div>
-                      <div className="text-[11px] text-neutral-500 mt-1">
-                        Pay cash directly to the Kalwaral store runner upon physical delivery of your consignment. Requires 6-digit confirmation OTP.
+                      <div className="text-[11px] text-secondaryText mt-1">
+                        Pay cash directly to the Kalwaral store runner upon physical delivery. Requires 6-digit confirmation OTP.
                       </div>
                     </div>
                   </div>
                 </label>
 
-                {/* Option 3: Instant UPI */}
-                <label className={`block border p-4 sm:p-5 rounded-2xl cursor-pointer transition-all ${
+                {/* Instant UPI */}
+                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
                   paymentMethod === 'UPI'
-                    ? 'border-black bg-neutral-50 shadow-xs'
-                    : 'border-neutral-200 hover:border-neutral-400 bg-white'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
                     <input
@@ -814,13 +891,13 @@ export default function CheckoutPage() {
                       name="payment"
                       checked={paymentMethod === 'UPI'}
                       onChange={() => setPaymentMethod('UPI')}
-                      className="mt-1 sm:mt-0 accent-black w-4 h-4"
+                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs sm:text-sm text-neutral-900">
-                        Instant UPI Verification
+                      <div className="font-bold text-xs sm:text-sm text-obsidian">
+                        Direct UPI Verification
                       </div>
-                      <div className="text-[11px] text-neutral-500 mt-1">
+                      <div className="text-[11px] text-secondaryText mt-1">
                         Direct merchant UPI transfer with 5-minute confirmation authorization.
                       </div>
                     </div>
@@ -828,22 +905,22 @@ export default function CheckoutPage() {
                 </label>
               </div>
 
-              {/* Statutory Policy Consents */}
-              <div className="bg-neutral-50 p-4 sm:p-5 rounded-2xl border border-neutral-200 space-y-3">
-                <span className="text-[11px] font-black uppercase tracking-wider text-neutral-900 block">
-                  Mandatory Statutory Consents (Consumer Protection Rules 2020)
+              {/* Statutory Consents */}
+              <div className="bg-warmGray p-4 sm:p-5 rounded-xl border border-neutralBorder space-y-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-obsidian block">
+                  Mandatory Store Consents
                 </span>
 
-                <div className="space-y-2.5 text-xs text-neutral-700">
+                <div className="space-y-2 text-xs text-neutral-700">
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={agreeTerms}
                       onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black shrink-0"
+                      className="mt-0.5 w-4 h-4 rounded text-electricBlue focus:ring-electricBlue accent-electricBlue shrink-0"
                     />
                     <span className="leading-snug">
-                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-black">Terms &amp; Conditions of Sale</Link> and agree to 10-km radius village delivery parameters.
+                      I have read and accept the <Link href="/policies/terms" target="_blank" className="font-bold underline text-obsidian">Terms &amp; Conditions</Link> and agree to 10-km radius village delivery parameters.
                     </span>
                   </label>
 
@@ -852,10 +929,10 @@ export default function CheckoutPage() {
                       type="checkbox"
                       checked={agreeReturn}
                       onChange={(e) => setAgreeReturn(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black shrink-0"
+                      className="mt-0.5 w-4 h-4 rounded text-electricBlue focus:ring-electricBlue accent-electricBlue shrink-0"
                     />
                     <span className="leading-snug">
-                      I accept the <Link href="/policies/refunds" target="_blank" className="font-bold underline text-black">Refund &amp; Return Policy</Link> (7-day window for packaged handloom garments).
+                      I accept the <Link href="/policies/refunds" target="_blank" className="font-bold underline text-obsidian">Refund &amp; Return Policy</Link> (7-day window for packaged handlooms).
                     </span>
                   </label>
 
@@ -864,23 +941,23 @@ export default function CheckoutPage() {
                       type="checkbox"
                       checked={agreePrivacy}
                       onChange={(e) => setAgreePrivacy(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded text-black focus:ring-black accent-black shrink-0"
+                      className="mt-0.5 w-4 h-4 rounded text-electricBlue focus:ring-electricBlue accent-electricBlue shrink-0"
                     />
                     <span className="leading-snug">
-                      I consent to the <Link href="/policies/privacy" target="_blank" className="font-bold underline text-black">Privacy Policy</Link> and have noted the <Link href="/policies/statutory-declaration" target="_blank" className="font-bold underline text-black">Section 23 CGST Tax Exemption Notice</Link>.
+                      I consent to the <Link href="/policies/privacy" target="_blank" className="font-bold underline text-obsidian">Privacy Policy</Link> and Section 23 CGST Tax Exemption Notice.
                     </span>
                   </label>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
+              <div className="pt-4 border-t border-neutralBorder flex justify-between items-center">
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
-                  className="text-xs font-bold text-neutral-600 hover:text-black"
+                  onClick={() => setStep(2)}
+                  className="text-xs font-bold text-secondaryText hover:text-obsidian"
                 >
-                  ← Back to Address
+                  ← Back to Delivery
                 </button>
 
                 {paymentMethod === 'CASHFREE' ? (
@@ -889,7 +966,7 @@ export default function CheckoutPage() {
                     id="cashfree-pay-now-btn"
                     onClick={handleCashfreeCheckout}
                     disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
-                    className="bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3.5 rounded-full transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="bg-electricBlue text-white hover:bg-blue-600 text-xs sm:text-sm font-bold px-8 py-3 rounded-xl transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -897,7 +974,7 @@ export default function CheckoutPage() {
                         <span>Connecting to Cashfree...</span>
                       </>
                     ) : (
-                      <span>Pay with Cashfree Hosted Checkout (₹{cart.total}) →</span>
+                      <span>Pay ₹{calculatedTotal} with Cashfree →</span>
                     )}
                   </button>
                 ) : (
@@ -906,7 +983,7 @@ export default function CheckoutPage() {
                     id="confirm-place-order-btn"
                     onClick={handleInitiateOrderOtp}
                     disabled={isSubmitting || !agreeTerms || !agreeReturn || !agreePrivacy}
-                    className="bg-black text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3.5 rounded-full transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="bg-obsidian text-white hover:bg-neutral-800 text-xs sm:text-sm font-bold px-8 py-3 rounded-xl transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -914,7 +991,7 @@ export default function CheckoutPage() {
                         <span>Confirming Order...</span>
                       </>
                     ) : (
-                      <span>Verify OTP &amp; Place Order (₹{cart.total}) →</span>
+                      <span>Verify OTP &amp; Place Order (₹{calculatedTotal}) →</span>
                     )}
                   </button>
                 )}
@@ -923,148 +1000,172 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Modal: Order Confirmation OTP Popup */}
-        {showOtpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl border border-neutral-200 shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6 relative animate-scale-up">
-              <button
-                onClick={() => setShowOtpModal(false)}
-                className="absolute top-5 right-5 text-neutral-400 hover:text-black font-black text-xl"
-              >
-                ✕
-              </button>
-
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-neutral-100 text-black border border-neutral-200 rounded-full flex items-center justify-center mx-auto text-xl">
-                  🛡️
-                </div>
-                <h3 className="text-lg font-black text-neutral-900">Authorize Order Placement</h3>
-                <p className="text-xs text-neutral-500">
-                  Please enter the 6-digit confirmation code sent to <strong className="text-neutral-900">{email}</strong> to confirm your order of <strong>₹{cart.total}</strong>.
-                </p>
-                {otpSentMessage && (
-                  <div className="text-[11px] font-bold text-neutral-800 bg-neutral-100 py-1 px-3 rounded-full inline-block border border-neutral-200">
-                    {otpSentMessage}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-700 mb-1.5 text-center">
-                    6-Digit Order Confirmation Code
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    autoFocus
-                    placeholder="• • • • • •"
-                    value={orderOtp}
-                    onChange={(e) => setOrderOtp(e.target.value.replace(/\D/g, ''))}
-                    className="w-full text-center text-2xl font-mono font-black tracking-widest py-3 px-4 rounded-2xl border-2 border-neutral-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                  <p className="text-[10px] text-center text-neutral-400 mt-1">
-                    Strictly valid for 5 minutes. Check spam folder if not received in 30 seconds.
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleInitiateOrderOtp()}
-                    disabled={isSendingOtp}
-                    className="w-1/3 py-3 text-xs font-bold text-neutral-700 hover:text-black border border-neutral-200 rounded-full disabled:opacity-50"
-                  >
-                    {isSendingOtp ? 'Sending...' : 'Resend Code'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePlaceOrder()}
-                    disabled={isSubmitting || orderOtp.length !== 6}
-                    className="w-2/3 py-3 text-xs font-black bg-black text-white hover:bg-neutral-800 rounded-full transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <SmoothLoader size="xs" color="white" />
-                        <span>Verifying...</span>
-                      </>
-                    ) : (
-                      <span>Verify &amp; Confirm Order →</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Right Column (1 Col): Sticky Order Items Summary */}
+        {/* Right Column (1 Col): Order Summary Card */}
         <div className="lg:col-span-1">
-          <div className="sticky top-28 bg-white border border-neutral-200/90 rounded-3xl p-6 sm:p-8 space-y-5 hover-elevate-card">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-              <h3 className="font-black text-xs text-neutral-900 uppercase tracking-wider">
-                Order Items ({cart.items.length})
+          <div className="sticky top-28 bg-white border border-neutralBorder rounded-2xl p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-neutralBorder pb-3">
+              <h3 className="font-bold text-xs text-obsidian uppercase tracking-wider">
+                Order Summary ({cart.items.length} {cart.items.length === 1 ? 'item' : 'items'})
               </h3>
-              <Link href="/cart" className="text-xs text-neutral-500 hover:text-black underline">
+              <Link href="/cart" className="text-xs text-electricBlue hover:underline font-semibold">
                 Edit Bag
               </Link>
             </div>
 
-            <div className="divide-y divide-neutral-100 text-xs max-h-72 overflow-y-auto pr-1">
+            {/* Line items preview */}
+            <div className="divide-y divide-neutralBorder text-xs max-h-64 overflow-y-auto pr-1">
               {cart.items.map((item: any, idx: number) => (
-                <div key={idx} className="py-3 flex justify-between items-center gap-3">
-                  <div className="flex-1">
-                    <div className="font-bold text-neutral-900 line-clamp-1">{item.name}</div>
-                    <div className="text-[11px] text-neutral-500 mt-0.5">
-                      {item.cutLength ? `✂ Cut: ${item.cutLength}m • ` : ''}Size: {item.size} • Qty: {item.qty}
+                <div key={idx} className="py-2.5 flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-warmGray overflow-hidden relative shrink-0 border border-neutralBorder">
+                      {item.image ? (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                          unoptimized={item.image.startsWith('http')}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs">🧵</div>
+                      )}
+                    </div>
+                    <div className="truncate">
+                      <div className="font-semibold text-obsidian truncate">{item.name}</div>
+                      <div className="text-[11px] text-secondaryText">
+                        Qty: {item.qty} {item.size ? `• Size: ${item.size}` : ''}
+                      </div>
                     </div>
                   </div>
-                  <div className="font-bold text-neutral-900 text-right shrink-0">
+                  <div className="font-bold text-obsidian shrink-0">
                     ₹{item.price * item.qty}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-neutral-100 pt-3 space-y-2 text-xs">
-              <div className="flex justify-between text-neutral-600">
-                <span>Items Subtotal:</span>
-                <span className="font-medium text-neutral-900">₹{cart.subtotal}</span>
+            {/* Breakdown */}
+            <div className="border-t border-neutralBorder pt-3 space-y-2 text-xs">
+              <div className="flex justify-between text-secondaryText">
+                <span>Subtotal:</span>
+                <span className="font-medium text-obsidian">₹{cart.subtotal}</span>
               </div>
+
               {cart.discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Festival Discount:</span>
+                  <span>Discount Savings:</span>
                   <span>-₹{cart.discountAmount}</span>
                 </div>
               )}
-              <div className="flex justify-between text-neutral-600 items-center">
-                <span>10 km Doorstep Delivery:</span>
-                <span className="font-bold text-neutral-900">
-                  {cart.shippingFee === 0 ? (
+
+              <div className="flex justify-between text-secondaryText items-center">
+                <span>Delivery:</span>
+                <span className="font-bold text-obsidian">
+                  {deliveryCost === 0 ? (
                     <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">
                       FREE
                     </span>
                   ) : (
-                    `₹${cart.shippingFee}`
+                    `₹${deliveryCost}`
                   )}
                 </span>
               </div>
-              <div className="border-t border-neutral-200 pt-3 flex justify-between items-baseline font-black text-neutral-900">
+
+              <div className="border-t border-neutralBorder pt-3 flex justify-between items-baseline font-bold text-obsidian">
                 <span className="text-sm">Total Payable:</span>
-                <span className="text-2xl">₹{cart.total}</span>
+                <span className="text-xl text-obsidian">₹{calculatedTotal}</span>
               </div>
             </div>
 
-            <div className="bg-neutral-50 p-3.5 rounded-2xl text-[11px] text-neutral-600 border border-neutral-200 space-y-1">
-              <div className="font-bold text-neutral-900">✓ Handloom Provenance Guaranteed</div>
+            {/* Provenance Badge */}
+            <div className="bg-warmGray p-3 rounded-xl text-[11px] text-secondaryText border border-neutralBorder space-y-1">
+              <div className="font-bold text-obsidian flex items-center gap-1.5">
+                <span>🛡️</span>
+                <span>Authentic Handloom Guaranteed</span>
+              </div>
               <p className="text-[10px] leading-relaxed">
-                Dispatched directly from <strong>KB FASHIONS</strong>, Kalwaral Village, Kamareddy, Telangana (503145). Accompanied by authentic Bill of Supply.
+                Dispatched directly from <strong>KB FASHIONS</strong>, Kalwaral Village, Kamareddy, Telangana (503145) with official Bill of Supply.
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal: Order Confirmation OTP Popup */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl border border-neutralBorder shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-5 relative">
+            <button
+              onClick={() => setShowOtpModal(false)}
+              className="absolute top-4 right-4 text-secondaryText hover:text-obsidian font-bold text-lg"
+            >
+              ✕
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-warmGray text-obsidian border border-neutralBorder rounded-full flex items-center justify-center mx-auto text-xl">
+                🛡️
+              </div>
+              <h3 className="text-lg font-bold text-obsidian">Authorize Order Placement</h3>
+              <p className="text-xs text-secondaryText">
+                Please enter the 6-digit confirmation code sent to <strong className="text-obsidian">{email}</strong> to confirm your order of <strong>₹{calculatedTotal}</strong>.
+              </p>
+              {otpSentMessage && (
+                <div className="text-[11px] font-bold text-emerald-800 bg-emerald-50 py-1 px-3 rounded-full inline-block border border-emerald-200">
+                  {otpSentMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5 text-center">
+                  6-Digit Order Confirmation Code
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  autoFocus
+                  placeholder="• • • • • •"
+                  value={orderOtp}
+                  onChange={(e) => setOrderOtp(e.target.value.replace(/\D/g, ''))}
+                  className="w-full text-center text-2xl font-mono font-bold tracking-widest py-2.5 px-4 rounded-xl border border-neutralBorder focus:border-electricBlue focus:outline-none focus:ring-1 focus:ring-electricBlue"
+                />
+                <p className="text-[10px] text-center text-neutral-400 mt-1">
+                  Valid for 5 minutes. Check spam folder if not received in 30 seconds.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleInitiateOrderOtp()}
+                  disabled={isSendingOtp}
+                  className="w-1/3 py-2.5 text-xs font-bold text-neutral-700 hover:text-obsidian border border-neutralBorder rounded-xl disabled:opacity-50"
+                >
+                  {isSendingOtp ? 'Sending...' : 'Resend'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePlaceOrder()}
+                  disabled={isSubmitting || orderOtp.length !== 6}
+                  className="w-2/3 py-2.5 text-xs font-bold bg-electricBlue text-white hover:bg-blue-600 rounded-xl transition-all shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <SmoothLoader size="xs" color="white" />
+                      <span>Verifying...</span>
+                    </>
+                  ) : (
+                    <span>Verify &amp; Confirm Order →</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSubmitting && (
         <SmoothLoadingOverlay

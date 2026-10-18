@@ -2,15 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useModalAlert } from '@/components/ModalContext';
-import HeroGrandBanner from '@/components/HeroGrandBanner';
-import { authFetch } from '@/lib/clientAuth';
-import {
-  UserProfileIcon,
-  ShoppingBagIcon,
-  DeliveryTruckIcon,
-  SupportDeskIcon
-} from '@/components/CustomIcons';
+import CategoryCircleStrip from '@/components/CategoryCircleStrip';
+import ProductCard from '@/components/ProductCard';
+import { ProductGridSkeleton } from '@/components/SkeletonPlaceholder';
 
 interface Product {
   id: string;
@@ -21,469 +15,313 @@ interface Product {
   price: number;
   compareAtPrice?: number | null;
   category: string;
-  productType?: string;
-  brand?: string;
-  fabric?: string;
-  isUnstitched?: boolean;
-  unitType?: string;
-  pricePerMeter?: number | null;
-  tags: string[];
-  sizes: string[];
-  colors: string[];
-  rating: number;
-  reviews: number;
-  stockQuantity: number;
-  origin: string;
-  isFeatured: boolean;
-  images: { id: string; data: string; name: string }[];
+  rating?: number;
+  reviews?: number;
+  isFeatured?: boolean;
+  images?: { id: string; data: string; name: string }[];
 }
 
 export default function HomePage() {
-  const { showModal } = useModalAlert();
   const [products, setProducts] = useState<Product[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [wishlist, setWishlist] = useState<string[]>([]);
-  const [user, setUser] = useState<any>(null);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
+
+  const heroSlides = [
+    {
+      title: "Elegance in Every Drape",
+      subtitle: "Premium Sarees for Every Occasion",
+      ctaText: "Shop Sarees →",
+      ctaLink: "/search?category=Sarees",
+      imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=85",
+      badge: "Festive Collection • Flat 30% OFF",
+    },
+    {
+      title: "Handloom Heritage",
+      subtitle: "Authentic Gadwal & Pure Silk Creations",
+      ctaText: "Explore Collection →",
+      ctaLink: "/search?category=Sarees",
+      imageUrl: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1200&q=85",
+      badge: "Kalwaral Store Special",
+    },
+    {
+      title: "Fine Suiting & Shirtings",
+      subtitle: "Raymond & Arvind Premium Unstitched Cuts",
+      ctaText: "View Men's Wear →",
+      ctaLink: "/search?category=Men%27s%20Unstitched%20Fabrics",
+      imageUrl: "https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?auto=format&fit=crop&w=1200&q=85",
+      badge: "Custom Lengths Available",
+    },
+  ];
 
   useEffect(() => {
     fetchProducts();
-    fetchUser();
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('kb_wishlist');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setWishlist(Array.isArray(parsed) ? parsed.map((p: any) => p.productId || p.id) : []);
-        } catch (e) {}
-      }
-    }
   }, []);
-
-  const fetchUser = async () => {
-    try {
-      const res = await authFetch('/api/auth/me');
-      const data = await res.json();
-      if (data?.authenticated) setUser(data.user);
-      else setUser(null);
-    } catch (e) {}
-  };
 
   const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const res = await fetch('/api/catalog/products');
       const data = await res.json();
-      if (data?.products) setProducts(data.products);
-    } catch (e) {}
-  };
-
-  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-      showModal({
-        type: 'auth',
-        title: 'Sign In Required for Wishlist',
-        message: 'Please sign in to save handloom garments to your wishlist.',
-        primaryBtn: {
-          text: 'Sign In to Account →',
-          href: `/auth/signin?redirect=%2F`,
-        },
-        secondaryBtn: {
-          text: 'Create New Account',
-          href: `/auth/signup?redirect=%2F`,
-        },
-      });
-      return;
-    }
-
-    let updated: any[] = [];
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('kb_wishlist');
-      const currentList: any[] = stored ? JSON.parse(stored) : [];
-      const exists = currentList.some(p => (p.productId || p.id) === product.productId);
-      if (exists) {
-        updated = currentList.filter(p => (p.productId || p.id) !== product.productId);
-        showModal({
-          type: 'info',
-          title: 'Removed from Wishlist',
-          message: `"${product.name}" was removed from your wishlist.`,
-        });
-      } else {
-        updated = [...currentList, product];
-        showModal({
-          type: 'success',
-          title: 'Saved to Wishlist',
-          message: `"${product.name}" added to your wishlist.`,
-          primaryBtn: {
-            text: 'View Wishlist →',
-            href: '/wishlist',
-          },
-          secondaryBtn: {
-            text: 'Continue Shopping',
-          },
-        });
+      if (data?.products && Array.isArray(data.products)) {
+        setProducts(data.products);
       }
-      localStorage.setItem('kb_wishlist', JSON.stringify(updated));
-      setWishlist(updated.map(p => p.productId || p.id));
+    } catch (e) {
+      console.error('Error fetching catalog products:', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const quickAddToBag = async (product: Product, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      const res = await authFetch('/api/cart/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: product.productId,
-          name: product.name,
-          price: product.price,
-          size: product.sizes[0] || 'Standard',
-        })
-      });
-      const data = await res.json();
-
-      if (res.status === 401 || data.requiresAuth) {
-        showModal({
-          type: 'auth',
-          title: 'Sign In Required',
-          message: 'Please sign in to add garments to your bag and proceed to checkout.',
-          primaryBtn: {
-            text: 'Sign In →',
-            href: `/auth/signin?redirect=%2F`,
-          },
-          secondaryBtn: {
-            text: 'Register',
-            href: `/auth/signup?redirect=%2F`,
-          },
-        });
-        return;
-      }
-
-      if (!res.ok) {
-        showModal({
-          type: 'error',
-          title: 'Unable to Add Item',
-          message: data.error || 'Could not add item to bag. Please try again.',
-        });
-        return;
-      }
-
-      showModal({
-        type: 'success',
-        title: 'Added to Bag',
-        message: `✓ "${product.name}" has been added to your shopping bag.`,
-        primaryBtn: {
-          text: 'View Bag & Checkout →',
-          href: '/cart',
-        },
-        secondaryBtn: {
-          text: 'Continue Browsing',
-        },
-      });
-    } catch (e: any) {
-      showModal({
-        type: 'error',
-        title: 'Connection Notice',
-        message: 'Could not connect to the store servers. Please check your network.',
-      });
+  // Helper to extract image URL
+  const getProductImage = (p: Product) => {
+    if (p.images && p.images.length > 0 && p.images[0].data) {
+      return p.images[0].data;
     }
+    return `/api/media/${p.productId || p.id}`;
   };
 
-  const categories = [
-    'All',
-    'Sarees',
-    "Men's Unstitched",
-    "Women's Wear",
-    'Wedding & Pattu',
-    'Dhotis & Towels',
-  ];
-
-  const filteredProducts = activeCategory === 'All'
-    ? products
-    : products.filter(p => {
-        const cat = activeCategory.toLowerCase();
-        if (cat.includes('wedding')) {
-          return p.category.toLowerCase().includes('wedding') || p.tags.some(t => t.toLowerCase().includes('wedding') || t.toLowerCase().includes('gadwal') || t.toLowerCase().includes('pattu'));
-        }
-        return (
-          p.category.toLowerCase() === cat ||
-          (p.productType && p.productType.toLowerCase() === cat) ||
-          (cat.includes('saree') && (p.category === 'Sarees' || p.productType === 'SAREE')) ||
-          (cat.includes('men') && (p.category.includes('Men') || p.productType === 'MEN_UNSTITCHED')) ||
-          (cat.includes('women') && (p.category.includes('Women') || p.productType === 'WOMEN_WEAR')) ||
-          (cat.includes('dhoti') && (p.category.includes('Dhoti') || p.productType === 'DHOTI_TOWEL'))
-        );
-      });
+  // Trending Products: First 6 products
+  const trendingProducts = products.slice(0, 6);
+  // New Arrivals: Next 6 products
+  const newArrivals = products.slice(6, 12);
 
   return (
     <div className="bg-[#f8f9fa] text-neutral-900 min-h-screen">
-      {/* 1. HERO GRAND BANNER: 100% Viewport Width, Clean, Uncropped */}
-      <HeroGrandBanner />
-
-      {/* 2. VILLAGE HERITAGE & STATUTORY STRIP */}
-      <div className="bg-neutral-900 text-neutral-300 border-b border-neutral-800 py-3.5 px-4 sm:px-6 lg:px-8 text-xs select-none">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-[11px] sm:text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            <span className="font-bold text-white">KB FASHIONS (Kalwaral, Telangana)</span>
-            <span className="text-neutral-500 hidden sm:inline">•</span>
-            <span className="text-neutral-400 hidden sm:inline">20 Years of Generational Handlooms (2006–2026)</span>
-          </div>
-          <div className="flex items-center gap-4 text-neutral-400">
-            <span>🚀 10 km Village Delivery (PIN 503145)</span>
-            <span className="hidden md:inline">•</span>
-            <span className="hidden md:inline text-neutral-300">Sec 23 CGST Tax-Exempt Net Pricing</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. MAIN CATALOG SECTION */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Category Header & Filter Pills */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 mb-8 border-b border-slate-200">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900">
-              Handloom &amp; Master Cuts Catalog
+      
+      {/* 1. HERO CAMPAIGN SECTION (Desktop & Mobile matching approved mockup) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 sm:pt-6 sm:pb-4">
+        
+        {/* DESKTOP HERO BANNER */}
+        <div className="hidden sm:relative sm:flex items-center justify-between rounded-3xl overflow-hidden bg-gradient-to-r from-[#F6E8D8] via-[#FAF5EE] to-[#F6E8D8] border border-amber-200/50 shadow-xs min-h-[360px] lg:min-h-[420px]">
+          
+          {/* Left Hero Content */}
+          <div className="flex-1 p-8 sm:p-12 lg:p-16 z-10 max-w-xl">
+            <span className="inline-block text-[11px] font-black tracking-widest text-amber-800 uppercase bg-amber-200/50 px-3 py-1 rounded-full border border-amber-300/60 mb-3">
+              {heroSlides[currentSlide].badge}
+            </span>
+            <h1 className="text-3xl lg:text-5xl font-black text-neutral-900 tracking-tight leading-tight">
+              {heroSlides[currentSlide].title}
             </h1>
-            <p className="text-xs text-neutral-500 mt-1">
-              Pure Gadwal silks, Raymond suitings, Arvind shirtings, and authentic village cottons
+            <p className="mt-2 text-sm lg:text-base text-neutral-600 font-medium">
+              {heroSlides[currentSlide].subtitle}
             </p>
+            <div className="mt-6 flex items-center gap-4">
+              <Link
+                href={heroSlides[currentSlide].ctaLink}
+                className="bg-[#3478F6] text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-full hover:bg-blue-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 group"
+              >
+                <span>{heroSlides[currentSlide].ctaText}</span>
+              </Link>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {categories.map(cat => (
+          {/* Right Hero Image */}
+          <div className="relative w-1/2 h-[360px] lg:h-[420px] overflow-hidden">
+            <img
+              src={heroSlides[currentSlide].imageUrl}
+              alt="KB Fashions Campaign"
+              className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105"
+            />
+            {/* Subtle Gradient Blend */}
+            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#F6E8D8] via-[#F6E8D8]/60 to-transparent" />
+          </div>
+
+          {/* Carousel Navigation Arrows */}
+          <button
+            type="button"
+            onClick={() => setCurrentSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1))}
+            aria-label="Previous slide"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-neutral-800 shadow-md flex items-center justify-center hover:bg-white transition-all z-20"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentSlide((prev) => (prev === heroSlides.length - 1 ? 0 : prev + 1))}
+            aria-label="Next slide"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 text-neutral-800 shadow-md flex items-center justify-center hover:bg-white transition-all z-20"
+          >
+            ›
+          </button>
+
+          {/* Slider Dots Indicator */}
+          <div className="absolute bottom-4 left-12 flex items-center gap-2 z-20">
+            {heroSlides.map((_, idx) => (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`text-xs font-bold px-4 py-2 rounded-full transition-all cursor-pointer border ${
-                  activeCategory === cat
-                    ? 'bg-black border-black text-white shadow-sm'
-                    : 'bg-white border-slate-200 text-neutral-700 hover:border-black hover:text-black'
+                key={idx}
+                type="button"
+                onClick={() => setCurrentSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  currentSlide === idx ? 'w-6 bg-neutral-900' : 'bg-neutral-300 hover:bg-neutral-400'
                 }`}
-              >
-                {cat}
-              </button>
+              />
             ))}
           </div>
+
         </div>
 
-        {/* Product Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-7">
-          {filteredProducts.map(product => {
-            const isWishlisted = wishlist.includes(product.productId);
-            const imageSrc = product.images?.[0]?.data || '';
-            const isMeter = product.isUnstitched || product.unitType === 'METER';
-
-            return (
-              <article
-                key={product.id}
-                className="group bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 hover:border-neutral-900 hover:shadow-lg hover:-translate-y-0.5 relative overflow-hidden"
+        {/* MOBILE HERO CARD (Matching approved mockup) */}
+        <div className="sm:hidden relative rounded-2xl overflow-hidden bg-gradient-to-br from-neutral-900 via-neutral-950 to-blue-950 text-white shadow-md">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex-1 pr-3 z-10">
+              <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">
+                Festive Collection
+              </span>
+              <h2 className="text-xl font-black text-white mt-0.5 leading-tight">
+                Flat 30% OFF
+              </h2>
+              <p className="text-[11px] text-neutral-300 mt-1">
+                Authentic sarees & fine weaves
+              </p>
+              <Link
+                href="/search?category=Sarees"
+                className="mt-3 inline-block bg-white text-neutral-900 text-xs font-bold px-4 py-1.5 rounded-full shadow-xs hover:bg-neutral-100"
               >
-                <div>
-                  {/* Image Viewport */}
-                  <Link
-                    href={`/products/${product.productId}`}
-                    className="block relative aspect-[4/5] bg-neutral-100 rounded-xl overflow-hidden mb-4"
-                  >
-                    {imageSrc ? (
-                      <img
-                        src={imageSrc}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center font-black text-neutral-400">
-                        KB FASHIONS
-                      </div>
-                    )}
-
-                    {/* Tag Badge */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
-                      <span className="bg-white/95 backdrop-blur-xs text-neutral-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs">
-                        {product.tags[0] || 'Handcrafted'}
-                      </span>
-                    </div>
-
-                    {/* Wishlist Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => toggleWishlist(product, e)}
-                      className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs transition-transform shadow-xs ${
-                        isWishlisted
-                          ? 'bg-black text-white'
-                          : 'bg-white/95 text-neutral-700 hover:scale-110 border border-slate-200'
-                      }`}
-                      aria-label="Toggle wishlist"
-                    >
-                      {isWishlisted ? '♥' : '♡'}
-                    </button>
-                  </Link>
-
-                  {/* Origin & Fabric */}
-                  <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                    <span>{product.origin || 'Kalwaral Heritage'}</span>
-                  </div>
-
-                  {/* Product Title */}
-                  <Link href={`/products/${product.productId}`}>
-                    <h2 className="font-bold text-sm text-neutral-900 group-hover:text-blue-700 transition-colors line-clamp-1 mb-1.5">
-                      {product.name}
-                    </h2>
-                  </Link>
-
-                  <p className="text-xs text-neutral-500 line-clamp-2 mb-4 leading-relaxed">
-                    {product.description}
-                  </p>
-                </div>
-
-                {/* Price & Action Button */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    {isMeter ? (
-                      <div>
-                        <span className="text-base font-black text-neutral-900">₹{product.pricePerMeter || product.price}</span>
-                        <span className="text-xs text-neutral-500 font-medium ml-1">/ Meter</span>
-                        <span className="block text-[9px] text-neutral-400">Tailored cut</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <span className="text-base font-black text-neutral-900">₹{product.price}</span>
-                        {product.compareAtPrice && (
-                          <span className="text-xs text-neutral-400 line-through ml-2">₹{product.compareAtPrice}</span>
-                        )}
-                        <span className="block text-[9px] text-neutral-400 font-medium">Net retail price</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {isMeter ? (
-                    <Link
-                      href={`/products/${product.productId}`}
-                      className="px-4 py-2 rounded-full bg-neutral-100 text-neutral-900 hover:bg-black hover:text-white text-xs font-bold transition-colors"
-                    >
-                      Select Cut →
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => quickAddToBag(product, e)}
-                      className="px-4 py-2 rounded-full bg-black text-white hover:bg-neutral-800 text-xs font-bold transition-all shadow-xs"
-                    >
-                      + Add to Bag
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
+                Shop Now →
+              </Link>
+            </div>
+            <div className="w-28 h-32 rounded-xl overflow-hidden shrink-0 border border-white/10">
+              <img
+                src={heroSlides[0].imageUrl}
+                alt="Festive Collection"
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
+          </div>
         </div>
-      </main>
 
-      {/* 4. THREE PILLARS OF VILLAGE TRANSPARENCY */}
-      <section className="bg-white border-t border-b border-slate-200 py-12 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-              Village Provenance
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 mt-2">
-              Why Patrons Trust KB Fashions
+      </section>
+
+      {/* 2. CIRCULAR CATEGORY NAVIGATION STRIP */}
+      <CategoryCircleStrip />
+
+      {/* 3. TRENDING NOW SECTION (Matching approved mockup) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div className="flex items-center justify-between gap-4 mb-5 sm:mb-6">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
+              Trending Now
             </h2>
-            <p className="text-xs text-neutral-500 mt-1">
-              Direct loom relationships, certified weights, and doorstep delivery within 10 km.
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Top curated handlooms and customer favorites
             </p>
           </div>
+          <Link
+            href="/search"
+            className="text-xs sm:text-sm font-bold text-[#3478F6] hover:text-blue-700 flex items-center gap-1 group whitespace-nowrap"
+          >
+            <span>View All</span>
+            <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+          </Link>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="p-6 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
-                01
-              </div>
-              <h3 className="font-bold text-sm text-neutral-900">Direct Ancestral Weaves</h3>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Direct procurement from ancestral Gadwal loom artisans and mill-authorized Raymond suiting lines. Zero counterfeit blends.
+        {/* Product Grid */}
+        {isLoading ? (
+          <ProductGridSkeleton count={6} />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-5">
+            {trendingProducts.map((p) => (
+              <ProductCard
+                key={p.productId || p.id}
+                id={p.productId || p.id}
+                productId={p.productId || p.id}
+                title={p.title || p.name}
+                name={p.name}
+                price={p.price}
+                compareAtPrice={p.compareAtPrice}
+                category={p.category}
+                imageUrl={getProductImage(p)}
+                rating={p.rating || 4.6}
+                reviews={p.reviews || 120}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. NEW ARRIVALS & HANDLOOM HERITAGE */}
+      {newArrivals.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16">
+          <div className="flex items-center justify-between gap-4 mb-5 sm:mb-6">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
+                New Arrivals &amp; Handloom Heritage
+              </h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Generational weaves, Raymond cuts, and daily cottons
               </p>
             </div>
+            <Link
+              href="/search?sort=created-desc"
+              className="text-xs sm:text-sm font-bold text-[#3478F6] hover:text-blue-700 flex items-center gap-1 group whitespace-nowrap"
+            >
+              <span>View All</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+          </div>
 
-            <div className="p-6 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
-                02
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-5">
+            {newArrivals.map((p) => (
+              <ProductCard
+                key={p.productId || p.id}
+                id={p.productId || p.id}
+                productId={p.productId || p.id}
+                title={p.title || p.name}
+                name={p.name}
+                price={p.price}
+                compareAtPrice={p.compareAtPrice}
+                category={p.category}
+                imageUrl={getProductImage(p)}
+                rating={p.rating || 4.8}
+                reviews={p.reviews || 75}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 5. TRUST BADGES STRIP (Approved Mockup Style) */}
+      <section className="bg-white border-t border-b border-slate-200 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+            
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg mb-2">
+                🚚
               </div>
-              <h3 className="font-bold text-sm text-neutral-900">10 km Local Express Delivery</h3>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Doorstep delivery within Kalwaral and surrounding villages under PIN 503145 with stage-by-stage consignment tracking.
-              </p>
+              <div className="text-xs sm:text-sm font-bold text-neutral-900">Free Shipping</div>
+              <div className="text-[11px] text-neutral-500 mt-0.5">On orders above ₹999</div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
-                03
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mb-2">
+                🔄
               </div>
-              <h3 className="font-bold text-sm text-neutral-900">Sec 23 CGST Net Pricing</h3>
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Operates with statutory exemption under Section 23 of the CGST Act. Transparent net bills of supply with zero tax markup.
-              </p>
+              <div className="text-xs sm:text-sm font-bold text-neutral-900">Easy Returns</div>
+              <div className="text-[11px] text-neutral-500 mt-0.5">7 days hassle-free policy</div>
             </div>
+
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-lg mb-2">
+                📦
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-neutral-900">Direct Village Runner</div>
+              <div className="text-[11px] text-neutral-500 mt-0.5">10 km radius under PIN 503145</div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-lg mb-2">
+                🔒
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-neutral-900">Secure Payment</div>
+              <div className="text-[11px] text-neutral-500 mt-0.5">100% Safe with Cashfree</div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* 5. NEWSLETTER SUBSCRIPTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="bg-black text-white rounded-3xl p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-950/80 px-3 py-1 rounded-full border border-blue-800">
-            Festive Handloom Updates
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black">
-            Stay Connected with Kalwaral Weaves
-          </h2>
-          <p className="text-xs text-neutral-400 leading-relaxed">
-            Get notified of new Gadwal silk releases, seasonal unstitched cuts, and festival announcements.
-          </p>
-
-          {newsletterSubscribed ? (
-            <div className="p-3 bg-neutral-900 text-emerald-400 text-xs font-bold rounded-full inline-block border border-emerald-800">
-              ✓ You are subscribed to KB Fashions seasonal updates.
-            </div>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (newsletterEmail) {
-                  setNewsletterSubscribed(true);
-                  showModal({
-                    type: 'success',
-                    title: 'Subscribed Successfully',
-                    message: `✓ Thank you! Updates will be sent to ${newsletterEmail}.`,
-                  });
-                }
-              }}
-              className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2"
-            >
-              <input
-                type="email"
-                required
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="flex-1 px-4 py-3 rounded-full bg-neutral-900 border border-neutral-700 text-white text-xs focus:outline-none focus:border-white"
-              />
-              <button
-                type="submit"
-                className="bg-white text-black hover:bg-neutral-200 text-xs font-bold px-6 py-3 rounded-full transition-colors"
-              >
-                Subscribe
-              </button>
-            </form>
-          )}
-        </div>
-      </section>
     </div>
   );
 }

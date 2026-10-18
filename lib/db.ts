@@ -1567,17 +1567,39 @@ class DatabaseStore {
       }
     ];
 
-    // Seed into Database collections & generate custom SVGs stored in DB
+    const PRODUCT_PHOTOGRAPHY_MAP: Record<string, string> = {
+      "prod-gadwal-1": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=80",
+      "prod-pattu-1": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1000&q=80",
+      "prod-designer-1": "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=1000&q=80",
+      "prod-nirma-1": "https://images.unsplash.com/photo-1610030469854-4638706346aa?auto=format&fit=crop&w=1000&q=80",
+      "prod-women-top-1": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1000&q=80",
+      "prod-women-legging-1": "https://images.unsplash.com/photo-1506619216599-9d16d0903dfd?auto=format&fit=crop&w=1000&q=80",
+      "prod-women-dress-1": "https://images.unsplash.com/photo-1618244972963-dbee1a7edc95?auto=format&fit=crop&w=1000&q=80",
+      "prod-blouse-1": "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?auto=format&fit=crop&w=1000&q=80",
+      "prod-matching-1": "https://images.unsplash.com/photo-1535043934128-cf0b28d52f95?auto=format&fit=crop&w=1000&q=80",
+      "prod-men-raymond-shirt": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1000&q=80",
+      "prod-men-raymond-pant": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1000&q=80",
+      "prod-men-arvind-linen": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=1000&q=80",
+      "prod-men-combo-box": "https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?auto=format&fit=crop&w=1000&q=80",
+      "prod-dhoti-1": "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&w=1000&q=80",
+      "prod-towel-1": "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1000&q=80",
+      "prod-banian-1": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1000&q=80",
+      "prod-kerchief-1": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=1000&q=80",
+    };
+
+    // Seed into Database collections & generate authentic photography URLs
     rawCatalog.forEach((p, idx) => {
       const imgId = `img-cat-${idx + 1}`;
-      const svgData = generateApparelSvg(p.name, p.productType, p.colorHex, p.bgHex, p.badge, p.brand);
+      const photoUrl = PRODUCT_PHOTOGRAPHY_MAP[p.productId];
+      const imgData = photoUrl || generateApparelSvg(p.name, p.productType, p.colorHex, p.bgHex, p.badge, p.brand);
+      const mimeType = photoUrl ? "image/jpeg" : "image/svg+xml";
 
       const imageModel: ProductImageModel = {
         id: imgId,
         productId: p.productId,
-        name: `${p.name} - Official Photograph`,
-        mimeType: "image/svg+xml",
-        data: svgData,
+        name: `${p.name} - Authentic Photography`,
+        mimeType,
+        data: imgData,
         isPrimary: true,
         createdAt: now,
       };

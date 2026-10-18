@@ -44,7 +44,7 @@ export default function RootLayout({
           <LoadingOverlayProvider>
             <ModalProvider>
               <Header />
-              <main className="flex-1 pt-24 sm:pt-[96px] pb-20 sm:pb-0">
+              <main className="flex-1 pt-28 sm:pt-[84px] pb-24 sm:pb-0">
                 {children}
               </main>
               <MobileBottomDock />
