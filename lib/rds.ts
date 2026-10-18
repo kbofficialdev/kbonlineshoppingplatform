@@ -9,16 +9,35 @@ const RDS_USERNAME = process.env.RDS_USERNAME || 'Sudoapt1729';
 
 AWS.config.update({ region: RDS_REGION });
 
+interface CachedToken {
+  token: string;
+  generatedAt: number;
+  expiresInMs: number;
+}
+
+// Auto-regenerate cache: RDS IAM tokens expire strictly every 15 minutes (900s).
+// We refresh automatically at 12 minutes (720s) to guarantee zero PAM auth failures.
+let tokenCache: CachedToken | null = null;
+
 /**
- * Generate an RDS IAM Authentication Token or return configured RDS_AUTH_TOKEN
+ * Generate or retrieve a valid, fresh AWS RDS IAM Authentication Token
+ * Automatically regenerates before the 15-minute expiration deadline.
  */
-export function getRDSAuthToken(): string {
-  // If user provided token or password in environment variable
-  if (process.env.RDS_AUTH_TOKEN && process.env.RDS_AUTH_TOKEN.trim().length > 0) {
-    return process.env.RDS_AUTH_TOKEN.trim();
+export function getRDSAuthToken(forceRefresh = false): string {
+  const configuredPassword = process.env.RDS_AUTH_TOKEN?.trim() || '';
+
+  // If a standard database password (non-IAM URL token) is set, return it directly
+  if (configuredPassword && !configuredPassword.includes('X-Amz-Signature') && !configuredPassword.includes('X-Amz-Date')) {
+    return configuredPassword;
   }
 
-  // Otherwise generate dynamic auth token using AWS RDS Signer
+  const now = Date.now();
+  const maxTokenAgeMs = 12 * 60 * 1000; // 12 minutes (safe margin under 15 min expiry)
+
+  if (!forceRefresh && tokenCache && (now - tokenCache.generatedAt) < maxTokenAgeMs) {
+    return tokenCache.token;
+  }
+
   try {
     const signer = new (AWS as any).RDS.Signer({
       region: RDS_REGION,
@@ -26,15 +45,21 @@ export function getRDSAuthToken(): string {
       port: RDS_PORT,
       username: RDS_USERNAME,
     });
-    return signer.getAuthToken({});
-  } catch (err) {
-    console.warn('Could not generate dynamic AWS RDS IAM Auth token:', err);
-    return process.env.RDS_AUTH_TOKEN || '';
+    const freshToken = signer.getAuthToken({});
+    tokenCache = {
+      token: freshToken,
+      generatedAt: now,
+      expiresInMs: maxTokenAgeMs,
+    };
+    return freshToken;
+  } catch (err: any) {
+    console.warn('Notice: AWS RDS dynamic IAM token generation error:', err?.message || err);
+    return configuredPassword;
   }
 }
 
 /**
- * Create a new connected pg Client instance
+ * Create a new connected pg Client instance with fresh auto-renewed authentication
  */
 export function createRDSClient(): Client {
   const password = getRDSAuthToken();
@@ -46,14 +71,48 @@ export function createRDSClient(): Client {
     user: RDS_USERNAME,
     password,
     ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
   });
+}
+
+/**
+ * Shared connection pool for Next.js API routes with auto-renewing credentials
+ */
+let sharedPool: Pool | null = null;
+
+export function getRDSPool(): Pool {
+  if (!sharedPool) {
+    sharedPool = new Pool({
+      host: RDS_HOSTNAME,
+      port: RDS_PORT,
+      database: RDS_DATABASE,
+      user: RDS_USERNAME,
+      password: () => getRDSAuthToken(), // Dynamic password evaluation on checkout
+      ssl: { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
+  }
+  return sharedPool;
 }
 
 /**
  * Test AWS RDS connection and query DB engine version
  */
 export async function testRDSConnection(): Promise<{ success: boolean; version?: string; error?: string }> {
-  const client = createRDSClient();
+  // Always force a freshly minted token for testing
+  const token = getRDSAuthToken(true);
+  const client = new Client({
+    host: RDS_HOSTNAME,
+    port: RDS_PORT,
+    database: RDS_DATABASE,
+    user: RDS_USERNAME,
+    password: token,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+  });
+
   try {
     await client.connect();
     const res = await client.query('SELECT version()');
@@ -67,4 +126,3 @@ export async function testRDSConnection(): Promise<{ success: boolean; version?:
     } catch (_) {}
   }
 }
-

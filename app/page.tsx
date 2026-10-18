@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useModalAlert } from '@/components/ModalContext';
 import HeroGrandBanner from '@/components/HeroGrandBanner';
-import ProductCollageShowcase from '@/components/ProductCollageShowcase';
 import { authFetch } from '@/lib/clientAuth';
+import {
+  UserProfileIcon,
+  ShoppingBagIcon,
+  DeliveryTruckIcon,
+  SupportDeskIcon
+} from '@/components/CustomIcons';
 
 interface Product {
   id: string;
@@ -28,7 +33,6 @@ interface Product {
   rating: number;
   reviews: number;
   stockQuantity: number;
-  fabricCare?: string;
   origin: string;
   isFeatured: boolean;
   images: { id: string; data: string; name: string }[];
@@ -40,26 +44,11 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [user, setUser] = useState<any>(null);
-  const [store, setStore] = useState<any>({
-    brandName: "KB",
-    officialName: "KB FASHIONS",
-    village: "Kalwaral",
-    mandal: "Sadasivanagar",
-    district: "Kamareddy",
-    state: "Telangana",
-    pinCode: "503145",
-    contactPhone: "+91 7989768200",
-    contactEmail: "kb.official.admin@gmail.com",
-  });
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
-  const chartCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const chartInstanceRef = useRef<any>(null);
-
   useEffect(() => {
     fetchProducts();
-    fetchStoreSettings();
     fetchUser();
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('kb_wishlist');
@@ -81,14 +70,6 @@ export default function HomePage() {
     } catch (e) {}
   };
 
-  const fetchStoreSettings = async () => {
-    try {
-      const res = await fetch('/api/store/settings');
-      const data = await res.json();
-      if (data?.settings) setStore(data.settings);
-    } catch (e) {}
-  };
-
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/catalog/products');
@@ -101,15 +82,14 @@ export default function HomePage() {
     e.preventDefault();
     e.stopPropagation();
 
-    // Check if user is authenticated before allowing wishlist services
     if (!user) {
       showModal({
         type: 'auth',
         title: 'Sign In Required for Wishlist',
-        message: 'Please sign in to save your favorite Kalwaral handloom items to your personal wishlist.',
+        message: 'Please sign in to save handloom garments to your wishlist.',
         primaryBtn: {
           text: 'Sign In to Account →',
-          href: `/auth/signin?redirect=%2F&reason=auth_required`,
+          href: `/auth/signin?redirect=%2F`,
         },
         secondaryBtn: {
           text: 'Create New Account',
@@ -136,7 +116,7 @@ export default function HomePage() {
         showModal({
           type: 'success',
           title: 'Saved to Wishlist',
-          message: `♥ "${product.name}" has been bookmarked to your wishlist.`,
+          message: `"${product.name}" added to your wishlist.`,
           primaryBtn: {
             text: 'View Wishlist →',
             href: '/wishlist',
@@ -162,7 +142,7 @@ export default function HomePage() {
           productId: product.productId,
           name: product.name,
           price: product.price,
-          size: product.sizes[0] || 'M',
+          size: product.sizes[0] || 'Standard',
         })
       });
       const data = await res.json();
@@ -170,14 +150,14 @@ export default function HomePage() {
       if (res.status === 401 || data.requiresAuth) {
         showModal({
           type: 'auth',
-          title: 'Sign In Required to Shop',
-          message: 'An active account session is required to add items to your shopping bag, save your selections, and place an order.',
+          title: 'Sign In Required',
+          message: 'Please sign in to add garments to your bag and proceed to checkout.',
           primaryBtn: {
-            text: 'Sign In to Account →',
-            href: `/auth/signin?redirect=%2F&reason=auth_required`,
+            text: 'Sign In →',
+            href: `/auth/signin?redirect=%2F`,
           },
           secondaryBtn: {
-            text: 'Create New Account',
+            text: 'Register',
             href: `/auth/signup?redirect=%2F`,
           },
         });
@@ -193,78 +173,26 @@ export default function HomePage() {
         return;
       }
 
-      // Success modal alert at center of page
       showModal({
         type: 'success',
-        title: 'Item Added to Shopping Bag',
-        message: `✓ "${product.name}" has been added to your shopping bag!`,
+        title: 'Added to Bag',
+        message: `✓ "${product.name}" has been added to your shopping bag.`,
         primaryBtn: {
-          text: 'View Shopping Bag & Checkout →',
+          text: 'View Bag & Checkout →',
           href: '/cart',
         },
         secondaryBtn: {
-          text: 'Continue Shopping',
+          text: 'Continue Browsing',
         },
       });
     } catch (e: any) {
       showModal({
         type: 'error',
-        title: 'Connection Error',
-        message: 'Could not connect to the store servers. Please check your connection.',
+        title: 'Connection Notice',
+        message: 'Could not connect to the store servers. Please check your network.',
       });
     }
   };
-
-  // Initialize Canvas Chart.js for quality ratings
-  useEffect(() => {
-    if (!chartCanvasRef.current) return;
-    const ctx = chartCanvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-
-    const Chart = (window as any).Chart;
-    if (Chart) {
-      chartInstanceRef.current = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Fabric Longevity', 'Softness & Breathability', 'Stitching Strength', 'Color Retention', 'Price-to-Value'],
-          datasets: [{
-            label: 'Patron Satisfaction Rating (%)',
-            data: [99, 98, 98, 97, 100],
-            backgroundColor: '#08090C',
-            borderRadius: 6,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (context: any) => ` Satisfaction: ${context.raw}%`
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              ticks: { callback: (val: any) => val + '%', font: { size: 10, family: 'Inter' } },
-              grid: { color: '#E8EAF0' }
-            },
-            x: {
-              ticks: { font: { size: 11, family: 'Inter' } },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    }
-  }, [products]);
 
   const categories = [
     'All',
@@ -272,9 +200,7 @@ export default function HomePage() {
     "Men's Unstitched",
     "Women's Wear",
     'Wedding & Pattu',
-    'Blouse & Matching',
     'Dhotis & Towels',
-    'Inners & Essentials'
   ];
 
   const filteredProducts = activeCategory === 'All'
@@ -290,96 +216,54 @@ export default function HomePage() {
           (cat.includes('saree') && (p.category === 'Sarees' || p.productType === 'SAREE')) ||
           (cat.includes('men') && (p.category.includes('Men') || p.productType === 'MEN_UNSTITCHED')) ||
           (cat.includes('women') && (p.category.includes('Women') || p.productType === 'WOMEN_WEAR')) ||
-          (cat.includes('blouse') && (p.category.includes('Blouse') || p.productType === 'BLOUSE_PIECE')) ||
-          (cat.includes('dhoti') && (p.category.includes('Dhoti') || p.productType === 'DHOTI_TOWEL')) ||
-          (cat.includes('inner') && (p.category.includes('Inner') || p.productType === 'INNER_ESSENTIAL'))
+          (cat.includes('dhoti') && (p.category.includes('Dhoti') || p.productType === 'DHOTI_TOWEL'))
         );
       });
 
-  const weddingCollection = products.filter(p => 
-    p.tags?.some(t => ['wedding', 'gadwal', 'pattu', 'ceremony', 'pure silk'].includes(t.toLowerCase())) ||
-    p.category === 'Wedding' || p.brand === 'Gadwal Handloom' || p.brand === 'Raymond'
-  ).slice(0, 4);
-
   return (
-    <div className="bg-[#f8f9fa] text-kb-black">
-      {/* ========================================================================= */}
-      {/* 2. GRAND HERO BRAND SHOWCASE (First Page Banner, 100vw Edge-to-Edge)      */}
-      {/* ========================================================================= */}
-      <section className="w-full pb-0">
-        <HeroGrandBanner />
-      </section>
+    <div className="bg-[#f8f9fa] text-neutral-900 min-h-screen">
+      {/* 1. HERO GRAND BANNER: 100% Viewport Width, Clean, Uncropped */}
+      <HeroGrandBanner />
 
-      {/* ========================================================================= */}
-      {/* 2.5 DYNAMIC PRODUCT COLLAGE SHOWCASE WITH AUTO-SWAP ANIMATIONS            */}
-      {/* ========================================================================= */}
-      <ProductCollageShowcase
-        products={products}
-        wishlist={wishlist}
-        onToggleWishlist={toggleWishlist}
-        onQuickAddToBag={quickAddToBag}
-      />
-
-      {/* ========================================================================= */}
-      {/* 3. KB SHOPMATE AI ANNOUNCEMENT BANNER (AI Blue-Violet Gradient 7%)       */}
-      {/* ========================================================================= */}
-      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="kb-ai-gradient rounded-kb-panel p-6 sm:p-8 text-white relative overflow-hidden shadow-md">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-            <div className="space-y-3 max-w-2xl text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-kb-pill bg-white/15 backdrop-blur-sm border border-white/20 text-xs font-semibold text-white">
-                <span className="text-base">✦</span>
-                <span>Shop in Telugu &amp; English with Voice</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Meet KB Shopmate AI: Your Personal Village Assistant
-              </h2>
-              <p className="text-white/90 text-sm leading-relaxed">
-                Experience voice-powered conversational shopping. Say or type naturally in Telugu: 
-                <span className="font-telugu font-semibold bg-white/20 px-2 py-0.5 rounded mx-1 text-white">
-                  “నాకు ₹1000 లోపు మంచి చీర చూపించు”
-                </span>
-                and discover handpicked sarees, suitings, and essentials matched to your exact budget.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Link
-                href="/ai"
-                className="bg-white text-kb-black hover:bg-neutral-100 font-semibold text-sm px-6 py-3.5 rounded-kb-pill transition-all text-center flex items-center justify-center gap-2 shadow-sm"
-              >
-                <span>🎙️ Try KB Shopmate AI Now</span>
-              </Link>
-              <Link
-                href="/ai?query=gadwal+sarees"
-                className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-medium text-sm px-5 py-3.5 rounded-kb-pill transition-all text-center"
-              >
-                Voice Examples →
-              </Link>
-            </div>
+      {/* 2. VILLAGE HERITAGE & STATUTORY STRIP */}
+      <div className="bg-neutral-900 text-neutral-300 border-b border-neutral-800 py-3.5 px-4 sm:px-6 lg:px-8 text-xs select-none">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-[11px] sm:text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            <span className="font-bold text-white">KB FASHIONS (Kalwaral, Telangana)</span>
+            <span className="text-neutral-500 hidden sm:inline">•</span>
+            <span className="text-neutral-400 hidden sm:inline">20 Years of Generational Handlooms (2006–2026)</span>
+          </div>
+          <div className="flex items-center gap-4 text-neutral-400">
+            <span>🚀 10 km Village Delivery (PIN 503145)</span>
+            <span className="hidden md:inline">•</span>
+            <span className="hidden md:inline text-neutral-300">Sec 23 CGST Tax-Exempt Net Pricing</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ========================================================================= */}
-      {/* 4. POPULAR CATEGORIES (Neutral Surface with Electric Blue Active States) */}
-      {/* ========================================================================= */}
-      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2" id="categories">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      {/* 3. MAIN CATALOG SECTION */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Category Header & Filter Pills */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 mb-8 border-b border-slate-200">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-kb-black">Popular Categories</h2>
-            <p className="text-xs text-kb-slate mt-1">Browse authentic garments hand-selected for our Kalwaral store</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900">
+              Handloom &amp; Master Cuts Catalog
+            </h1>
+            <p className="text-xs text-neutral-500 mt-1">
+              Pure Gadwal silks, Raymond suitings, Arvind shirtings, and authentic village cottons
+            </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`cat-pill text-xs font-semibold px-4 py-2 rounded-kb-pill transition-all cursor-pointer border ${
+                className={`text-xs font-bold px-4 py-2 rounded-full transition-all cursor-pointer border ${
                   activeCategory === cat
-                    ? 'bg-kb-blue border-kb-blue text-white shadow-sm'
-                    : 'bg-white border-[#E8EAF0] text-kb-black hover:border-kb-blue hover:text-kb-blue'
+                    ? 'bg-black border-black text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-neutral-700 hover:border-black hover:text-black'
                 }`}
               >
                 {cat}
@@ -387,13 +271,9 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ========================================================================= */}
-      {/* 5. NEW ARRIVALS & BEST SELLERS (Pure White 55%, Blue CTAs 10%, Gold 3%)   */}
-      {/* ========================================================================= */}
-      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 pb-12" id="shop">
-        <div id="product-grid" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {/* Product Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-7">
           {filteredProducts.map(product => {
             const isWishlisted = wishlist.includes(product.productId);
             const imageSrc = product.images?.[0]?.data || '';
@@ -402,14 +282,14 @@ export default function HomePage() {
             return (
               <article
                 key={product.id}
-                className="group select-none bg-white border border-neutral-200/90 rounded-2xl p-4 hover-elevate-card flex flex-col justify-between relative overflow-hidden"
+                className="group bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 hover:border-neutral-900 hover:shadow-lg hover:-translate-y-0.5 relative overflow-hidden"
               >
-                {/* Subtle light colored line animated on hover */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-kb-blue/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
                 <div>
-                  {/* Image Container with Consistent Aspect Ratio */}
-                  <Link href={`/products/${product.productId}`} className="block relative aspect-[4/5] bg-neutral-100 rounded-xl overflow-hidden mb-4">
+                  {/* Image Viewport */}
+                  <Link
+                    href={`/products/${product.productId}`}
+                    className="block relative aspect-[4/5] bg-neutral-100 rounded-xl overflow-hidden mb-4"
+                  >
                     {imageSrc ? (
                       <img
                         src={imageSrc}
@@ -417,64 +297,67 @@ export default function HomePage() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-neutral-400">
-                        KB
+                      <div className="w-full h-full flex items-center justify-center font-black text-neutral-400">
+                        KB FASHIONS
                       </div>
                     )}
 
-                    {/* Small Champagne Gold Badges for Genuine Provenance */}
-                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
-                      <span className="bg-white/95 backdrop-blur-sm text-kb-black text-[10px] font-bold px-2 py-0.5 rounded-kb-pill border border-[#E8EAF0] shadow-2xs">
+                    {/* Tag Badge */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
+                      <span className="bg-white/95 backdrop-blur-xs text-neutral-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-slate-200 shadow-2xs">
                         {product.tags[0] || 'Handcrafted'}
                       </span>
-                      {product.brand && product.brand !== 'KB FASHIONS' && (
-                        <span className="bg-kb-black text-kb-gold text-[9px] font-bold px-2 py-0.5 rounded-kb-pill border border-kb-gold/30">
-                          {product.brand}
-                        </span>
-                      )}
                     </div>
 
+                    {/* Wishlist Button */}
                     <button
+                      type="button"
                       onClick={(e) => toggleWishlist(product, e)}
-                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 border border-[#E8EAF0] flex items-center justify-center text-xs hover:scale-110 transition-transform shadow-xs"
-                      title="Wishlist"
+                      className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs transition-transform shadow-xs ${
+                        isWishlisted
+                          ? 'bg-black text-white'
+                          : 'bg-white/95 text-neutral-700 hover:scale-110 border border-slate-200'
+                      }`}
+                      aria-label="Toggle wishlist"
                     >
                       {isWishlisted ? '♥' : '♡'}
                     </button>
                   </Link>
 
-                  {/* Origin Tag */}
-                  <div className="flex items-center gap-1.5 text-[10px] text-kb-slate font-medium mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-kb-gold"></span>
-                    <span>{product.origin}</span>
+                  {/* Origin & Fabric */}
+                  <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-bold uppercase tracking-wider mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    <span>{product.origin || 'Kalwaral Heritage'}</span>
                   </div>
 
+                  {/* Product Title */}
                   <Link href={`/products/${product.productId}`}>
-                    <h3 className="font-semibold text-sm text-kb-black group-hover:text-kb-blue transition-colors line-clamp-1 mb-1">
+                    <h2 className="font-bold text-sm text-neutral-900 group-hover:text-blue-700 transition-colors line-clamp-1 mb-1.5">
                       {product.name}
-                    </h3>
+                    </h2>
                   </Link>
 
-                  <p className="text-xs text-kb-slate line-clamp-2 mb-3 leading-relaxed">
+                  <p className="text-xs text-neutral-500 line-clamp-2 mb-4 leading-relaxed">
                     {product.description}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-[#E8EAF0] flex items-center justify-between">
+                {/* Price & Action Button */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   <div>
                     {isMeter ? (
                       <div>
-                        <span className="text-base font-bold text-kb-black">₹{product.pricePerMeter || product.price}</span>
-                        <span className="text-xs text-kb-slate font-medium ml-1">/ Meter</span>
-                        <span className="block text-[9px] text-kb-slate">Custom tailor cut</span>
+                        <span className="text-base font-black text-neutral-900">₹{product.pricePerMeter || product.price}</span>
+                        <span className="text-xs text-neutral-500 font-medium ml-1">/ Meter</span>
+                        <span className="block text-[9px] text-neutral-400">Tailored cut</span>
                       </div>
                     ) : (
                       <div>
-                        <span className="text-base font-bold text-kb-black">₹{product.price}</span>
+                        <span className="text-base font-black text-neutral-900">₹{product.price}</span>
                         {product.compareAtPrice && (
-                          <span className="text-xs text-kb-slate line-through ml-2">₹{product.compareAtPrice}</span>
+                          <span className="text-xs text-neutral-400 line-through ml-2">₹{product.compareAtPrice}</span>
                         )}
-                        <span className="block text-[9px] text-kb-slate">Net retail price</span>
+                        <span className="block text-[9px] text-neutral-400 font-medium">Net retail price</span>
                       </div>
                     )}
                   </div>
@@ -482,14 +365,15 @@ export default function HomePage() {
                   {isMeter ? (
                     <Link
                       href={`/products/${product.productId}`}
-                      className="bg-kb-blue hover:bg-blue-600 text-white text-xs font-semibold px-4 py-2.5 rounded-kb-pill transition-all"
+                      className="px-4 py-2 rounded-full bg-neutral-100 text-neutral-900 hover:bg-black hover:text-white text-xs font-bold transition-colors"
                     >
-                      Choose Cut →
+                      Select Cut →
                     </Link>
                   ) : (
                     <button
+                      type="button"
                       onClick={(e) => quickAddToBag(product, e)}
-                      className="bg-kb-blue hover:bg-blue-600 text-white text-xs font-semibold px-4 py-2.5 rounded-kb-pill transition-all shadow-xs"
+                      className="px-4 py-2 rounded-full bg-black text-white hover:bg-neutral-800 text-xs font-bold transition-all shadow-xs"
                     >
                       + Add to Bag
                     </button>
@@ -499,207 +383,73 @@ export default function HomePage() {
             );
           })}
         </div>
-      </section>
+      </main>
 
-      {/* ========================================================================= */}
-      {/* 6. CURATED COLLECTIONS: WEDDING & TRENDING FASHION                        */}
-      {/* ========================================================================= */}
-      <section className="bg-neutral-50 border-t border-b border-[#E8EAF0] py-16">
-        <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
-            <div>
-              <span className="text-xs font-bold text-kb-gold uppercase tracking-wider bg-kb-gold/10 px-3 py-1 rounded-full border border-kb-gold/20">
-                Ancestral Wedding Registry
-              </span>
-              <h2 className="text-3xl font-bold tracking-tight text-kb-black mt-2">
-                Ceremonial &amp; Festive Collection
-              </h2>
-              <p className="text-xs text-kb-slate mt-1 max-w-xl">
-                Gadwal silk sarees, Arvind unstitched safari suit lengths, and pure cotton festive dhotis prepared specifically for weddings and family celebrations.
-              </p>
-            </div>
-            <Link
-              href="/search?category=Sarees"
-              className="text-xs font-semibold text-kb-blue hover:underline flex items-center gap-1"
-            >
-              Browse All Ceremonial Wear →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {weddingCollection.map(product => {
-              const imageSrc = product.images?.[0]?.data || '';
-              return (
-                <div key={product.id} className="bg-white border border-[#E8EAF0] rounded-kb-card p-4 flex flex-col justify-between hover:shadow-md transition-all">
-                  <div>
-                    <Link href={`/products/${product.productId}`} className="block relative aspect-[4/5] bg-neutral-100 rounded-lg overflow-hidden mb-3">
-                      {imageSrc ? (
-                        <img src={imageSrc} alt={product.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-neutral-400">KB</div>
-                      )}
-                      <span className="absolute top-2 left-2 bg-kb-black text-kb-gold text-[9px] font-bold px-2 py-0.5 rounded-kb-pill border border-kb-gold/30">
-                        {product.brand || 'Handloom'}
-                      </span>
-                    </Link>
-                    <h3 className="font-semibold text-sm text-kb-black line-clamp-1">{product.name}</h3>
-                    <p className="text-xs text-kb-slate line-clamp-1 mt-0.5">{product.fabric || 'Pure Cotton & Silk'}</p>
-                  </div>
-                  <div className="pt-3 border-t border-[#E8EAF0] flex items-center justify-between mt-3">
-                    <span className="font-bold text-sm text-kb-black">₹{product.price}</span>
-                    <Link
-                      href={`/products/${product.productId}`}
-                      className="text-xs font-semibold text-kb-blue hover:underline"
-                    >
-                      View Details →
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 7. CUSTOMER TRUST, DELIVERY, RETURNS & GST EXEMPTION                     */}
-      {/* ========================================================================= */}
-      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-bold text-kb-black uppercase tracking-wider bg-neutral-100 px-3 py-1 rounded-full border border-[#E8EAF0]">
-            Transparent Commerce
-          </span>
-          <h2 className="text-3xl font-bold tracking-tight text-kb-black mt-3">
-            Why Patrons Choose KB Fashions
-          </h2>
-          <p className="text-xs text-kb-slate mt-2">
-            No synthetic blends, no hidden taxes, and genuine village hospitality backed by full tracking.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white border border-[#E8EAF0] p-6 rounded-kb-card text-center space-y-3">
-            <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-xl mx-auto text-kb-black">
-              📜
-            </div>
-            <h3 className="font-bold text-sm text-kb-black">GST Exempted Retail</h3>
-            <p className="text-xs text-kb-slate leading-relaxed">
-              We operate under Section 23 of the CGST Act. Every price is a net retail price with official Bills of Supply and zero tax markup.
-            </p>
-          </div>
-
-          <div className="bg-white border border-[#E8EAF0] p-6 rounded-kb-card text-center space-y-3">
-            <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-xl mx-auto text-kb-black">
-              🚚
-            </div>
-            <h3 className="font-bold text-sm text-kb-black">Stage-by-Stage Tracking</h3>
-            <p className="text-xs text-kb-slate leading-relaxed">
-              From handloom folding in Kalwaral to courier dispatch, monitor your shipment through every checkpoint in real-time.
-            </p>
-          </div>
-
-          <div className="bg-white border border-[#E8EAF0] p-6 rounded-kb-card text-center space-y-3">
-            <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-xl mx-auto text-kb-black">
-              🧵
-            </div>
-            <h3 className="font-bold text-sm text-kb-black">Authentic Fabrics</h3>
-            <p className="text-xs text-kb-slate leading-relaxed">
-              Direct ancestral weavers for Gadwal sarees, Raymond suitings, Arvind shirtings, and 100% skin-safe village cottons.
-            </p>
-          </div>
-
-          <div className="bg-white border border-[#E8EAF0] p-6 rounded-kb-card text-center space-y-3">
-            <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-xl mx-auto text-kb-black">
-              📞
-            </div>
-            <h3 className="font-bold text-sm text-kb-black">Direct Village Support</h3>
-            <p className="text-xs text-kb-slate leading-relaxed">
-              Call or WhatsApp our Kalwaral store counter at +91 7989768200 for direct artisan advice and sizing assistance.
-            </p>
-          </div>
-        </div>
-
-        {/* Quality Chart */}
-        <div className="mt-12 bg-white p-6 rounded-kb-card border border-[#E8EAF0] shadow-xs">
-          <div className="text-center mb-6">
-            <h3 className="font-bold text-sm text-kb-black">Independent Patron Satisfaction Index</h3>
-            <p className="text-xs text-kb-slate">Metrics compiled from 20 years of Kalwaral community patronage</p>
-          </div>
-          <div className="h-64">
-            <canvas ref={chartCanvasRef}></canvas>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 8. GENUINE CUSTOMER REVIEWS                                              */}
-      {/* ========================================================================= */}
-      <section className="bg-neutral-50 border-t border-b border-[#E8EAF0] py-16">
-        <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 4. THREE PILLARS OF VILLAGE TRANSPARENCY */}
+      <section className="bg-white border-t border-b border-slate-200 py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-10">
-            <span className="text-xs font-bold text-kb-blue uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-              Community Voices
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+              Village Provenance
             </span>
-            <h2 className="text-3xl font-bold tracking-tight text-kb-black mt-2">
-              Loved by Generations Across Telangana
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 mt-2">
+              Why Patrons Trust KB Fashions
             </h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              Direct loom relationships, certified weights, and doorstep delivery within 10 km.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-kb-card border border-[#E8EAF0] space-y-3 shadow-xs">
-              <div className="flex text-kb-gold text-xs">★★★★★</div>
-              <p className="text-xs text-kb-slate leading-relaxed italic">
-                “We have been purchasing wedding sarees and dhoti sets from KB Fashions in Kalwaral for two decades. The Gadwal silk quality and zari border work are heirloom level.”
-              </p>
-              <div className="pt-2 border-t border-[#E8EAF0] flex items-center justify-between text-xs">
-                <strong className="text-kb-black">Rajesham Goud</strong>
-                <span className="text-kb-slate text-[11px]">Kamareddy, Telangana</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            <div className="p-6 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
+                01
               </div>
+              <h3 className="font-bold text-sm text-neutral-900">Direct Ancestral Weaves</h3>
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                Direct procurement from ancestral Gadwal loom artisans and mill-authorized Raymond suiting lines. Zero counterfeit blends.
+              </p>
             </div>
 
-            <div className="bg-white p-6 rounded-kb-card border border-[#E8EAF0] space-y-3 shadow-xs">
-              <div className="flex text-kb-gold text-xs">★★★★★</div>
-              <p className="text-xs text-kb-slate leading-relaxed italic">
-                “Ordering custom meter cuts for Raymond and Arvind suiting was effortless. The precise meter cuts and delivery to Hyderabad took just 2 days. Village honesty at its best.”
-              </p>
-              <div className="pt-2 border-t border-[#E8EAF0] flex items-center justify-between text-xs">
-                <strong className="text-kb-black">K. Srinivas Rao</strong>
-                <span className="text-kb-slate text-[11px]">Hyderabad</span>
+            <div className="p-6 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
+                02
               </div>
+              <h3 className="font-bold text-sm text-neutral-900">10 km Local Express Delivery</h3>
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                Doorstep delivery within Kalwaral and surrounding villages under PIN 503145 with stage-by-stage consignment tracking.
+              </p>
             </div>
 
-            <div className="bg-white p-6 rounded-kb-card border border-[#E8EAF0] space-y-3 shadow-xs">
-              <div className="flex text-kb-gold text-xs">★★★★★</div>
-              <p className="text-xs text-kb-slate leading-relaxed italic">
-                “KB Shopmate AI understood my Telugu query instantly and suggested the exact Gadwal saree within my ₹1,500 budget. Highly recommended shopping experience!”
-              </p>
-              <div className="pt-2 border-t border-[#E8EAF0] flex items-center justify-between text-xs">
-                <strong className="text-kb-black">Laxmi Prasanna</strong>
-                <span className="text-kb-slate text-[11px]">Nizamabad</span>
+            <div className="p-6 rounded-2xl bg-neutral-50 border border-slate-200 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
+                03
               </div>
+              <h3 className="font-bold text-sm text-neutral-900">Sec 23 CGST Net Pricing</h3>
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                Operates with statutory exemption under Section 23 of the CGST Act. Transparent net bills of supply with zero tax markup.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 9. NEWSLETTER & MARKETING SUBSCRIPTION                                   */}
-      {/* ========================================================================= */}
-      <section className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-kb-black text-white rounded-kb-panel p-8 sm:p-12 text-center max-w-3xl mx-auto space-y-4">
-          <span className="text-xs font-mono text-kb-gold uppercase tracking-wider font-semibold">
-            Stay Connected with Kalwaral Handlooms
+      {/* 5. NEWSLETTER SUBSCRIPTION */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="bg-black text-white rounded-3xl p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-4">
+          <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-950/80 px-3 py-1 rounded-full border border-blue-800">
+            Festive Handloom Updates
           </span>
-          <h2 className="text-2xl sm:text-3xl font-bold">
-            Subscribe for Festive Weave Announcements
+          <h2 className="text-2xl sm:text-3xl font-black">
+            Stay Connected with Kalwaral Weaves
           </h2>
-          <p className="text-xs sm:text-sm text-neutral-300 max-w-xl mx-auto leading-relaxed">
-            Receive exclusive updates on new Gadwal loom batches, seasonal suiting cuts, and festive discounts directly from our village artisans.
+          <p className="text-xs text-neutral-400 leading-relaxed">
+            Get notified of new Gadwal silk releases, seasonal unstitched cuts, and festival announcements.
           </p>
 
           {newsletterSubscribed ? (
-            <div className="p-3 bg-neutral-900 border border-kb-gold/40 text-kb-gold text-xs font-semibold rounded-kb-pill inline-block">
-              ✓ Thank you! You are subscribed to KB Fashions seasonal updates.
+            <div className="p-3 bg-neutral-900 text-emerald-400 text-xs font-bold rounded-full inline-block border border-emerald-800">
+              ✓ You are subscribed to KB Fashions seasonal updates.
             </div>
           ) : (
             <form
@@ -709,8 +459,8 @@ export default function HomePage() {
                   setNewsletterSubscribed(true);
                   showModal({
                     type: 'success',
-                    title: 'Subscribed to Handloom Weaves',
-                    message: `✓ Thank you! ${newsletterEmail} is now subscribed to KB Fashions seasonal announcements and festive weaver discounts.`,
+                    title: 'Subscribed Successfully',
+                    message: `✓ Thank you! Updates will be sent to ${newsletterEmail}.`,
                   });
                 }
               }}
@@ -722,20 +472,16 @@ export default function HomePage() {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email address"
-                className="flex-1 px-4 py-3 rounded-kb-pill bg-neutral-900 border border-neutral-700 text-white text-xs focus:outline-none focus:border-kb-blue"
+                className="flex-1 px-4 py-3 rounded-full bg-neutral-900 border border-neutral-700 text-white text-xs focus:outline-none focus:border-white"
               />
               <button
                 type="submit"
-                className="bg-kb-blue hover:bg-blue-600 text-white text-xs font-semibold px-6 py-3 rounded-kb-pill transition-all"
+                className="bg-white text-black hover:bg-neutral-200 text-xs font-bold px-6 py-3 rounded-full transition-colors"
               >
                 Subscribe
               </button>
             </form>
           )}
-
-          <p className="text-[11px] text-neutral-400 pt-2">
-            No spam. Only authentic handloom announcements. Unsubscribe anytime.
-          </p>
         </div>
       </section>
     </div>

@@ -4,33 +4,28 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import StoreAlertBanner from './StoreAlertBanner';
-import BrandTooltip from './BrandTooltip';
-import { CATEGORIES_DATA } from './CategoryStrip';
 import { authFetch, clearClientSession } from '@/lib/clientAuth';
 import { useToast } from './ToastContext';
+import {
+  KBBrandLogoMark,
+  UserProfileIcon,
+  OrdersBoxIcon,
+  DeliveryTruckIcon,
+  SupportDeskIcon,
+  AdminShieldIcon,
+  LogoutIcon,
+  ChevronDownIcon
+} from './CustomIcons';
 
 export default function Header() {
   const pathname = usePathname();
   const { showToast } = useToast();
-  const [cartCount, setCartCount] = useState<number>(0);
-  const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [user, setUser] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState<boolean>(false);
-  const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [store, setStore] = useState<any>({
-    brandName: "KB",
-    officialName: "KB FASHIONS",
-    village: "Kalwaral",
-    district: "Kamareddy",
-    state: "Telangana",
-    contactPhone: "+91 7989768200",
-  });
-
-  // Track window scroll for elevation shadow
+  // Track window scroll for subtle glass elevation
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 15);
@@ -40,40 +35,33 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Prevent background scroll when mobile sidebar drawer is open
+  // Close dropdown on route transition
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [mobileMenuOpen]);
-
-  // Close categories dropdown on route changes
-  useEffect(() => {
-    setIsCategoriesOpen(false);
+    setDropdownOpen(false);
   }, [pathname]);
 
-  // Click outside listener for categories dropdown
+  // Click outside and escape key listener for dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        categoriesDropdownRef.current &&
-        !categoriesDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsCategoriesOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
-  const loadData = async () => {
+  const loadUserData = async () => {
     try {
-      // 1. Fetch user profile
       const userRes = await authFetch('/api/auth/me');
       const userData = await userRes.json();
       if (userData?.authenticated) {
@@ -81,44 +69,19 @@ export default function Header() {
       } else {
         setUser(null);
       }
-
-      // 2. Fetch cart
-      const cartRes = await authFetch('/api/cart');
-      if (cartRes.ok) {
-        const cartData = await cartRes.json();
-        if (cartData?.items) {
-          setCartCount(cartData.items.reduce((sum: number, i: any) => sum + i.qty, 0));
-        }
-      } else {
-        setCartCount(0);
-      }
-
-      // 3. Wishlist
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('kb_wishlist');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setWishlistCount(Array.isArray(parsed) ? parsed.length : 0);
-        }
-      }
-
-      // 4. Store settings from database
-      const storeRes = await fetch('/api/store/settings');
-      const storeData = await storeRes.json();
-      if (storeData?.settings) {
-        setStore(storeData.settings);
-      }
-    } catch (e) {}
+    } catch (e) {
+      setUser(null);
+    }
   };
 
   useEffect(() => {
-    loadData();
-    setMobileMenuOpen(false);
-    const interval = setInterval(loadData, 6000);
+    loadUserData();
+    const interval = setInterval(loadUserData, 10000);
     return () => clearInterval(interval);
   }, [pathname]);
 
   const handleLogout = async () => {
+    setDropdownOpen(false);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       clearClientSession();
@@ -126,23 +89,13 @@ export default function Header() {
       showToast({
         type: 'info',
         title: 'Logged Out',
-        message: 'You have been securely signed out of your account.'
+        message: 'You have been securely signed out of KB Fashions.',
       });
       setTimeout(() => {
         window.location.href = '/';
-      }, 400);
+      }, 300);
     } catch (e) {
       window.location.href = '/';
-    }
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setMobileMenuOpen(false);
-    if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
-    } else {
-      window.location.href = '/search?category=All';
     }
   };
 
@@ -151,424 +104,219 @@ export default function Header() {
       id="main-store-header"
       className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${
         isScrolled
-          ? 'border-b border-slate-200/90 shadow-md'
-          : 'border-b border-slate-200 shadow-none'
+          ? 'border-b border-slate-200/90 shadow-sm'
+          : 'border-b border-slate-200'
       }`}
     >
-      {/* Dynamic Push Alerts & Announcements Banner (Standard Blue, Black, Green, Red Text) */}
+      {/* Dynamic Push Alerts Banner */}
       <StoreAlertBanner />
 
-      {/* Main Top Navigation Bar (100% Solid Opaque White Background - Completely Hides Body Content On Scroll) */}
-      <div className="bg-white max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 relative">
-        {/* Brand Logo & Desktop Categories Trigger */}
-        <div className="flex items-center gap-3 shrink-0" ref={categoriesDropdownRef}>
-          <BrandTooltip content={`${store.officialName} • Kalwaral`} subcontent="ESTD. 2006">
-            <Link href="/" className="flex items-baseline gap-1 group">
-              <span className="text-2xl font-black tracking-tight text-black group-hover:opacity-80 transition-opacity">
-                {store.brandName}.
+      {/* Main Top Navigation Bar: Strictly Logo on Left and Profile Dropdown on Right */}
+      <div className="bg-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-[72px] flex items-center justify-between relative">
+        {/* LEFT: Redesigned Brand Logo with Black, White, and Blue Variant Gradients */}
+        <Link
+          href="/"
+          id="kb-navbar-brand-logo"
+          className="flex items-center gap-3 group select-none transition-transform active:scale-[0.98]"
+          aria-label="KB Fashions Home"
+        >
+          <KBBrandLogoMark className="w-10 h-10 sm:w-11 sm:h-11 shadow-sm transition-transform duration-300 group-hover:scale-105" />
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-neutral-950 via-blue-950 to-blue-700 bg-clip-text text-transparent group-hover:to-blue-500 transition-all">
+                KB FASHIONS
               </span>
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest hidden sm:inline">
-                FASHIONS
-              </span>
-            </Link>
-          </BrandTooltip>
-
-          {/* Desktop Categories Dropdown Trigger Button */}
-          <div className="hidden lg:block relative ml-2">
-            <button
-              type="button"
-              id="desktop-categories-nav-trigger"
-              onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-              onMouseEnter={() => setIsCategoriesOpen(true)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-bold transition-all shadow-2xs ${
-                isCategoriesOpen
-                  ? 'bg-black text-white border-black ring-2 ring-black/10'
-                  : 'bg-neutral-50 text-neutral-800 border-slate-200 hover:bg-neutral-100 hover:border-black'
-              }`}
-              aria-expanded={isCategoriesOpen}
-              aria-haspopup="true"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-              <span>Categories</span>
-              <span className={`text-[10px] transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`}>▾</span>
-            </button>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none">
+              ESTD. 2006 • KALWARAL, TELANGANA
+            </span>
           </div>
-        </div>
+        </Link>
 
-        {/* Global Search Input Field (Desktop / Tablet) */}
-        <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center flex-1 max-w-md relative mx-4">
-          <BrandTooltip content="Search" subcontent="Sarees, Fabrics, Cuts" className="w-full">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Gadwal sarees, Raymond suitings, cottons..."
-              className="w-full px-4 py-2 pl-9 rounded-full border border-slate-200 bg-neutral-50 text-xs text-black placeholder-neutral-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400 pointer-events-none">🔍</span>
-          </BrandTooltip>
-        </form>
-
-        {/* Right Actions Container: All Buttons Have Exactly Identical Dimensions (w-9 h-9 sm:w-10 sm:h-10) */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {/* AI Feature Icon (Coming Soon / Waitlist) */}
-          <BrandTooltip content="KB AI" subcontent="Coming Soon">
-            <Link
-              href="/ai"
-              id="kb-shopmate-ai-nav-btn"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center text-sm hover:border-black hover:bg-neutral-50 transition-colors shadow-2xs relative"
-              aria-label="KB AI Waitlist"
-            >
-              <span aria-hidden="true">🤖</span>
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-            </Link>
-          </BrandTooltip>
-
-          {/* Wishlist Icon */}
-          <BrandTooltip content="Wishlist" subcontent={`${wishlistCount} items`}>
-            <Link
-              href="/wishlist"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center text-sm hover:border-black hover:bg-neutral-50 transition-colors shadow-2xs relative"
-              aria-label="Wishlist"
-            >
-              <span aria-hidden="true">♡</span>
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-          </BrandTooltip>
-
-          {/* Bag Icon */}
-          <BrandTooltip content="Bag" subcontent={`${cartCount} items`}>
-            <Link
-              href="/cart"
-              id="header-cart-link"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-black bg-black text-white flex items-center justify-center text-sm hover:bg-neutral-800 transition-colors shadow-xs relative"
-              aria-label="Shopping Bag"
-            >
-              <span aria-hidden="true">🛍️</span>
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          </BrandTooltip>
-
-          {/* Customer Account / Profile Icon */}
-          {user ? (
-            <>
-              <BrandTooltip content="Account" subcontent={user.email}>
-                <Link
-                  href="/account"
-                  id="header-profile-link"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center text-xs font-bold hover:border-black transition-colors shadow-2xs overflow-hidden"
-                  aria-label="Account Profile"
-                >
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{user.name?.slice(0, 2).toUpperCase() || '👤'}</span>
-                  )}
-                </Link>
-              </BrandTooltip>
-
-              {user.role === 'ADMIN' && (
-                <BrandTooltip content="Admin" subcontent="Store Management">
-                  <Link
-                    href="/admin"
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-300 bg-amber-50 text-amber-900 flex items-center justify-center text-sm font-bold hover:bg-amber-100 transition-colors shadow-2xs"
-                    aria-label="Admin Portal"
-                  >
-                    ⚡
-                  </Link>
-                </BrandTooltip>
-              )}
-
-              <BrandTooltip content="Sign Out">
-                <button
-                  onClick={handleLogout}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center text-sm text-neutral-600 hover:text-red-600 hover:border-red-300 transition-colors shadow-2xs"
-                  aria-label="Sign Out"
-                >
-                  🚪
-                </button>
-              </BrandTooltip>
-            </>
-          ) : (
-            <BrandTooltip content="Sign In" subcontent="Login / Register">
-              <Link
-                href="/auth/signin?redirect=/account"
-                id="header-profile-link"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center text-sm hover:border-black transition-colors shadow-2xs"
-                aria-label="Sign In"
-              >
-                👤
-              </Link>
-            </BrandTooltip>
-          )}
-
-          {/* Mobile Hamburger Menu Button (Identical Size) */}
+        {/* RIGHT: Profile Icon with Interactive Dropdown (No other links or icons) */}
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center text-sm font-bold hover:border-black hover:bg-neutral-50 transition-colors shadow-2xs shrink-0"
-            aria-label="Toggle mobile drawer"
-            id="mobile-menu-toggle-btn"
+            type="button"
+            id="kb-navbar-profile-trigger"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            aria-expanded={dropdownOpen}
+            aria-haspopup="true"
+            aria-label="User Account Menu"
+            className={`flex items-center gap-2 p-1.5 sm:px-3 sm:py-2 rounded-full border transition-all duration-200 ${
+              dropdownOpen
+                ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-sm'
+                : 'border-slate-200 bg-white hover:border-neutral-900 hover:shadow-2xs'
+            }`}
           >
-            {mobileMenuOpen ? '✕' : '☰'}
-          </button>
-        </div>
-      </div>
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name || 'User'}
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-900 via-blue-950 to-blue-700 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                {user?.name ? user.name.slice(0, 2).toUpperCase() : <UserProfileIcon className="w-4 h-4 text-white" />}
+              </div>
+            )}
 
-      {/* ========================================================================= */}
-      {/* FLOATING CATEGORIES DROPDOWN MENU WITH SMOOTH TRANSITION EFFECT (DESKTOP) */}
-      {/* ========================================================================= */}
-      <div
-        id="floating-categories-dropdown"
-        onMouseEnter={() => setIsCategoriesOpen(true)}
-        onMouseLeave={() => setIsCategoriesOpen(false)}
-        className={`absolute top-full left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-2xl transition-all duration-300 ease-out origin-top ${
-          isCategoriesOpen
-            ? 'opacity-100 translate-y-0 pointer-events-auto visible'
-            : 'opacity-0 -translate-y-2 pointer-events-none invisible'
-        }`}
-      >
-        <div className="max-w-kb-content mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-kb-blue animate-pulse"></span>
-              <span className="text-xs font-black uppercase tracking-wider text-black">
-                Kalwaral Village Handlooms &amp; Master Cuts
+            {/* Desktop User Label / Status Indicator */}
+            <div className="hidden sm:flex flex-col items-start text-left leading-tight pr-1">
+              <span className="text-xs font-bold text-neutral-900 truncate max-w-[130px]">
+                {user ? user.name || 'Patron' : 'My Account'}
               </span>
-              <span className="text-[10px] text-neutral-400 font-telugu">చేనేత వస్త్ర విభాగాలు</span>
+              <span className="text-[10px] text-neutral-400 font-medium">
+                {user ? (user.role === 'ADMIN' ? '⚡ Administrator' : 'Verified Patron') : 'Sign In / Register'}
+              </span>
             </div>
-            <Link
-              href="/search?category=All"
-              onClick={() => setIsCategoriesOpen(false)}
-              className="text-xs font-bold text-kb-blue hover:underline flex items-center gap-1"
+
+            <ChevronDownIcon
+              className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${
+                dropdownOpen ? 'rotate-180 text-blue-600' : ''
+              }`}
+            />
+          </button>
+
+          {/* Clean Account Dropdown Panel */}
+          {dropdownOpen && (
+            <div
+              id="kb-navbar-profile-dropdown"
+              className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden"
             >
-              <span>Explore All 12+ Weaves in Catalog</span>
-              <span>→</span>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            {CATEGORIES_DATA.map((cat) => (
-              <Link
-                key={cat.id}
-                href={cat.href}
-                onClick={() => setIsCategoriesOpen(false)}
-                className="group flex items-start gap-3 p-3 rounded-2xl border border-slate-200/80 bg-white hover:border-black hover:bg-neutral-50/80 transition-all shadow-2xs hover:shadow-sm"
-              >
-                <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-800 group-hover:bg-black group-hover:text-white transition-colors shrink-0">
-                  {cat.iconSvg}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-bold text-neutral-900 group-hover:text-black">{cat.name}</span>
-                    {cat.badge && (
-                      <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-                        {cat.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-neutral-500 font-telugu mt-0.5">{cat.nameTe}</p>
-                  <p className="text-[10px] text-neutral-400 line-clamp-1 mt-0.5">{cat.subtitle}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* MOBILE CONSISTENT SIDEBAR DRAWER WITH STRICT GROUPING & CATEGORIES         */}
-      {/* ========================================================================= */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 overflow-hidden">
-          {/* Dark Backdrop Overlay */}
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-
-          {/* Slide-In Sidebar Drawer from Right (Guaranteed Full Height & Visible on Scroll) */}
-          <div
-            id="mobile-nav-drawer"
-            className="fixed top-0 right-0 bottom-0 w-[310px] sm:w-[340px] max-w-[85vw] bg-white shadow-2xl flex flex-col z-50 h-full overflow-y-auto animate-in slide-in-from-right duration-300 ease-out"
-          >
-            {/* Drawer Header */}
-            <div className="sticky top-0 z-20 p-4 border-b border-slate-100 flex items-center justify-between bg-white">
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black tracking-tight text-black">{store.brandName}.</span>
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">FASHIONS</span>
-              </div>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold hover:bg-neutral-100 transition-colors"
-                aria-label="Close menu"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Scrollable Content Container */}
-            <div className="p-4 space-y-6 flex-1">
-              {/* Mobile Search Form */}
-              <form onSubmit={handleSearchSubmit} className="flex items-center relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search sarees, unstitched cuts..."
-                  className="w-full px-3.5 py-2 pl-9 rounded-full border border-slate-200 bg-neutral-50 text-xs text-black focus:outline-none focus:ring-1 focus:ring-black"
-                />
-                <span className="absolute left-3 text-xs text-neutral-400 pointer-events-none">🔍</span>
-              </form>
-
-              {/* KB Shopmate AI Feature Card (Coming Soon / Waitlist) */}
-              <Link
-                href="/ai"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block p-3.5 rounded-2xl bg-neutral-900 text-white shadow-sm border border-neutral-800"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-white/20 text-amber-300 px-2 py-0.5 rounded-full">
-                    ✦ PRIVATE WAITLIST
-                  </span>
-                  <span className="text-xs">→</span>
-                </div>
-                <div className="text-xs font-bold">KB Shopmate AI Voice Assistant</div>
-                <div className="text-[10px] text-neutral-400 mt-0.5">Coming soon for trusted customers (Telugu &amp; English)</div>
-              </Link>
-
-              {/* Complete Categories Included in Mobile Sidebar Drawer */}
-              <div className="space-y-3">
-                <div className="text-[11px] font-black uppercase tracking-wider text-neutral-900 flex items-center justify-between border-b border-neutral-100 pb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span>▦</span>
-                    <span>Browse All Categories</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-neutral-400">Kalwaral Weaves</span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2">
-                  {CATEGORIES_DATA.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      href={cat.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:border-black hover:bg-neutral-50 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-800 shrink-0">
-                        {cat.iconSvg}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-neutral-900">{cat.name}</span>
-                          {cat.badge && (
-                            <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900">
-                              {cat.badge}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-neutral-500">
-                          <span className="font-telugu">{cat.nameTe}</span>
-                          <span>•</span>
-                          <span className="truncate">{cat.subtitle}</span>
-                        </div>
-                      </div>
-                      <span className="text-neutral-400 text-xs">→</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              {/* Village Store Physical Landmark Info */}
-              <div className="p-3.5 bg-neutral-50 rounded-2xl border border-slate-200 text-[11px] text-neutral-600 space-y-1.5">
-                <div className="font-bold text-neutral-900 flex items-center gap-1.5">
-                  <span>🏛️</span>
-                  <span>{store.officialName}</span>
-                </div>
-                <p>3-55/1, Kalwaral (Vil), Sadasivanagar (M), Kamareddy, Telangana 503145</p>
-                <p className="text-[10px] text-emerald-700 font-bold">✓ Doorstep Delivery within 10 km Radius</p>
-              </div>
-            </div>
-
-            {/* Drawer Footer: Customer Account / Auth */}
-            <div className="sticky bottom-0 p-4 border-t border-slate-200 bg-white">
               {user ? (
-                <div className="space-y-3">
-                  <Link
-                    href="/account"
-                    id="mobile-profile-link"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 p-2 rounded-xl bg-neutral-50 border border-slate-200"
-                  >
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-black text-white font-bold flex items-center justify-center text-xs shrink-0">
+                <>
+                  {/* Authenticated User Header */}
+                  <div className="px-4 py-3 bg-neutral-50/80 border-b border-slate-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-950 to-blue-700 text-white font-bold flex items-center justify-center text-sm shrink-0 overflow-hidden">
                       {user.avatar ? (
                         <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                       ) : (
-                        <span>{user.name?.slice(0, 2).toUpperCase() || '👤'}</span>
+                        <span>{user.name?.slice(0, 2).toUpperCase() || 'KB'}</span>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-neutral-900 truncate">{user.name || user.email}</div>
-                      <div className="text-[10px] text-blue-600 font-semibold">Manage Profile →</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-black text-neutral-900 truncate">{user.name}</div>
+                      <div className="text-[11px] text-neutral-500 truncate">{user.email || user.phone}</div>
+                      <span className="inline-block mt-0.5 text-[9px] font-extrabold uppercase px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                        {user.role === 'ADMIN' ? 'Store Administrator' : 'Verified Patron'}
+                      </span>
                     </div>
-                  </Link>
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Account Navigation Links */}
+                  <div className="py-1">
+                    <Link
+                      href="/account"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:text-black hover:bg-neutral-50 transition-colors"
+                    >
+                      <UserProfileIcon className="w-4 h-4 text-neutral-500" />
+                      <span>Account Profile &amp; Addresses</span>
+                    </Link>
+
                     <Link
                       href="/account/orders"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="text-center py-2 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-xs font-bold text-neutral-800"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:text-black hover:bg-neutral-50 transition-colors"
                     >
-                      📦 Orders
+                      <OrdersBoxIcon className="w-4 h-4 text-neutral-500" />
+                      <span>My Orders &amp; Receipts</span>
                     </Link>
+
                     <Link
                       href="/account?tab=tracking"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="text-center py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:text-black hover:bg-neutral-50 transition-colors"
                     >
-                      🚚 Track
+                      <DeliveryTruckIcon className="w-4 h-4 text-neutral-500" />
+                      <span>Live 10km Consignment Tracking</span>
+                    </Link>
+
+                    <Link
+                      href="/support"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-neutral-700 hover:text-black hover:bg-neutral-50 transition-colors"
+                    >
+                      <SupportDeskIcon className="w-4 h-4 text-neutral-500" />
+                      <span>Online Support Desk</span>
+                    </Link>
+
+                    {user.role === 'ADMIN' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-amber-900 bg-amber-50/70 hover:bg-amber-100/70 transition-colors border-y border-amber-100"
+                      >
+                        <AdminShieldIcon className="w-4 h-4 text-amber-700" />
+                        <span>Admin Store Management</span>
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* Sign Out Button */}
+                  <div className="pt-1 mt-1 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors text-left"
+                    >
+                      <LogoutIcon className="w-4 h-4 text-rose-500" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Guest Header */}
+                  <div className="px-4 py-3 bg-neutral-50/80 border-b border-slate-100">
+                    <div className="text-xs font-black text-neutral-900">Welcome to KB Fashions</div>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
+                      Sign in for order tracking, wishlist saves, and rural delivery services.
+                    </p>
+                  </div>
+
+                  <div className="p-3 space-y-2">
+                    <Link
+                      href="/auth/signin?redirect=/account"
+                      onClick={() => setDropdownOpen(false)}
+                      className="block w-full text-center py-2.5 rounded-full bg-black text-white text-xs font-bold hover:bg-neutral-800 transition-colors shadow-xs"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      onClick={() => setDropdownOpen(false)}
+                      className="block w-full text-center py-2.5 rounded-full border border-slate-300 bg-white text-neutral-900 text-xs font-bold hover:bg-neutral-50 transition-colors"
+                    >
+                      Create New Account
                     </Link>
                   </div>
 
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-center py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/auth/signin?redirect=/account"
-                    id="mobile-profile-link"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex-1 text-center py-2.5 rounded-full bg-black text-white text-xs font-bold shadow-sm"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex-1 text-center py-2.5 rounded-full border border-neutral-300 text-xs font-bold bg-white"
-                  >
-                    Register
-                  </Link>
-                </div>
+                  <div className="pt-2 border-t border-slate-100 px-2 pb-1 space-y-1">
+                    <Link
+                      href="/account?tab=tracking"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 rounded-lg transition-colors"
+                    >
+                      <DeliveryTruckIcon className="w-4 h-4 text-neutral-400" />
+                      <span>Track Consignment</span>
+                    </Link>
+                    <Link
+                      href="/support"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 rounded-lg transition-colors"
+                    >
+                      <SupportDeskIcon className="w-4 h-4 text-neutral-400" />
+                      <span>Online Support Desk</span>
+                    </Link>
+                  </div>
+                </>
               )}
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </header>
   );
 }

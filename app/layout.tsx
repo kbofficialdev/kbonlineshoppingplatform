@@ -36,7 +36,6 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
       </head>
       <body className="bg-[#f8f9fa] text-neutral-900 font-sans antialiased selection:bg-neutral-900 selection:text-white min-h-screen flex flex-col justify-between">
         <TopProgressBar />
