@@ -29,6 +29,8 @@ export default function CartPage() {
   const [total, setTotal] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [isCheckoutEnabled, setIsCheckoutEnabled] = useState<boolean>(true);
+  const [checkoutNotice, setCheckoutNotice] = useState<string>('');
 
   useEffect(() => {
     fetchCart();
@@ -50,6 +52,18 @@ export default function CartPage() {
         setShippingFee(data.shippingFee || 0);
         setTotal(data.total || 0);
       }
+
+      try {
+        const sRes = await fetch('/api/store/settings');
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          const settings = sData.storeSettings || sData.settings;
+          if (settings) {
+            setIsCheckoutEnabled(settings.isCheckoutEnabled !== false);
+            setCheckoutNotice(settings.checkoutDisabledNotice || '');
+          }
+        }
+      } catch (err) {}
     } catch (e) {
       console.error('Error loading cart:', e);
     } finally {
@@ -284,12 +298,26 @@ export default function CartPage() {
               </div>
 
               {/* Primary Action Button */}
-              <Link
-                href="/checkout"
-                className="block w-full py-3.5 bg-[#3478F6] text-white text-center font-bold text-sm rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
-              >
-                Proceed to Checkout
-              </Link>
+              {!isCheckoutEnabled ? (
+                <div className="space-y-2">
+                  <button
+                    disabled
+                    className="block w-full py-3.5 bg-neutral-200 text-neutral-500 text-center font-bold text-sm rounded-xl cursor-not-allowed shadow-none"
+                  >
+                    Checkout Temporarily Paused
+                  </button>
+                  <p className="text-[11px] text-rose-600 text-center font-semibold bg-rose-50 border border-rose-200 p-2.5 rounded-xl">
+                    {checkoutNotice || 'Checkout is temporarily paused for routine maintenance. Your items remain safely saved.'}
+                  </p>
+                </div>
+              ) : (
+                <Link
+                  href="/checkout"
+                  className="block w-full py-3.5 bg-[#3478F6] text-white text-center font-bold text-sm rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
+                >
+                  Proceed to Checkout
+                </Link>
+              )}
 
               {/* Savings Banner matching mockup */}
               {discount > 0 && (

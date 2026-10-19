@@ -19,6 +19,14 @@ export default function AdminSettingsPage() {
     supportHours: '9:00 AM – 9:00 PM IST',
     notificationsEmail: true,
     notificationsSms: true,
+    isCartEnabled: true,
+    isCheckoutEnabled: true,
+    isPaymentsEnabled: true,
+    isCodEnabled: true,
+    isMaintenanceMode: false,
+    cartDisabledNotice: 'Adding items to cart is temporarily paused for catalogue maintenance.',
+    checkoutDisabledNotice: 'Checkout is temporarily paused for routine maintenance. Your items remain saved.',
+    paymentsDisabledNotice: 'Online gateway payments are currently undergoing maintenance.',
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -27,6 +35,7 @@ export default function AdminSettingsPage() {
 
   const tabs = [
     'General',
+    'Operations & Kill-Switches',
     'Delivery & Shipping',
     'Returns & Cancellation',
     'Contact',
@@ -43,11 +52,12 @@ export default function AdminSettingsPage() {
       setIsLoading(true);
       const res = await fetch('/api/store/settings');
       const data = await res.json();
-      if (data?.storeSettings) {
+      const current = data?.storeSettings || data?.settings;
+      if (current) {
         setSettings((prev: any) => ({
           ...prev,
-          ...data.storeSettings,
-          storeName: data.storeSettings.officialName || prev.storeName,
+          ...current,
+          storeName: current.officialName || current.storeName || prev.storeName,
         }));
       }
     } catch (e) {
@@ -198,6 +208,163 @@ export default function AdminSettingsPage() {
                   <p className="text-[11px] text-neutral-400">
                     Recommended size: 400 × 400 px (PNG)
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'Operations & Kill-Switches' && (
+          <div className="space-y-6">
+            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex items-start gap-3">
+              <span className="text-xl">⚡</span>
+              <div>
+                <h4 className="text-xs font-bold text-amber-900">Administrative Operational Controls</h4>
+                <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                  Control storefront capabilities in real time. Pausing any function immediately protects customer checkout sessions, halts backend order processing, and displays your custom alert to visitors.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Kill-Switch: Cart */}
+              <div className="p-5 rounded-2xl border border-[#E8EAF0] bg-white shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-neutral-900 flex items-center gap-2">
+                      <span>🛍️</span> Add to Cart Capability
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">Allows visitors to add products to their bag</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.isCartEnabled !== false}
+                      onChange={(e) => setSettings({ ...settings, isCartEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                {settings.isCartEnabled === false && (
+                  <div className="pt-2 border-t border-neutral-100 space-y-1">
+                    <label className="text-[10px] font-bold text-rose-600 uppercase">Customer Cart Notice</label>
+                    <input
+                      type="text"
+                      value={settings.cartDisabledNotice || ''}
+                      onChange={(e) => setSettings({ ...settings, cartDisabledNotice: e.target.value })}
+                      placeholder="Notice shown on product pages..."
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-rose-200 bg-rose-50/50"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Kill-Switch: Checkout */}
+              <div className="p-5 rounded-2xl border border-[#E8EAF0] bg-white shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-neutral-900 flex items-center gap-2">
+                      <span>💳</span> Checkout &amp; Order Flow
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">Permits customers to advance to checkout</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.isCheckoutEnabled !== false}
+                      onChange={(e) => setSettings({ ...settings, isCheckoutEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                {settings.isCheckoutEnabled === false && (
+                  <div className="pt-2 border-t border-neutral-100 space-y-1">
+                    <label className="text-[10px] font-bold text-rose-600 uppercase">Customer Checkout Notice</label>
+                    <input
+                      type="text"
+                      value={settings.checkoutDisabledNotice || ''}
+                      onChange={(e) => setSettings({ ...settings, checkoutDisabledNotice: e.target.value })}
+                      placeholder="Notice shown on shopping cart page..."
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-rose-200 bg-rose-50/50"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Kill-Switch: Payments Gateway */}
+              <div className="p-5 rounded-2xl border border-[#E8EAF0] bg-white shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-neutral-900 flex items-center gap-2">
+                      <span>🏦</span> Online Gateway Payments
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">UPI, Net Banking, and Cards via Cashfree</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.isPaymentsEnabled !== false}
+                      onChange={(e) => setSettings({ ...settings, isPaymentsEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                {settings.isPaymentsEnabled === false && (
+                  <div className="pt-2 border-t border-neutral-100 space-y-1">
+                    <label className="text-[10px] font-bold text-rose-600 uppercase">Payment Disabled Notice</label>
+                    <input
+                      type="text"
+                      value={settings.paymentsDisabledNotice || ''}
+                      onChange={(e) => setSettings({ ...settings, paymentsDisabledNotice: e.target.value })}
+                      placeholder="Notice shown during payment method selection..."
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-rose-200 bg-rose-50/50"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Kill-Switch: COD */}
+              <div className="p-5 rounded-2xl border border-[#E8EAF0] bg-white shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-neutral-900 flex items-center gap-2">
+                      <span>💵</span> Cash on Delivery (COD)
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">Doorstep cash settlement option</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.isCodEnabled !== false}
+                      onChange={(e) => setSettings({ ...settings, isCodEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Maintenance Mode */}
+              <div className="p-5 rounded-2xl border border-[#E8EAF0] bg-white shadow-2xs space-y-3 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-neutral-900 flex items-center gap-2">
+                      <span>🚨</span> Store Maintenance Mode
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">Places an emergency maintenance banner on every customer screen</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.isMaintenanceMode === true}
+                      onChange={(e) => setSettings({ ...settings, isMaintenanceMode: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                  </label>
                 </div>
               </div>
             </div>

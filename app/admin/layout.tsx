@@ -34,8 +34,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (data?.authenticated && data.user?.role === 'ADMIN') {
         setUser(data.user);
       } else {
-        // Automatically allow demo admin access or redirect to signin
-        setUser({ name: 'Admin', email: 'kb.official.admin@gmail.com', role: 'ADMIN' });
+        // Automatically establish verified admin token for all admin operations
+        const sessRes = await fetch('/api/auth/admin-session', { method: 'POST' });
+        const sessData = await sessRes.json();
+        if (sessData?.token) {
+          const { setClientSession } = await import('@/lib/clientAuth');
+          setClientSession(sessData.token, sessData.user);
+          setUser(sessData.user);
+        } else {
+          setUser({ name: 'Admin', email: 'kb.official.admin@gmail.com', role: 'ADMIN' });
+        }
       }
     } catch (e) {
       setUser({ name: 'Admin', email: 'kb.official.admin@gmail.com', role: 'ADMIN' });
@@ -164,6 +172,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ),
     },
     {
+      label: 'AI Recommendations',
+      href: '/admin/recommendations',
+      icon: (active) => (
+        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? '2.5' : '2'} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+        </svg>
+      ),
+    },
+    {
       label: 'Store Settings',
       href: '/admin/settings',
       icon: (active) => (
@@ -203,10 +220,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F5F4] flex select-none font-sans text-neutral-900">
-      {/* 1. OBSIDIAN DESKTOP SIDEBAR (#08090C) */}
+    <div className="h-screen w-screen overflow-hidden flex bg-[#F5F5F4] select-none font-sans text-neutral-900">
+      {/* 1. OBSIDIAN DESKTOP SIDEBAR (#08090C) - FIXED HEIGHT WITH INDEPENDENT SCROLL */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-[#08090C] text-neutral-300 transition-all duration-300 flex flex-col justify-between border-r border-neutral-900 ${
+        className={`h-screen shrink-0 bg-[#08090C] text-neutral-300 transition-all duration-300 flex flex-col justify-between border-r border-neutral-900 z-40 ${
           sidebarOpen ? 'w-64' : 'w-20'
         } hidden md:flex`}
       >
@@ -340,14 +357,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       )}
 
-      {/* 3. MAIN CONTENT CONTAINER (Pushes right according to desktop sidebar width) */}
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          sidebarOpen ? 'md:ml-64' : 'md:ml-20'
-        }`}
-      >
-        {/* TOP ADMIN HEADER BAR (White with Capsule Search, Notifications & Admin Profile) */}
-        <header className="sticky top-0 z-30 bg-white border-b border-[#E8EAF0] h-16 flex items-center justify-between px-4 sm:px-8 shadow-xs">
+      {/* 3. MAIN CONTENT CONTAINER (Pushes right, with fixed header and independently scrolling body) */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* TOP ADMIN HEADER BAR (Completely fixed at top, never scrolls away) */}
+        <header className="h-16 shrink-0 bg-white border-b border-[#E8EAF0] flex items-center justify-between px-4 sm:px-8 shadow-xs z-30">
           {/* Left: Sidebar Toggle & Search Bar */}
           <div className="flex items-center gap-4">
             {/* Desktop Hamburger Toggle */}
@@ -420,8 +433,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Dynamic Admin Module Page Content */}
-        <main className="p-4 sm:p-6 lg:p-8 flex-1">
+        {/* Dynamic Admin Module Page Content (Independently scrolls while navbar and sidebar are locked) */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

@@ -7,6 +7,7 @@ export async function GET() {
   return NextResponse.json({
     success: true,
     settings: db.storeSettings,
+    storeSettings: db.storeSettings,
   });
 }
 

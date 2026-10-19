@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, OrderTimelineEventModel } from '@/lib/db';
+import { db, OrderTimelineEventModel, OrderStatus } from '@/lib/db';
 import { getAuthFromRequest } from '@/lib/auth';
 import { orderTimelineUpdateSchema } from '@/lib/validations';
 
@@ -27,8 +27,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { stage, title, description, location, courierPartner, trackingNumber } = parsed.data;
 
     // Execute stage progression inside a rollback-capable transaction
+    const normalizedStage = (stage === 'IN TRANSIT' ? 'DISPATCHED' : stage) as OrderStatus;
     await db.transaction(() => {
-      db.updateOrderStatus(order.orderId, stage, {
+      db.updateOrderStatus(order.orderId, normalizedStage, {
         title,
         description,
         location,

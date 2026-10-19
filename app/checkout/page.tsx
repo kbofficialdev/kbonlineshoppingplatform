@@ -56,6 +56,9 @@ export default function CheckoutPage() {
 
   // Step 3: Payment Selection
   const [paymentMethod, setPaymentMethod] = useState<'CASHFREE' | 'COD' | 'UPI'>('CASHFREE');
+  const [isPaymentsEnabled, setIsPaymentsEnabled] = useState<boolean>(true);
+  const [isCodEnabled, setIsCodEnabled] = useState<boolean>(true);
+  const [paymentsNotice, setPaymentsNotice] = useState<string>('');
 
   // Statutory Consents
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
@@ -114,6 +117,26 @@ export default function CheckoutPage() {
           },
         });
       }
+
+      try {
+        const sRes = await fetch('/api/store/settings');
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          const settings = sData.storeSettings || sData.settings;
+          if (settings) {
+            const payOk = settings.isPaymentsEnabled !== false;
+            const codOk = settings.isCodEnabled !== false;
+            setIsPaymentsEnabled(payOk);
+            setIsCodEnabled(codOk);
+            setPaymentsNotice(settings.paymentsDisabledNotice || '');
+            if (!payOk && codOk) {
+              setPaymentMethod('COD');
+            } else if (!codOk && payOk) {
+              setPaymentMethod('CASHFREE');
+            }
+          }
+        }
+      } catch (err) {}
     } catch (e) {
     } finally {
       setIsLoading(false);
@@ -827,75 +850,110 @@ export default function CheckoutPage() {
               {/* Payment Methods */}
               <div className="space-y-3">
                 {/* Cashfree Online */}
-                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
-                  paymentMethod === 'CASHFREE'
-                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
-                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
+                <label className={`block border p-4 sm:p-5 rounded-xl transition-all ${
+                  !isPaymentsEnabled
+                    ? 'border-neutral-200 bg-neutral-100/60 opacity-60 cursor-not-allowed'
+                    : paymentMethod === 'CASHFREE'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs cursor-pointer'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white cursor-pointer'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
+                      disabled={!isPaymentsEnabled}
                       checked={paymentMethod === 'CASHFREE'}
-                      onChange={() => setPaymentMethod('CASHFREE')}
-                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4"
+                      onChange={() => isPaymentsEnabled && setPaymentMethod('CASHFREE')}
+                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4 disabled:opacity-50"
                     />
                     <div className="flex-1">
                       <div className="font-bold text-xs sm:text-sm text-obsidian flex items-center gap-2 flex-wrap">
                         <span>Cashfree Secure Payments</span>
-                        <span className="text-[10px] uppercase font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
-                          Instant Confirmation
-                        </span>
+                        {isPaymentsEnabled ? (
+                          <span className="text-[10px] uppercase font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            Instant Confirmation
+                          </span>
+                        ) : (
+                          <span className="text-[10px] uppercase font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full">
+                            Temporarily Paused
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-secondaryText mt-1">
                         Pay with UPI (GPay, PhonePe, Paytm), Credit &amp; Debit Cards, NetBanking, and Wallets via Cashfree API.
                       </div>
+                      {!isPaymentsEnabled && (
+                        <div className="text-[11px] text-rose-700 font-semibold mt-1.5">
+                          ⚠️ {paymentsNotice || 'Online payments are currently undergoing maintenance.'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </label>
 
                 {/* Cash on Delivery */}
-                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
-                  paymentMethod === 'COD'
-                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
-                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
+                <label className={`block border p-4 sm:p-5 rounded-xl transition-all ${
+                  !isCodEnabled
+                    ? 'border-neutral-200 bg-neutral-100/60 opacity-60 cursor-not-allowed'
+                    : paymentMethod === 'COD'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs cursor-pointer'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white cursor-pointer'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
+                      disabled={!isCodEnabled}
                       checked={paymentMethod === 'COD'}
-                      onChange={() => setPaymentMethod('COD')}
-                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4"
+                      onChange={() => isCodEnabled && setPaymentMethod('COD')}
+                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4 disabled:opacity-50"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs sm:text-sm text-obsidian">
-                        Cash on Delivery (COD) / Store Runner Handover
+                      <div className="font-bold text-xs sm:text-sm text-obsidian flex items-center gap-2">
+                        <span>Cash on Delivery (COD) / Store Runner Handover</span>
+                        {!isCodEnabled && (
+                          <span className="text-[10px] uppercase font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full">
+                            Unavailable
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-secondaryText mt-1">
                         Pay cash directly to the Kalwaral store runner upon physical delivery. Requires 6-digit confirmation OTP.
                       </div>
+                      {!isCodEnabled && (
+                        <div className="text-[11px] text-rose-700 font-semibold mt-1.5">
+                          ⚠️ Cash on Delivery is currently disabled. Please select online payment.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </label>
 
                 {/* Instant UPI */}
-                <label className={`block border p-4 sm:p-5 rounded-xl cursor-pointer transition-all ${
-                  paymentMethod === 'UPI'
-                    ? 'border-electricBlue bg-blue-50/20 shadow-xs'
-                    : 'border-neutralBorder hover:border-neutral-400 bg-white'
+                <label className={`block border p-4 sm:p-5 rounded-xl transition-all ${
+                  !isPaymentsEnabled
+                    ? 'border-neutral-200 bg-neutral-100/60 opacity-60 cursor-not-allowed'
+                    : paymentMethod === 'UPI'
+                    ? 'border-electricBlue bg-blue-50/20 shadow-xs cursor-pointer'
+                    : 'border-neutralBorder hover:border-neutral-400 bg-white cursor-pointer'
                 }`}>
                   <div className="flex items-start sm:items-center gap-3">
                     <input
                       type="radio"
                       name="payment"
+                      disabled={!isPaymentsEnabled}
                       checked={paymentMethod === 'UPI'}
-                      onChange={() => setPaymentMethod('UPI')}
-                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4"
+                      onChange={() => isPaymentsEnabled && setPaymentMethod('UPI')}
+                      className="mt-1 sm:mt-0 accent-electricBlue w-4 h-4 disabled:opacity-50"
                     />
                     <div className="flex-1">
-                      <div className="font-bold text-xs sm:text-sm text-obsidian">
-                        Direct UPI Verification
+                      <div className="font-bold text-xs sm:text-sm text-obsidian flex items-center gap-2">
+                        <span>Direct UPI Verification</span>
+                        {!isPaymentsEnabled && (
+                          <span className="text-[10px] uppercase font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full">
+                            Temporarily Paused
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-secondaryText mt-1">
                         Direct merchant UPI transfer with 5-minute confirmation authorization.

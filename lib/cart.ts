@@ -19,7 +19,7 @@ export function calculateCart(userId: string) {
     };
   }
   let items = db.cartItems.filter(i => i.sessionId === userId || i.userId === userId);
-  
+
   // Auto-migrate guest items to authenticated user session if user cart is empty
   if (items.length === 0 && userId && userId !== 'default-guest') {
     const guestItems = db.cartItems.filter(i => i.sessionId === 'default-guest');
@@ -34,15 +34,34 @@ export function calculateCart(userId: string) {
 
   const subtotal = items.reduce((acc, i) => acc + (i.price * i.qty), 0);
   const appliedPromo = db.appliedPromos.get(userId) || db.appliedPromos.get('default-guest');
-
-  let discountAmount = 0;
   let discountPercent = 0;
+  let discountAmount = 0;
 
-  if (appliedPromo?.code === 'KB10') {
-    discountPercent = 10;
-    discountAmount = Math.round(subtotal * 0.10);
-  } else if (appliedPromo?.code === 'WELCOME50') {
-    discountAmount = Math.min(subtotal, 50);
+  if (appliedPromo?.code) {
+    const coupon = db.findCouponByCode(appliedPromo.code);
+    if (coupon && coupon.isActive) {
+      const isExpired = coupon.expiryDate ? new Date(coupon.expiryDate).getTime() < Date.now() : false;
+      const meetsMinOrder = subtotal >= (coupon.minOrderAmount || 0);
+
+      if (!isExpired && meetsMinOrder) {
+        if (coupon.discountType === 'PERCENTAGE') {
+          discountPercent = coupon.discountValue;
+          let calculated = Math.round(subtotal * (coupon.discountValue / 100));
+          if (coupon.maxDiscountAmount && coupon.maxDiscountAmount > 0) {
+            calculated = Math.min(calculated, coupon.maxDiscountAmount);
+          }
+          discountAmount = calculated;
+        } else {
+          discountAmount = Math.min(subtotal, coupon.discountValue);
+          discountPercent = Math.round((discountAmount / Math.max(1, subtotal)) * 100);
+        }
+      }
+    } else if (appliedPromo.code === 'KB10') {
+      discountPercent = 10;
+      discountAmount = Math.round(subtotal * 0.10);
+    } else if (appliedPromo.code === 'WELCOME50') {
+      discountAmount = Math.min(subtotal, 50);
+    }
   }
 
   const freeShippingThreshold = db.storeSettings?.freeShippingThreshold ?? 999;

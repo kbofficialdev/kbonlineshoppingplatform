@@ -26,6 +26,27 @@ export async function POST(req: NextRequest) {
 
     const { customer, paymentMethod, sessionId, otp, termsAccepted } = parsed.data;
     
+    // Administrative Kill-Switch guards
+    if (db.storeSettings.isCheckoutEnabled === false) {
+      return NextResponse.json({
+        error: db.storeSettings.checkoutDisabledNotice || 'Checkout is temporarily paused by store administration.',
+        isCheckoutDisabled: true,
+      }, { status: 403 });
+    }
+
+    if (paymentMethod === 'COD' && db.storeSettings.isCodEnabled === false) {
+      return NextResponse.json({
+        error: 'Cash on Delivery is temporarily disabled by store administration.',
+        isCodDisabled: true,
+      }, { status: 403 });
+    }
+
+    if (paymentMethod !== 'COD' && db.storeSettings.isPaymentsEnabled === false) {
+      return NextResponse.json({
+        error: db.storeSettings.paymentsDisabledNotice || 'Online payments are temporarily paused by store administration.',
+        isPaymentsDisabled: true,
+      }, { status: 403 });
+    }
     // Validate OTP if provided in request
     if (otp) {
       const cached = db.orderOtps.get(customer.email.toLowerCase());

@@ -14,6 +14,13 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
+    if (db.storeSettings.isCartEnabled === false) {
+      return NextResponse.json({
+        error: db.storeSettings.cartDisabledNotice || 'Adding items to cart is temporarily paused by store administration.',
+        isCartDisabled: true,
+      }, { status: 403 });
+    }
+
     const body = await req.json();
     const parsed = cartAddSchema.safeParse(body);
 

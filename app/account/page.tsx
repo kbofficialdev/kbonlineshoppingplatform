@@ -8,7 +8,7 @@ import { clearClientSession, getStoredToken, authFetch } from '@/lib/clientAuth'
 import { useToast } from '@/components/ToastContext';
 import { SmoothLoader } from '@/components/SmoothLoader';
 
-type AccountTab = 'overview' | 'orders' | 'wishlist' | 'addresses' | 'profile' | 'security';
+type AccountTab = 'overview' | 'orders' | 'transactions' | 'wishlist' | 'addresses' | 'profile' | 'security';
 
 function AccountManagementContent() {
   const router = useRouter();
@@ -22,6 +22,8 @@ function AccountManagementContent() {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [trackingData, setTrackingData] = useState<any>(null);
+  const [transactionsData, setTransactionsData] = useState<{ transactions: any[]; orderSummaries: any[] }>({ transactions: [], orderSummaries: [] });
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState<boolean>(false);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -113,10 +115,32 @@ function AccountManagementContent() {
         setPinCode(data.profile.pinCode || '503145');
         setPreferredLanguage(data.profile.preferredLanguage || 'en');
       }
+      loadTransactions();
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: 'Error loading account data.' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadTransactions = async () => {
+    try {
+      setIsLoadingTransactions(true);
+      const headers = getAuthHeaders();
+      const res = await fetch('/api/account/transactions', { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setTransactionsData({
+            transactions: data.transactions || [],
+            orderSummaries: data.orderSummaries || [],
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Error loading transactions:', e);
+    } finally {
+      setIsLoadingTransactions(false);
     }
   };
 
@@ -385,6 +409,7 @@ function AccountManagementContent() {
   const NAV_ITEMS = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'orders', label: 'My Orders', icon: '📦', count: orders.length },
+    { id: 'transactions', label: 'Payment History', icon: '💳', count: transactionsData.transactions.length },
     { id: 'wishlist', label: 'My Wishlist', icon: '🤍', count: wishlist.length },
     { id: 'addresses', label: 'Saved Addresses', icon: '📍', count: addresses.length },
     { id: 'profile', label: 'Profile Settings', icon: '👤' },
@@ -845,6 +870,159 @@ function AccountManagementContent() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: PAYMENT HISTORY / TRANSACTIONS */}
+          {activeTab === 'transactions' && (
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="bg-white rounded-2xl border border-neutralBorder p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-obsidian">Payment History &amp; Transaction Logs</h2>
+                  <p className="text-xs text-secondaryText mt-0.5">
+                    Account-isolated record of all transaction attempts, payment gateways, and success/failure diagnostics.
+                  </p>
+                </div>
+                <button
+                  onClick={loadTransactions}
+                  disabled={isLoadingTransactions}
+                  className="px-4 py-2 text-xs font-bold rounded-xl border border-neutralBorder hover:bg-neutral-50 transition-colors flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+                >
+                  <span>🔄</span>
+                  <span>{isLoadingTransactions ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
+              </div>
+
+              {/* Transaction Metrics */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl border border-neutralBorder p-4 shadow-xs">
+                  <div className="text-xs font-bold text-secondaryText">Total Attempts</div>
+                  <div className="text-2xl font-bold text-obsidian mt-1">{transactionsData.transactions.length}</div>
+                </div>
+                <div className="bg-white rounded-2xl border border-neutralBorder p-4 shadow-xs">
+                  <div className="text-xs font-bold text-emerald-700">Successful</div>
+                  <div className="text-2xl font-bold text-emerald-600 mt-1">
+                    {transactionsData.transactions.filter(t => t.status === 'SUCCESS').length}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-neutralBorder p-4 shadow-xs">
+                  <div className="text-xs font-bold text-rose-700">Failed / Retried</div>
+                  <div className="text-2xl font-bold text-rose-600 mt-1">
+                    {transactionsData.transactions.filter(t => t.status === 'FAILED').length}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-neutralBorder p-4 shadow-xs">
+                  <div className="text-xs font-bold text-secondaryText">Orders Tracked</div>
+                  <div className="text-2xl font-bold text-electricBlue mt-1">
+                    {transactionsData.orderSummaries.length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Summaries List */}
+              {transactionsData.orderSummaries.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-neutralBorder p-12 text-center text-secondaryText text-xs space-y-2">
+                  <div className="text-3xl">💳</div>
+                  <p className="font-bold text-obsidian">No payment transactions recorded yet.</p>
+                  <p>When you initiate checkout or complete payments, attempt logs and gateway references will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transactionsData.orderSummaries.map((summary: any) => {
+                    const isSuccess = summary.finalStatus === 'SUCCESS';
+                    return (
+                      <div key={summary.orderId} className="bg-white rounded-2xl border border-neutralBorder p-5 shadow-xs space-y-4">
+                        {/* Order Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutralBorder">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-obsidian">Order #{summary.orderId}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isSuccess
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                  : 'bg-amber-50 text-amber-800 border border-amber-200'
+                              }`}>
+                                {summary.finalStatus}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-secondaryText mt-0.5">
+                              Invoice: {summary.invoiceNumber} • Placed on {summary.createdAt ? new Date(summary.createdAt).toLocaleDateString('en-IN') : 'Recent'}
+                            </div>
+                          </div>
+
+                          <div className="text-left sm:text-right">
+                            <div className="font-bold text-sm text-obsidian">₹{summary.totalAmount?.toLocaleString('en-IN')}</div>
+                            <div className="text-[10px] text-secondaryText">
+                              {summary.attempts?.length || 1} attempt(s) • {summary.successCount} success, {summary.failedCount} failed
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Payment Attempts List */}
+                        <div className="space-y-2.5">
+                          <div className="text-[11px] font-bold text-secondaryText uppercase tracking-wider">
+                            Transaction &amp; Gateway Attempt Log
+                          </div>
+
+                          {summary.attempts?.map((attempt: any, idx: number) => {
+                            const isAttemptSuccess = attempt.status === 'SUCCESS';
+                            return (
+                              <div
+                                key={attempt.id || idx}
+                                className={`p-3.5 rounded-xl border text-xs space-y-2 ${
+                                  isAttemptSuccess
+                                    ? 'bg-emerald-50/50 border-emerald-200'
+                                    : 'bg-rose-50/50 border-rose-200'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      isAttemptSuccess ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                                    }`}>
+                                      Attempt #{idx + 1}: {attempt.status}
+                                    </span>
+                                    <span className="font-bold text-obsidian">₹{attempt.amount}</span>
+                                    <span className="text-[11px] text-secondaryText">via {attempt.gateway || 'CASHFREE'} ({attempt.method || 'ONLINE'})</span>
+                                  </div>
+
+                                  <div className="text-[11px] text-secondaryText font-mono">
+                                    {attempt.createdAt ? new Date(attempt.createdAt).toLocaleString('en-IN') : 'N/A'}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1 border-t border-neutral-200/60">
+                                  <div>
+                                    <span className="text-secondaryText font-medium">Gateway Ref ID: </span>
+                                    <span className="font-mono text-obsidian">{attempt.gatewayTransactionId || attempt.id}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-secondaryText font-medium">Payment ID: </span>
+                                    <span className="font-mono text-obsidian">{attempt.id}</span>
+                                  </div>
+                                </div>
+
+                                {attempt.failureReason && (
+                                  <div className="text-[11px] text-rose-700 bg-rose-100/70 p-2 rounded-lg font-medium">
+                                    ⚠️ Failure Diagnostic: {attempt.failureReason}
+                                  </div>
+                                )}
+
+                                {isAttemptSuccess && (
+                                  <div className="text-[11px] text-emerald-800 bg-emerald-100/70 p-2 rounded-lg font-medium">
+                                    ✓ Payment successfully captured and verified. Order authorized for fulfillment.
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

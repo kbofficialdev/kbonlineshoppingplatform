@@ -96,6 +96,40 @@ export interface NavItemModel {
   isFeatured?: boolean;
 }
 
+export interface CouponModel {
+  id: string;
+  code: string;
+  discountType: 'PERCENTAGE' | 'FLAT';
+  discountValue: number;
+  minOrderAmount: number;
+  maxDiscountAmount?: number | null;
+  usageCount: number;
+  usageLimit?: number | null;
+  expiryDate?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentTransactionModel {
+  id: string;
+  transactionId: string;
+  orderId: string;
+  userId?: string | null;
+  customerName?: string;
+  customerEmail?: string;
+  amount: number;
+  currency: string;
+  gateway: 'CASHFREE' | 'COD' | 'UPI' | 'CARD';
+  gatewayPaymentId?: string | null;
+  status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'USER_CANCELLED';
+  attemptNumber: number;
+  failureReason?: string | null;
+  gatewayStatusCode?: string | null;
+  rawResponse?: any;
+  createdAt: string;
+}
+
 export interface StoreSettingsModel {
   id: string;
   brandName: string;
@@ -130,6 +164,18 @@ export interface StoreSettingsModel {
   lastPolicyUpdateTitle?: string;
   lastPolicyUpdateSummary?: string;
   lastPolicyUpdatedAt?: string;
+  isCartEnabled?: boolean;
+  isCheckoutEnabled?: boolean;
+  isPaymentsEnabled?: boolean;
+  isCodEnabled?: boolean;
+  isMaintenanceMode?: boolean;
+  maintenanceNotice?: string;
+  cartPausedNotice?: string;
+  checkoutPausedNotice?: string;
+  paymentsPausedNotice?: string;
+  cartDisabledNotice?: string;
+  checkoutDisabledNotice?: string;
+  paymentsDisabledNotice?: string;
   updatedAt: string;
 }
 
@@ -230,13 +276,13 @@ export interface MatchingDetails {
   customDesignerNotes?: string;
 }
 
-export type ProductType = 
-  | 'SAREE' 
-  | 'MEN_UNSTITCHED' 
-  | 'WOMEN_WEAR' 
-  | 'BLOUSE_PIECE' 
-  | 'DHOTI_TOWEL' 
-  | 'INNER_ESSENTIAL' 
+export type ProductType =
+  | 'SAREE'
+  | 'MEN_UNSTITCHED'
+  | 'WOMEN_WEAR'
+  | 'BLOUSE_PIECE'
+  | 'DHOTI_TOWEL'
+  | 'INNER_ESSENTIAL'
   | 'GENERAL';
 
 export interface ProductModel {
@@ -389,10 +435,10 @@ export interface AuditLogModel {
 
 // Generate curated SVG vector artwork tailored to village store product types
 function generateApparelSvg(
-  title: string, 
-  productType: ProductType, 
-  colorHex: string, 
-  bgHex: string, 
+  title: string,
+  productType: ProductType,
+  colorHex: string,
+  bgHex: string,
   badgeText: string,
   brandText: string
 ): string {
@@ -526,8 +572,18 @@ class DatabaseStore {
     cashfreeEnv: "sandbox",
     cashfreeApiVersion: "2026-01-01",
     lastPolicyUpdateTitle: "Consumer Protection & Delivery Compliance 2026",
-    lastPolicyUpdateSummary: "Updated 10km rural delivery coverage radius, grievance officer statutory details, and 7-day return procedures.",
-    lastPolicyUpdatedAt: new Date().toISOString(),
+    isCartEnabled: true,
+    isCheckoutEnabled: true,
+    isPaymentsEnabled: true,
+    isCodEnabled: true,
+    isMaintenanceMode: false,
+    maintenanceNotice: "Store system operating normally.",
+    cartPausedNotice: "Cart additions are temporarily paused for a brief stock update.",
+    checkoutPausedNotice: "Checkout is temporarily paused for scheduled maintenance.",
+    paymentsPausedNotice: "Online payment gateway is temporarily paused. Please check back shortly.",
+    cartDisabledNotice: "Cart additions are temporarily paused for a brief stock update.",
+    checkoutDisabledNotice: "Checkout is temporarily paused for scheduled maintenance.",
+    paymentsDisabledNotice: "Online payment gateway is temporarily paused. Please check back shortly.",
     updatedAt: new Date().toISOString(),
   };
 
@@ -540,6 +596,8 @@ class DatabaseStore {
   public alerts: StoreAlertModel[] = [];
   public navItems: NavItemModel[] = [];
   public cartItems: CartItemModel[] = [];
+  public coupons: CouponModel[] = [];
+  public paymentTransactions: PaymentTransactionModel[] = [];
   public appliedPromos: Map<string, { code: string; percent: number }> = new Map();
   public orderOtps: Map<string, { otp: string; expiresAt: number }> = new Map();
   public orders: OrderModel[] = [];
@@ -562,6 +620,8 @@ class DatabaseStore {
       productImages: this.productImages,
       banners: this.banners,
       alerts: this.alerts,
+      coupons: this.coupons,
+      paymentTransactions: this.paymentTransactions,
       orders: this.orders,
       refundRequests: this.refundRequests,
       supportTickets: this.supportTickets,
@@ -582,6 +642,8 @@ class DatabaseStore {
       if (data.productImages) this.productImages = data.productImages;
       if (data.banners) this.banners = data.banners;
       if (data.alerts) this.alerts = data.alerts;
+      if (data.coupons) this.coupons = data.coupons;
+      if (data.paymentTransactions) this.paymentTransactions = data.paymentTransactions;
       if (data.orders) this.orders = data.orders;
       if (data.refundRequests) this.refundRequests = data.refundRequests;
       if (data.supportTickets) this.supportTickets = data.supportTickets;
@@ -673,6 +735,8 @@ class DatabaseStore {
         productImages: this.productImages,
         banners: this.banners,
         alerts: this.alerts,
+        coupons: this.coupons,
+        paymentTransactions: this.paymentTransactions,
         orders: this.orders,
         refundRequests: this.refundRequests,
         supportTickets: this.supportTickets,
@@ -738,6 +802,12 @@ class DatabaseStore {
         }
         if (Array.isArray(parsed.alerts) && parsed.alerts.length > 0) {
           this.alerts = parsed.alerts;
+        }
+        if (Array.isArray(parsed.coupons) && parsed.coupons.length > 0) {
+          this.coupons = parsed.coupons;
+        }
+        if (Array.isArray(parsed.paymentTransactions) && parsed.paymentTransactions.length > 0) {
+          this.paymentTransactions = parsed.paymentTransactions;
         }
         if (Array.isArray(parsed.supportTickets)) {
           this.supportTickets = parsed.supportTickets;
@@ -1997,7 +2067,173 @@ class DatabaseStore {
       }
     ];
 
-    // 8. Initial Audit Log
+    // 8. Promotional Coupons (Real Database Engine)
+    this.coupons = [
+      {
+        id: "cpn-1",
+        code: "FESTIVE30",
+        discountType: "PERCENTAGE",
+        discountValue: 30,
+        minOrderAmount: 2000,
+        maxDiscountAmount: 1000,
+        usageCount: 142,
+        usageLimit: 500,
+        expiryDate: "2026-12-31T23:59:59.000Z",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "cpn-2",
+        code: "WELCOME100",
+        discountType: "FLAT",
+        discountValue: 100,
+        minOrderAmount: 999,
+        maxDiscountAmount: 100,
+        usageCount: 312,
+        usageLimit: 1000,
+        expiryDate: "2026-12-31T23:59:59.000Z",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "cpn-3",
+        code: "KB10",
+        discountType: "PERCENTAGE",
+        discountValue: 10,
+        minOrderAmount: 500,
+        maxDiscountAmount: 500,
+        usageCount: 420,
+        usageLimit: 2000,
+        expiryDate: "2026-12-31T23:59:59.000Z",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "cpn-4",
+        code: "GADWAL15",
+        discountType: "PERCENTAGE",
+        discountValue: 15,
+        minOrderAmount: 1500,
+        maxDiscountAmount: 750,
+        usageCount: 88,
+        usageLimit: 300,
+        expiryDate: "2026-11-15T23:59:59.000Z",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    // 9. Payment Transactions (Account-Isolated Payment History)
+    this.paymentTransactions = [
+      {
+        id: "tx-1001-1",
+        transactionId: "cf_tx_1001_succeeded",
+        orderId: "ord-1001",
+        userId: "usr-cust-1",
+        customerName: "Rahul Sharma",
+        customerEmail: "customer@example.com",
+        amount: 3200,
+        currency: "INR",
+        gateway: "CASHFREE",
+        gatewayPaymentId: "cf_pay_98231821",
+        status: "SUCCESS",
+        attemptNumber: 1,
+        failureReason: null,
+        gatewayStatusCode: "PAID",
+        createdAt: new Date(Date.now() - 3600000 * 24 * 3).toISOString(),
+      },
+      {
+        id: "tx-1002-1",
+        transactionId: "cf_tx_1002_attempt1",
+        orderId: "ord-1002",
+        userId: "usr-cust-2",
+        customerName: "Priya Patel",
+        customerEmail: "priya.patel@gmail.com",
+        amount: 1450,
+        currency: "INR",
+        gateway: "CASHFREE",
+        gatewayPaymentId: "cf_pay_failed_4921",
+        status: "FAILED",
+        attemptNumber: 1,
+        failureReason: "Card declined by issuing bank (Insufficient balance)",
+        gatewayStatusCode: "PAYMENT_FAILED",
+        createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+      },
+      {
+        id: "tx-1002-2",
+        transactionId: "cf_tx_1002_attempt2",
+        orderId: "ord-1002",
+        userId: "usr-cust-2",
+        customerName: "Priya Patel",
+        customerEmail: "priya.patel@gmail.com",
+        amount: 1450,
+        currency: "INR",
+        gateway: "CASHFREE",
+        gatewayPaymentId: "cf_pay_failed_4922",
+        status: "FAILED",
+        attemptNumber: 2,
+        failureReason: "UPI intent request timed out by customer app",
+        gatewayStatusCode: "TIMEOUT",
+        createdAt: new Date(Date.now() - 3600000 * 47).toISOString(),
+      },
+      {
+        id: "tx-1002-3",
+        transactionId: "cf_tx_1002_attempt3",
+        orderId: "ord-1002",
+        userId: "usr-cust-2",
+        customerName: "Priya Patel",
+        customerEmail: "priya.patel@gmail.com",
+        amount: 1450,
+        currency: "INR",
+        gateway: "CASHFREE",
+        gatewayPaymentId: "cf_pay_success_4923",
+        status: "SUCCESS",
+        attemptNumber: 3,
+        failureReason: null,
+        gatewayStatusCode: "PAID",
+        createdAt: new Date(Date.now() - 3600000 * 46).toISOString(),
+      },
+      {
+        id: "tx-1003-1",
+        transactionId: "cf_tx_1003_attempt1",
+        orderId: "ord-1003",
+        userId: "usr-cust-1",
+        customerName: "Rahul Sharma",
+        customerEmail: "customer@example.com",
+        amount: 4500,
+        currency: "INR",
+        gateway: "CASHFREE",
+        gatewayPaymentId: "cf_pay_failed_8812",
+        status: "FAILED",
+        attemptNumber: 1,
+        failureReason: "NetBanking session expired before OTP entry",
+        gatewayStatusCode: "USER_DROPPED",
+        createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+      },
+      {
+        id: "tx-1003-2",
+        transactionId: "cf_tx_1003_attempt2",
+        orderId: "ord-1003",
+        userId: "usr-cust-1",
+        customerName: "Rahul Sharma",
+        customerEmail: "customer@example.com",
+        amount: 4500,
+        currency: "INR",
+        gateway: "COD",
+        gatewayPaymentId: "cod_confirmed",
+        status: "SUCCESS",
+        attemptNumber: 2,
+        failureReason: null,
+        gatewayStatusCode: "COD_AUTHORIZED",
+        createdAt: new Date(Date.now() - 3600000 * 11).toISOString(),
+      },
+    ];
+
+    // 10. Initial Audit Log
     this.addAuditLog(
       "SYSTEM",
       "SYSTEM",
@@ -2006,6 +2242,88 @@ class DatabaseStore {
       "KB-CATALOG",
       { totalProducts: this.products.length, village: "Kalwaral", status: "ONLINE_READY" }
     );
+  }
+
+  // ===================== COUPONS & PROMOTIONS =====================
+  public getCoupons(): CouponModel[] {
+    return [...this.coupons];
+  }
+
+  public findCouponByCode(code: string): CouponModel | undefined {
+    if (!code) return undefined;
+    return this.coupons.find(c => c.code.toUpperCase() === code.trim().toUpperCase());
+  }
+
+  public createCoupon(data: Partial<CouponModel>): CouponModel {
+    const now = new Date().toISOString();
+    const newCoupon: CouponModel = {
+      id: `cpn-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      code: (data.code || 'COUPON').toUpperCase().trim(),
+      discountType: data.discountType || 'PERCENTAGE',
+      discountValue: Number(data.discountValue) || 10,
+      minOrderAmount: Number(data.minOrderAmount) || 0,
+      maxDiscountAmount: data.maxDiscountAmount ? Number(data.maxDiscountAmount) : null,
+      usageCount: 0,
+      usageLimit: data.usageLimit ? Number(data.usageLimit) : null,
+      expiryDate: data.expiryDate || null,
+      isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.coupons.unshift(newCoupon);
+    this.saveToDisk();
+    return newCoupon;
+  }
+
+  public updateCoupon(id: string, data: Partial<CouponModel>): CouponModel | null {
+    const idx = this.coupons.findIndex(c => c.id === id || c.code.toUpperCase() === id.toUpperCase());
+    if (idx === -1) return null;
+    this.coupons[idx] = {
+      ...this.coupons[idx],
+      ...data,
+      code: data.code ? data.code.toUpperCase().trim() : this.coupons[idx].code,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveToDisk();
+    return this.coupons[idx];
+  }
+
+  public deleteCoupon(id: string): boolean {
+    const initialLen = this.coupons.length;
+    this.coupons = this.coupons.filter(c => c.id !== id && c.code.toUpperCase() !== id.toUpperCase());
+    if (this.coupons.length !== initialLen) {
+      this.saveToDisk();
+      return true;
+    }
+    return false;
+  }
+
+  // ===================== PAYMENT TRANSACTIONS =====================
+  public getPaymentTransactions(userId?: string, userEmail?: string): PaymentTransactionModel[] {
+    if (userId || userEmail) {
+      return this.paymentTransactions.filter(t => 
+        (userId && t.userId === userId) || 
+        (userEmail && t.customerEmail && t.customerEmail.toLowerCase() === userEmail.toLowerCase())
+      );
+    }
+    return [...this.paymentTransactions];
+  }
+
+  public getOrderPaymentAttempts(orderId: string): PaymentTransactionModel[] {
+    return this.paymentTransactions
+      .filter(t => t.orderId === orderId)
+      .sort((a, b) => a.attemptNumber - b.attemptNumber);
+  }
+
+  public addPaymentTransaction(data: Omit<PaymentTransactionModel, 'id' | 'createdAt'>): PaymentTransactionModel {
+    const newTx: PaymentTransactionModel = {
+      id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      ...data,
+    };
+    this.paymentTransactions.unshift(newTx);
+    this.saveToDisk();
+    return newTx;
   }
 
   public getNavItems(): NavItemModel[] {

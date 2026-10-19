@@ -19,3 +19,4 @@ export default function StoreMainWrapper({ children }: { children: React.ReactNo
     </main>
   );
 }
+

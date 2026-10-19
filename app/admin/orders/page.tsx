@@ -4,28 +4,78 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { authFetch } from '@/lib/clientAuth';
 
+interface OrderItem {
+  id: string;
+  productId: string;
+  title: string;
+  qty: number;
+  unitPrice: number;
+  totalAmount: number;
+}
+
+interface OrderTimelineEvent {
+  id: string;
+  stage: string;
+  title: string;
+  description: string;
+  location: string;
+  timestamp: string;
+}
+
+interface Order {
+  id: string;
+  orderId: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  villageOrCity: string;
+  streetAddress: string;
+  pinCode: string;
+  totalPaid: number;
+  subtotal: number;
+  shippingFee: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  orderStatus: string;
+  courierPartner?: string | null;
+  trackingNumber?: string | null;
+  createdAt: string;
+  items: OrderItem[];
+  timeline: OrderTimelineEvent[];
+}
+
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<string>('All');
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<string>('01 Oct 2026 - 28 Oct 2026');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [actionMessage, setActionMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Selected Order for Management Modal
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [modalOrderStatus, setModalOrderStatus] = useState<string>('CONFIRMED');
+  const [modalPaymentStatus, setModalPaymentStatus] = useState<string>('CAPTURED');
+  const [modalCourier, setModalCourier] = useState<string>('KB 10km Express Runner');
+  const [modalTracking, setModalTracking] = useState<string>('');
+  const [modalTimelineNote, setModalTimelineNote] = useState<string>('');
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState<boolean>(false);
+  const [paymentAttempts, setPaymentAttempts] = useState<any[]>([]);
 
   const statusTabs = [
     { label: 'All', value: 'All' },
-    { label: 'Pending (34)', value: 'Pending' },
-    { label: 'Processing', value: 'Processing' },
-    { label: 'Shipped', value: 'Shipped' },
-    { label: 'Delivered', value: 'Delivered' },
-    { label: 'Cancelled', value: 'Cancelled' },
-    { label: 'Returned', value: 'Returned' },
+    { label: 'Pending', value: 'ORDER_PLACED' },
+    { label: 'Confirmed', value: 'CONFIRMED' },
+    { label: 'Dispatched', value: 'DISPATCHED' },
+    { label: 'Out for Delivery', value: 'OUT_FOR_DELIVERY' },
+    { label: 'Delivered', value: 'DELIVERED' },
+    { label: 'Cancelled', value: 'CANCELLED' },
   ];
 
   useEffect(() => {
     fetchOrders();
-  }, [activeTab]);
+  }, []);
 
   const fetchOrders = async () => {
     try {
@@ -42,178 +92,156 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // High-fidelity showcase orders matching approved UI mockup (media_1792315250397_5959381a.jpg)
-  const mockupOrders = [
-    {
-      id: '#KB1248',
-      orderId: 'KB1248',
-      customer: 'Priya Sharma',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80',
-      itemsCount: 2,
-      amount: 2499,
-      paymentStatus: 'Paid',
-      orderStatus: 'Delivered',
-      date: '12 Oct 2026',
-    },
-    {
-      id: '#KB1247',
-      orderId: 'KB1247',
-      customer: 'Rahul Verma',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-      itemsCount: 1,
-      amount: 3899,
-      paymentStatus: 'Paid',
-      orderStatus: 'Processing',
-      date: '11 Oct 2026',
-    },
-    {
-      id: '#KB1246',
-      orderId: 'KB1246',
-      customer: 'Anjali Rao',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      itemsCount: 3,
-      amount: 1299,
-      paymentStatus: 'Paid',
-      orderStatus: 'Shipped',
-      date: '10 Oct 2026',
-    },
-    {
-      id: '#KB1245',
-      orderId: 'KB1245',
-      customer: 'Vikram Reddy',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-      itemsCount: 2,
-      amount: 2799,
-      paymentStatus: 'Paid',
-      orderStatus: 'Delivered',
-      date: '09 Oct 2026',
-    },
-    {
-      id: '#KB1244',
-      orderId: 'KB1244',
-      customer: 'Sneha Patel',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-      itemsCount: 1,
-      amount: 1899,
-      paymentStatus: 'Failed',
-      orderStatus: 'Cancelled',
-      date: '08 Oct 2026',
-    },
-    {
-      id: '#KB1243',
-      orderId: 'KB1243',
-      customer: 'Kiran Reddy',
-      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=120&q=80',
-      itemsCount: 4,
-      amount: 4499,
-      paymentStatus: 'Paid',
-      orderStatus: 'Processing',
-      date: '07 Oct 2026',
-    },
-  ];
+  const handleOpenManageModal = async (order: Order) => {
+    setSelectedOrder(order);
+    setModalOrderStatus(order.orderStatus);
+    setModalPaymentStatus(order.paymentStatus);
+    setModalCourier(order.courierPartner || 'KB 10km Express Runner');
+    setModalTracking(order.trackingNumber || `KB-LOC-${Math.floor(100000 + Math.random() * 900000)}`);
+    setModalTimelineNote(`Consignment stage updated by store management at Kalwaral hub.`);
 
-  // Merge database orders with mockup reference list
-  const combinedOrders = [
-    ...orders.map((o) => ({
-      id: `#${o.orderId?.replace('ORD-CF-', 'KB') || o.orderId}`,
-      orderId: o.orderId,
-      customer: o.customerName || 'Valued Patron',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-      itemsCount: o.items?.length || 1,
-      amount: o.totalPaid || 0,
-      paymentStatus: o.paymentStatus === 'PAID' ? 'Paid' : (o.paymentStatus === 'FAILED' ? 'Failed' : 'Paid'),
-      orderStatus: o.orderStatus === 'DELIVERED' ? 'Delivered' : (o.orderStatus === 'DISPATCHED' ? 'Shipped' : 'Processing'),
-      date: new Date(o.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-    })),
-    ...mockupOrders,
-  ];
+    // Fetch individual order details including payment attempts
+    try {
+      const res = await authFetch(`/api/orders/${order.orderId}`);
+      const data = await res.json();
+      if (data?.paymentAttempts) {
+        setPaymentAttempts(data.paymentAttempts);
+      }
+    } catch (e) {
+      setPaymentAttempts([]);
+    }
+  };
 
-  // Deduplicate by ID
-  const displayOrders = Array.from(new Map(combinedOrders.map(item => [item.id, item])).values());
+  const handleUpdateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
 
-  // Filter
-  const filtered = displayOrders.filter((o) => {
-    const matchesSearch =
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer.toLowerCase().includes(search.toLowerCase());
+    try {
+      setIsUpdatingOrder(true);
+      const res = await authFetch(`/api/orders/${selectedOrder.orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderStatus: modalOrderStatus,
+          paymentStatus: modalPaymentStatus,
+          courierPartner: modalCourier,
+          trackingNumber: modalTracking,
+          timelineNote: modalTimelineNote,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionMessage({
+          text: `✓ Order #${selectedOrder.orderId} updated to ${modalOrderStatus}. Customer tracking updated.`,
+          type: 'success',
+        });
+        setSelectedOrder(null);
+        fetchOrders();
+      } else {
+        setActionMessage({ text: data.error || 'Failed to update order', type: 'error' });
+      }
+    } catch (err) {
+      setActionMessage({ text: 'Error communicating with orders API', type: 'error' });
+    } finally {
+      setIsUpdatingOrder(false);
+      setTimeout(() => setActionMessage(null), 4000);
+    }
+  };
+
+  // Filter orders in real time
+  const filtered = orders.filter((o) => {
     const matchesTab =
-      activeTab === 'All' ||
-      (activeTab === 'Pending' && (o.orderStatus === 'Pending' || o.orderStatus === 'Processing')) ||
-      o.orderStatus.toLowerCase() === activeTab.toLowerCase();
+      activeTab === 'All' || o.orderStatus?.toUpperCase() === activeTab.toUpperCase();
+
+    const matchesSearch =
+      !search ||
+      o.orderId?.toLowerCase().includes(search.toLowerCase()) ||
+      o.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+      o.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
+      o.invoiceNumber?.toLowerCase().includes(search.toLowerCase());
+
     const matchesStatus =
-      statusFilter === 'all' ||
-      o.orderStatus.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesTab && matchesStatus;
+      statusFilter === 'all' || o.orderStatus?.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesTab && matchesSearch && matchesStatus;
   });
-
-  const toggleSelectAll = () => {
-    if (selectedOrders.length === filtered.length) {
-      setSelectedOrders([]);
-    } else {
-      setSelectedOrders(filtered.map((o) => o.id));
-    }
-  };
-
-  const toggleSelectOrder = (id: string) => {
-    if (selectedOrders.includes(id)) {
-      setSelectedOrders(selectedOrders.filter((item) => item !== id));
-    } else {
-      setSelectedOrders([...selectedOrders, id]);
-    }
-  };
-
-  const handleExport = () => {
-    const csvContent = "data:text/csv;charset=utf-8," +
-      ["Order ID,Customer,Items,Amount,Payment,Status,Date"].concat(
-        filtered.map(o => `"${o.id}","${o.customer}",${o.itemsCount},${o.amount},"${o.paymentStatus}","${o.orderStatus}","${o.date}"`)
-      ).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `KB_FASHIONS_ORDERS_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* 1. HEADER */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">Orders</h1>
-        <p className="text-xs text-neutral-500 font-medium">View and manage customer orders.</p>
+      {/* 1. TOP HEADER & METRICS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
+            Orders Management
+          </h1>
+          <p className="text-xs text-neutral-500 font-medium">
+            Real-time orders pipeline, consignment stage updates, tracking assignment, and payment verification.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-neutral-500">Total Live Orders:</span>
+          <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-50 text-blue-600 border border-blue-200">
+            {orders.length} Orders
+          </span>
+        </div>
       </div>
 
-      {/* 2. STATUS TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* Action Notification Alert */}
+      {actionMessage && (
+        <div
+          className={`p-3.5 rounded-xl text-xs font-bold border transition-all ${
+            actionMessage.type === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              : 'bg-rose-50 border-rose-300 text-rose-800'
+          }`}
+        >
+          {actionMessage.text}
+        </div>
+      )}
+
+      {/* 2. ORDER STATUS TABS */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-[#E8EAF0] text-xs">
         {statusTabs.map((tab) => {
-          const isActive = activeTab === tab.value;
+          const isSelected = activeTab === tab.value;
+          const count =
+            tab.value === 'All'
+              ? orders.length
+              : orders.filter((o) => o.orderStatus === tab.value).length;
+
           return (
             <button
               key={tab.value}
               type="button"
               onClick={() => setActiveTab(tab.value)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                isActive
+              className={`px-3.5 py-2 font-bold rounded-xl transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                isSelected
                   ? 'bg-[#3478F6] text-white shadow-xs'
-                  : 'bg-white border border-[#E8EAF0] text-neutral-600 hover:text-black hover:border-neutral-300'
+                  : 'text-neutral-600 hover:text-black hover:bg-neutral-100'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  isSelected ? 'bg-white/25 text-white' : 'bg-neutral-200/70 text-neutral-700'
+                }`}
+              >
+                {count}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* 3. TOOLBAR: Search, Date Range, Status & Export */}
+      {/* 3. SEARCH & TOOLBAR */}
       <div className="bg-white border border-[#E8EAF0] p-4 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[220px] max-w-sm">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by order ID, customer name..."
+            placeholder="Search by Order ID, Customer, or Invoice..."
             className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-[#E8EAF0] rounded-xl text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-[#3478F6] focus:bg-white transition-all"
           />
           <svg className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -222,185 +250,293 @@ export default function AdminOrdersPage() {
           </svg>
         </div>
 
-        {/* Right Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Date Range Picker Pill */}
-          <div className="flex items-center gap-2 bg-neutral-50 border border-[#E8EAF0] text-xs font-semibold text-neutral-700 px-3 py-2 rounded-xl">
-            <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>{dateRange}</span>
-            <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-
-          {/* Status Dropdown */}
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none bg-neutral-50 border border-[#E8EAF0] text-xs font-semibold text-neutral-700 pl-3 pr-7 py-2 rounded-xl focus:outline-none focus:border-[#3478F6] cursor-pointer"
-            >
-              <option value="all">Status</option>
-              <option value="delivered">Delivered</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <svg className="w-3.5 h-3.5 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-
-          {/* Export Button */}
-          <button
-            type="button"
-            onClick={handleExport}
-            className="inline-flex items-center gap-1.5 bg-white border border-[#E8EAF0] hover:bg-neutral-50 text-neutral-700 text-xs font-bold px-3.5 py-2 rounded-xl shadow-2xs transition-colors"
+        <div className="flex items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-neutral-50 border border-[#E8EAF0] text-xs font-semibold text-neutral-700 px-3 py-2 rounded-xl focus:outline-none focus:border-[#3478F6] cursor-pointer"
           >
-            <svg className="w-3.5 h-3.5 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span>Export</span>
-          </button>
+            <option value="all">All Stages</option>
+            <option value="order_placed">Placed</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="dispatched">Dispatched</option>
+            <option value="out_for_delivery">Out For Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
       </div>
 
       {/* 4. ORDERS DATA TABLE */}
       <div className="bg-white border border-[#E8EAF0] rounded-2xl shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-[#E8EAF0] bg-neutral-50/70 text-neutral-500 font-bold">
-                <th className="py-3 px-4 w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedOrders.length === filtered.length && filtered.length > 0}
-                    onChange={toggleSelectAll}
-                    className="rounded text-[#3478F6] focus:ring-0 cursor-pointer"
-                  />
-                </th>
-                <th className="py-3 px-4">Order ID</th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Items</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Payment</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E8EAF0]/70">
-              {filtered.map((order) => {
-                const isSelected = selectedOrders.includes(order.id);
-                return (
-                  <tr key={order.id} className={`hover:bg-neutral-50/70 transition-colors ${isSelected ? 'bg-blue-50/30' : ''}`}>
-                    <td className="py-3.5 px-4">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelectOrder(order.id)}
-                        className="rounded text-[#3478F6] focus:ring-0 cursor-pointer"
-                      />
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-neutral-900">
-                      {order.id}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={order.avatar}
-                          alt={order.customer}
-                          className="w-7 h-7 rounded-full object-cover shrink-0 border border-neutral-100"
-                        />
-                        <span className="font-semibold text-neutral-800">{order.customer}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-neutral-600">
-                      {order.itemsCount}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-neutral-900">
-                      ₹{order.amount.toLocaleString('en-IN')}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                        order.paymentStatus === 'Paid'
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                          : 'bg-rose-50 text-rose-600 border border-rose-200'
-                      }`}>
-                        {order.paymentStatus}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                        order.orderStatus === 'Delivered'
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                          : order.orderStatus === 'Processing'
-                          ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                          : order.orderStatus === 'Shipped'
-                          ? 'bg-sky-50 text-sky-600 border border-sky-200'
-                          : 'bg-rose-50 text-rose-600 border border-rose-200'
-                      }`}>
-                        {order.orderStatus}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-neutral-500 whitespace-nowrap">
-                      {order.date}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/admin/orders/${order.orderId || order.id.replace('#', '')}`}
-                        className="text-[#3478F6] font-bold hover:underline"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 5. PAGINATION FOOTER */}
-        <div className="p-4 border-t border-[#E8EAF0] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
-          <div>
-            Showing 1-{Math.min(6, filtered.length)} of {Math.max(1248, filtered.length)} orders
+        {isLoading ? (
+          <div className="py-16 text-center text-xs text-neutral-400">Loading orders...</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center text-xs text-neutral-400">
+            No orders match the selected filters.
           </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#E8EAF0] bg-neutral-50/70 text-neutral-500 font-bold">
+                  <th className="py-3 px-4">Order ID</th>
+                  <th className="py-3 px-4">Customer</th>
+                  <th className="py-3 px-4">Items</th>
+                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">Payment</th>
+                  <th className="py-3 px-4">Order Stage</th>
+                  <th className="py-3 px-4">Courier / Tracking</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E8EAF0]/70">
+                {filtered.map((order) => {
+                  const isDelivered = order.orderStatus === 'DELIVERED';
+                  const isDispatched = order.orderStatus === 'DISPATCHED' || order.orderStatus === 'OUT_FOR_DELIVERY';
+                  const isPaid = order.paymentStatus === 'CAPTURED';
 
-          <div className="flex items-center gap-1 font-semibold">
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-500">
-              ‹
-            </button>
-            <button className="w-7 h-7 rounded-lg bg-[#3478F6] text-white flex items-center justify-center shadow-xs">
-              1
-            </button>
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-700">
-              2
-            </button>
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-700">
-              3
-            </button>
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-700">
-              4
-            </button>
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-700">
-              5
-            </button>
-            <span className="px-1 text-neutral-400">...</span>
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-700">
-              208
-            </button>
-            <button className="w-7 h-7 rounded-lg border border-[#E8EAF0] flex items-center justify-center hover:bg-neutral-50 text-neutral-500">
-              ›
-            </button>
+                  return (
+                    <tr key={order.orderId} className="hover:bg-neutral-50/70 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-neutral-900">
+                        <div>#{order.orderId}</div>
+                        <div className="text-[10px] text-neutral-400 font-normal">{order.invoiceNumber}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-neutral-900">{order.customerName}</div>
+                        <div className="text-[11px] text-neutral-500">{order.customerPhone || order.customerEmail}</div>
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-neutral-600">
+                        {order.items?.length || 1} item(s)
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-neutral-900">
+                        ₹{order.totalPaid?.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                            isPaid
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}
+                        >
+                          {order.paymentStatus} ({order.paymentMethod})
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                            isDelivered
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                              : isDispatched
+                              ? 'bg-sky-50 text-sky-600 border-sky-200'
+                              : order.orderStatus === 'CANCELLED'
+                              ? 'bg-rose-50 text-rose-600 border-rose-200'
+                              : 'bg-blue-50 text-blue-600 border-blue-200'
+                          }`}
+                        >
+                          {order.orderStatus.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-neutral-600 text-[11px]">
+                        {order.trackingNumber ? (
+                          <div>
+                            <span className="font-mono font-semibold text-neutral-800">{order.trackingNumber}</span>
+                            <span className="block text-[10px] text-neutral-400">{order.courierPartner}</span>
+                          </div>
+                        ) : (
+                          <span className="text-neutral-400 italic">Not Assigned</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenManageModal(order)}
+                          className="px-3 py-1.5 bg-[#3478F6] hover:bg-blue-600 text-white font-bold rounded-lg text-xs shadow-xs transition-colors"
+                        >
+                          Manage & Update →
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* ======================================================== */}
+      {/* 5. ORDER MANAGEMENT & STAGE ADVANCE MODAL                */}
+      {/* ======================================================== */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[#E8EAF0] shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 relative max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#E8EAF0] pb-4">
+              <div>
+                <h2 className="text-lg font-black text-neutral-900">
+                  Manage Order #{selectedOrder.orderId}
+                </h2>
+                <p className="text-xs text-neutral-500">
+                  Update fulfillment stage, assign courier partner, and log delivery events.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrder(null)}
+                className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Order Summary & Customer Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-50/70 p-4 rounded-2xl border border-[#E8EAF0] text-xs">
+              <div>
+                <span className="font-bold text-neutral-500 block mb-1">Customer & Delivery:</span>
+                <div className="font-bold text-neutral-900">{selectedOrder.customerName}</div>
+                <div className="text-neutral-600">{selectedOrder.customerPhone} • {selectedOrder.customerEmail}</div>
+                <div className="text-neutral-600 mt-1">{selectedOrder.streetAddress}, {selectedOrder.villageOrCity} - {selectedOrder.pinCode}</div>
+              </div>
+              <div>
+                <span className="font-bold text-neutral-500 block mb-1">Billing Summary:</span>
+                <div className="font-bold text-neutral-900">Invoice: {selectedOrder.invoiceNumber}</div>
+                <div className="text-neutral-600">Subtotal: ₹{selectedOrder.subtotal} | Shipping: ₹{selectedOrder.shippingFee}</div>
+                <div className="text-emerald-700 font-black text-sm mt-1">Total Paid: ₹{selectedOrder.totalPaid} ({selectedOrder.paymentMethod})</div>
+              </div>
+            </div>
+
+            {/* PAYMENT ATTEMPTS AUDIT TRAIL */}
+            {paymentAttempts.length > 0 && (
+              <div className="border border-[#E8EAF0] p-4 rounded-2xl space-y-2">
+                <span className="font-bold text-neutral-800 text-xs block">
+                  💳 Payment Attempts Audit Log ({paymentAttempts.length} Total Attempts):
+                </span>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                  {paymentAttempts.map((tx) => (
+                    <div
+                      key={tx.id}
+                      className={`p-2.5 rounded-xl border text-[11px] flex items-center justify-between ${
+                        tx.status === 'SUCCESS'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                          : 'bg-rose-50 border-rose-200 text-rose-900'
+                      }`}
+                    >
+                      <div>
+                        <span className="font-bold">Attempt #{tx.attemptNumber}:</span> {tx.gateway} • ₹{tx.amount}
+                        {tx.failureReason && (
+                          <div className="text-[10px] text-rose-700 mt-0.5 font-medium">
+                            Reason: {tx.failureReason}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded-full bg-white border">
+                        {tx.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Update Form */}
+            <form onSubmit={handleUpdateOrder} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Order Status */}
+                <div>
+                  <label className="block font-bold text-neutral-700 mb-1">Fulfillment Stage *</label>
+                  <select
+                    value={modalOrderStatus}
+                    onChange={(e) => setModalOrderStatus(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8EAF0] font-bold text-neutral-900 focus:outline-none focus:border-[#3478F6] bg-neutral-50/50 cursor-pointer"
+                  >
+                    <option value="ORDER_PLACED">ORDER PLACED (Initial Queue)</option>
+                    <option value="CONFIRMED">CONFIRMED (Inspected & Packed)</option>
+                    <option value="DISPATCHED">DISPATCHED (In Transit)</option>
+                    <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY (Local Runner)</option>
+                    <option value="DELIVERED">DELIVERED (Doorstep Handover)</option>
+                    <option value="CANCELLED">CANCELLED (Cancelled by Admin)</option>
+                  </select>
+                </div>
+
+                {/* Payment Status */}
+                <div>
+                  <label className="block font-bold text-neutral-700 mb-1">Payment Status *</label>
+                  <select
+                    value={modalPaymentStatus}
+                    onChange={(e) => setModalPaymentStatus(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8EAF0] font-bold text-neutral-900 focus:outline-none focus:border-[#3478F6] bg-neutral-50/50 cursor-pointer"
+                  >
+                    <option value="CAPTURED">CAPTURED (Payment Received)</option>
+                    <option value="PENDING">PENDING (Awaiting Cash/Transfer)</option>
+                    <option value="REFUNDED">REFUNDED (Returned to Patron)</option>
+                    <option value="FAILED">FAILED (Transaction Declined)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Courier Partner */}
+                <div>
+                  <label className="block font-bold text-neutral-700 mb-1">Courier / Delivery Runner</label>
+                  <input
+                    type="text"
+                    value={modalCourier}
+                    onChange={(e) => setModalCourier(e.target.value)}
+                    placeholder="e.g. KB 10km Express Runner"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8EAF0] font-bold text-neutral-900 focus:outline-none focus:border-[#3478F6] bg-neutral-50/50"
+                  />
+                </div>
+
+                {/* Tracking Number */}
+                <div>
+                  <label className="block font-bold text-neutral-700 mb-1">Consignment Tracking Number</label>
+                  <input
+                    type="text"
+                    value={modalTracking}
+                    onChange={(e) => setModalTracking(e.target.value)}
+                    placeholder="e.g. KB-LOC-882910"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8EAF0] font-mono font-bold text-neutral-900 focus:outline-none focus:border-[#3478F6] bg-neutral-50/50"
+                  />
+                </div>
+              </div>
+
+              {/* Timeline Update Note */}
+              <div>
+                <label className="block font-bold text-neutral-700 mb-1">
+                  Customer Status Event Note (Visible on customer tracking page)
+                </label>
+                <textarea
+                  rows={2}
+                  value={modalTimelineNote}
+                  onChange={(e) => setModalTimelineNote(e.target.value)}
+                  placeholder="e.g. Garments inspected for handloom purity and dispatched with village runner."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8EAF0] font-medium text-neutral-900 focus:outline-none focus:border-[#3478F6] bg-neutral-50/50 resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E8EAF0]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  className="px-5 py-2.5 rounded-xl border border-[#E8EAF0] text-neutral-600 font-bold hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingOrder}
+                  className="px-6 py-2.5 bg-[#3478F6] hover:bg-blue-600 text-white font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                >
+                  {isUpdatingOrder ? 'Saving...' : 'Save & Advance Stage'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

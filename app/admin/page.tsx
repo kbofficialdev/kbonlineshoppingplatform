@@ -6,6 +6,7 @@ import { authFetch } from '@/lib/clientAuth';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<any>(null);
+  const [mlReport, setMlReport] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [timeFilter, setTimeFilter] = useState<string>('This Month');
   const [yearFilter, setYearFilter] = useState<string>('This Year');
@@ -17,10 +18,17 @@ export default function AdminDashboardPage() {
   const fetchAnalytics = async () => {
     try {
       setIsLoading(true);
-      const res = await authFetch('/api/admin/analytics');
+      const [res, mlRes] = await Promise.all([
+        authFetch('/api/admin/analytics'),
+        authFetch('/api/admin/ml-analytics')
+      ]);
       const json = await res.json();
+      const mlJson = await mlRes.json();
       if (json?.analytics) {
         setData(json.analytics);
+      }
+      if (mlJson?.report) {
+        setMlReport(mlJson.report);
       }
     } catch (e) {
       console.error('Failed to load admin metrics:', e);
@@ -227,6 +235,69 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 2.5 AI RECOMMENDATIONS & DECISION SNAPSHOT */}
+      {mlReport && mlReport.executiveRecommendations?.length > 0 && (
+        <div className="bg-gradient-to-r from-neutral-900 via-[#08090C] to-neutral-950 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-neutral-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-blue-500/20 text-[#3478F6] flex items-center justify-center text-base border border-blue-500/30">
+                ⚡
+              </span>
+              <div>
+                <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                  <span>AI Recommendations &amp; Strategic Decisions</span>
+                  <span className="text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-[#3478F6] text-white">
+                    Live Model
+                  </span>
+                </h3>
+                <p className="text-[11px] text-neutral-400 mt-0.5">
+                  Algorithm-driven suggestions for cross-sell bundles, reorder thresholds, and customer winback.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/admin/recommendations"
+              className="px-3.5 py-1.5 rounded-xl bg-[#3478F6] hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-xs self-start sm:self-auto shrink-0 flex items-center gap-1.5"
+            >
+              <span>Explore All ML Models</span>
+              <span>→</span>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {mlReport.executiveRecommendations.slice(0, 3).map((rec: any) => (
+              <div
+                key={rec.id}
+                className="p-3.5 rounded-xl bg-neutral-900/80 border border-neutral-800 space-y-2 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                      {rec.category.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-[9px] font-bold text-emerald-400">
+                      {rec.expectedRevenueImpact}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-neutral-100 line-clamp-1">{rec.title}</h4>
+                  <p className="text-[11px] text-neutral-400 line-clamp-2 mt-1 leading-relaxed">
+                    {rec.rationale}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-neutral-800 text-[10px] text-[#3478F6] font-semibold flex items-center justify-between">
+                  <span>Priority: {rec.priority}</span>
+                  <Link href="/admin/recommendations" className="hover:underline">
+                    View Model &gt;
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 3. ANALYTICS ROW (Sales Overview line chart & Order Status Donut chart) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

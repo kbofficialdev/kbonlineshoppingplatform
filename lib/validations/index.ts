@@ -123,7 +123,7 @@ export const checkoutSchema = z.object({
     state: z.string().min(2, "State is required"),
     pinCode: z.string().regex(pinRegex, "PIN code must be exactly 6 digits"),
   }),
-  paymentMethod: z.enum(['COD', 'UPI', 'CARD', 'NETBANKING', 'CASHFREE']).default('COD'),
+  paymentMethod: z.enum(['COD', 'UPI', 'CARD', 'NETBANKING', 'QR', 'CASHFREE']).default('CASHFREE'),
   sessionId: z.string().default('default-guest'),
   otp: z.string().optional(),
   termsAccepted: z.boolean().optional(),
@@ -131,7 +131,7 @@ export const checkoutSchema = z.object({
 
 // 5. Order Timeline Progression Schema
 export const orderTimelineUpdateSchema = z.object({
-  stage: z.enum(['ORDER_PLACED', 'CONFIRMED', 'DISPATCHED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']),
+  stage: z.enum(['ORDER_PLACED', 'CONFIRMED', 'DISPATCHED', 'IN TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']),
   title: z.string().min(3, "Stage title is required"),
   description: z.string().min(5, "Stage description is required"),
   location: z.string().min(2, "Stage location or facility is required"),
@@ -170,6 +170,14 @@ export const storeSettingsUpdateSchema = z.object({
   notifyCustomersOnPolicyChange: z.boolean().optional(),
   policyUpdateTitle: z.string().optional(),
   policyUpdateSummary: z.string().optional(),
+  isCartEnabled: z.boolean().optional(),
+  isCheckoutEnabled: z.boolean().optional(),
+  isPaymentsEnabled: z.boolean().optional(),
+  isCodEnabled: z.boolean().optional(),
+  isMaintenanceMode: z.boolean().optional(),
+  cartDisabledNotice: z.string().optional(),
+  checkoutDisabledNotice: z.string().optional(),
+  paymentsDisabledNotice: z.string().optional(),
 });
 
 // 7. Refund Request Schema
