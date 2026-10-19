@@ -263,8 +263,12 @@ async function runMigration() {
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
         location VARCHAR(255) NOT NULL,
+        courier_partner VARCHAR(255),
+        tracking_number VARCHAR(255),
         timestamp TIMESTAMPTZ DEFAULT NOW()
       );
+      ALTER TABLE order_timeline_events ADD COLUMN IF NOT EXISTS courier_partner VARCHAR(255);
+      ALTER TABLE order_timeline_events ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(255);
 
       -- Support Tickets Table
       CREATE TABLE IF NOT EXISTS support_tickets (
@@ -454,6 +458,18 @@ async function runMigration() {
     // 5. Orders
     if (Array.isArray(storeData.orders)) {
       for (const o of storeData.orders) {
+        const customerData = o.customer || {
+          name: o.customerName || 'Customer',
+          phone: o.customerPhone || '',
+          email: o.customerEmail || '',
+          address: o.streetAddress || '',
+          village: o.villageOrCity || '',
+          mandal: o.mandalOrArea || '',
+          district: o.district || '',
+          state: o.state || '',
+          pinCode: o.pinCode || '',
+        };
+
         await client.query(`
           INSERT INTO orders (
             id, order_id, user_id, order_number, customer, payment_method,
@@ -466,7 +482,7 @@ async function runMigration() {
             updated_at = EXCLUDED.updated_at;
         `, [
           o.id, o.orderId, o.userId || null, o.orderNumber || o.orderId,
-          JSON.stringify(o.customer), o.paymentMethod, o.paymentStatus, o.orderStatus,
+          JSON.stringify(customerData), o.paymentMethod, o.paymentStatus, o.orderStatus,
           o.subtotal, o.shippingFee, o.discountAmount || 0, o.totalPaid,
           o.cashfreeOrderId || null, o.cashfreePaymentId || null,
           o.createdAt ? new Date(o.createdAt) : new Date(),
@@ -488,8 +504,25 @@ async function runMigration() {
             ]);
           }
         }
+
+        // Timeline Events
+        if (Array.isArray(o.timeline)) {
+          for (const tl of o.timeline) {
+            await client.query(`
+              INSERT INTO order_timeline_events (
+                id, order_id, stage, title, description, location, courier_partner, tracking_number, timestamp
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              ON CONFLICT (id) DO NOTHING;
+            `, [
+              tl.id || `tl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              o.orderId, tl.stage, tl.title, tl.description || '', tl.location || 'Kalwaral Hub',
+              tl.courierPartner || null, tl.trackingNumber || null,
+              tl.timestamp ? new Date(tl.timestamp) : new Date()
+            ]);
+          }
+        }
       }
-      console.log(`✓ Migrated ${storeData.orders.length} orders into AWS RDS PostgreSQL.`);
+      console.log(`✓ Migrated ${storeData.orders.length} orders, items, and timeline events into AWS RDS PostgreSQL.`);
     }
 
     // 6. Support Tickets & Messages
